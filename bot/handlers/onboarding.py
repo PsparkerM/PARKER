@@ -156,17 +156,24 @@ async def on_schedule(callback: CallbackQuery, callback_data: OnboardingCallback
     )
 
 
-# ── 8. HEALTH ISSUES (multi-select) ──────────────────────────────────────────
+# ── 8 & 9. MULTI-SELECT (health + equipment) ─────────────────────────────────
 
-@router.callback_query(MultiSelectCallback.filter(F.group == "health"))
-async def on_health_toggle(callback: CallbackQuery, callback_data: MultiSelectCallback, state: FSMContext) -> None:
+@router.callback_query(MultiSelectCallback.filter())
+async def on_multi_select(callback: CallbackQuery, callback_data: MultiSelectCallback, state: FSMContext) -> None:
+    await callback.answer()
+    if callback_data.group == "health":
+        await _handle_health(callback, callback_data, state)
+    else:
+        await _handle_equip(callback, callback_data, state)
+
+
+async def _handle_health(callback: CallbackQuery, callback_data: MultiSelectCallback, state: FSMContext) -> None:
     data = await state.get_data()
     selected = list(data.get("health_issues", []))
 
     if callback_data.action == "done":
         if not selected:
             selected = ["none"]
-        await callback.answer()
         await state.update_data(health_issues=selected, equipment=[])
         await state.set_state(OnboardingStates.equipment)
         await callback.message.edit_text(
@@ -189,22 +196,17 @@ async def on_health_toggle(callback: CallbackQuery, callback_data: MultiSelectCa
         else:
             selected.append(item)
 
-    await callback.answer()
     await state.update_data(health_issues=selected)
     await callback.message.edit_reply_markup(reply_markup=health_issues_kb(selected))
 
 
-# ── 9. EQUIPMENT (multi-select) ───────────────────────────────────────────────
-
-@router.callback_query(MultiSelectCallback.filter(F.group == "equip"))
-async def on_equip_toggle(callback: CallbackQuery, callback_data: MultiSelectCallback, state: FSMContext) -> None:
+async def _handle_equip(callback: CallbackQuery, callback_data: MultiSelectCallback, state: FSMContext) -> None:
     data = await state.get_data()
     selected = list(data.get("equipment", []))
 
     if callback_data.action == "done":
         if not selected:
             selected = ["none"]
-        await callback.answer()
         await state.update_data(equipment=selected)
 
         final_data = {**await state.get_data(), "equipment": selected}
@@ -231,7 +233,6 @@ async def on_equip_toggle(callback: CallbackQuery, callback_data: MultiSelectCal
         else:
             selected.append(item)
 
-    await callback.answer()
     await state.update_data(equipment=selected)
     await callback.message.edit_reply_markup(reply_markup=equipment_kb(selected))
 

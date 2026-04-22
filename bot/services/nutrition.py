@@ -3,7 +3,7 @@ from bot.utils.calculators import (
     GOAL_LABELS, SCHEDULE_LABELS, HEALTH_LABELS, EQUIPMENT_LABELS,
 )
 
-FORBIDDEN_EXERCISES: dict[str, list[str]] = {
+FORBIDDEN_EXERCISES = {
     "back_problems": ["становая тяга", "приседания со штангой", "гиперэкстензия с весом", "наклоны с гантелями"],
     "knee_issues":   ["глубокие приседания с весом", "выпады с отягощением", "запрыгивания на тумбу"],
     "hypertension":  ["тяжёлый жим над головой", "упражнения с задержкой дыхания (натуживание)"],
@@ -29,7 +29,7 @@ def build_profile_summary(data: dict, macros: dict) -> str:
     equip = ", ".join(EQUIPMENT_LABELS.get(e, e) for e in data.get("equipment", []))
     formula = "Кетч-МакАрдл" if data.get("body_fat_pct") else "Миффлин-Сан Жеор"
 
-    warnings: list[str] = []
+    warnings = []
     for issue in data.get("health_issues", []):
         if issue in FORBIDDEN_EXERCISES:
             ex = ", ".join(FORBIDDEN_EXERCISES[issue])
