@@ -243,6 +243,107 @@ async def calculate_food_macros(text: str) -> dict:
         return {"error": "Ошибка расчёта КБЖУ"}
 
 
+PHOTO_FOOD_SYSTEM = """Ты — эксперт-нутрициолог. Тебе показывают фотографию еды или блюда.
+Определи все видимые продукты, оцени их количество (граммы) и рассчитай КБЖУ.
+
+Верни ТОЛЬКО валидный JSON без какого-либо текста до или после:
+{
+  "items": [
+    {"name": "название", "amount_g": 150, "calories": 200, "protein_g": 15.0, "fat_g": 8.0, "carb_g": 18.0}
+  ],
+  "total": {"calories": 200, "protein_g": 15.0, "fat_g": 8.0, "carb_g": 18.0},
+  "description": "Краткое описание блюда"
+}
+
+Правила:
+- Оценивай количество по размеру порции на фото (стандартные тарелки, ладонь = ~150г белка и т.д.)
+- Если блюдо составное — разбей на компоненты
+- Округляй калории до целых, БЖУ до 1 знака
+- Если еда не видна или фото нечёткое — верни {"error": "Не удалось распознать еду на фото"}"""
+
+ADAPT_SYSTEM = """Ты — персональный тренер и нутрициолог Петр. Анализируешь недельный прогресс пользователя.
+
+На основе данных за неделю дай конкретные рекомендации по корректировке плана.
+
+Верни JSON:
+{
+  "summary": "2-3 предложения о прогрессе за неделю",
+  "weight_trend": "gaining|losing|stable",
+  "calorie_adjust": 0,  // +/- ккал к текущей норме
+  "recommendations": [
+    "конкретная рекомендация 1",
+    "конкретная рекомендация 2",
+    "конкретная рекомендация 3"
+  ],
+  "motivation": "мотивирующее сообщение от Петра, 1 предложение"
+}"""
+
+
+async def calculate_food_macros_from_photo(image_b64: str, media_type: str = "image/jpeg") -> dict:
+    if not ANTHROPIC_API_KEY:
+        return {"error": "AI недоступен"}
+    try:
+        import anthropic, json, re
+        client = anthropic.AsyncAnthropic(api_key=ANTHROPIC_API_KEY)
+        msg = await client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=800,
+            system=PHOTO_FOOD_SYSTEM,
+            messages=[{
+                "role": "user",
+                "content": [
+                    {"type": "image", "source": {"type": "base64", "media_type": media_type, "data": image_b64}},
+                    {"type": "text", "text": "Что за еда на фото? Рассчитай КБЖУ."}
+                ]
+            }],
+        )
+        raw = msg.content[0].text.strip()
+        m = re.search(r'\{.*\}', raw, re.DOTALL)
+        if not m:
+            return {"error": "Не удалось распознать еду"}
+        return json.loads(m.group())
+    except Exception:
+        logging.exception("photo food error")
+        return {"error": "Ошибка распознавания фото"}
+
+
+async def generate_weekly_adaptation(profile: dict, logs: list, food_logs: list, macros: dict) -> dict:
+    if not ANTHROPIC_API_KEY:
+        return {"error": "AI недоступен"}
+    try:
+        import anthropic, json, re
+        client = anthropic.AsyncAnthropic(api_key=ANTHROPIC_API_KEY)
+
+        weight_vals = [l["weight"] for l in logs if l.get("weight")]
+        avg_cal = 0
+        if food_logs:
+            avg_cal = sum(f["total"]["calories"] for f in food_logs if f.get("total")) / len(food_logs)
+
+        summary_text = (
+            f"Пользователь: {profile.get('name','—')}, цель: {profile.get('goal','—')}\n"
+            f"Текущие макросы: {macros.get('calories','—')} ккал\n"
+            f"Записей за неделю: {len(logs)}\n"
+            f"Вес: {weight_vals[0] if weight_vals else '—'} кг → {weight_vals[-1] if weight_vals else '—'} кг\n"
+            f"Среднее потребление калорий: {round(avg_cal)} ккал/день\n"
+            f"Записей сна: {sum(1 for l in logs if l.get('sleep'))}\n"
+        )
+
+        msg = await client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=600,
+            system=ADAPT_SYSTEM,
+            messages=[{"role": "user", "content": f"Проанализируй прогресс за неделю:\n{summary_text}"}],
+        )
+        raw = msg.content[0].text.strip()
+        m = re.search(r'\{.*\}', raw, re.DOTALL)
+        if not m:
+            return {"error": "Не удалось сформировать анализ"}
+        return json.loads(m.group())
+    except Exception:
+        logging.exception("adapt error")
+        return {"error": "Ошибка анализа"}
+
+
 async def generate_chat_response(message: str, history: list, profile: dict) -> str:
     if not ANTHROPIC_API_KEY:
         return "AI временно недоступен. Попробуй позже."
