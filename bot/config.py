@@ -11,3 +11,8 @@ SUPABASE_SERVICE_KEY: str = os.getenv("SUPABASE_SERVICE_KEY", "")
 
 if not BOT_TOKEN:
     raise ValueError("BOT_TOKEN не задан")
+
+# VIP users — lifetime free access, no monetization restrictions
+VIP_USER_IDS: set[int] = {
+    # Add tg_id integers here
+}

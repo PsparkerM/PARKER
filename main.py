@@ -10,6 +10,7 @@ from aiogram.types import Update
 
 from bot.config import BOT_TOKEN, WEBAPP_URL
 from bot.handlers import start
+from bot.handlers.start import set_bot_commands
 from app.api.profile import router as profile_router
 from app.api.chat import router as chat_router
 from app.api.food import router as food_router
@@ -31,9 +32,10 @@ async def lifespan(app: FastAPI):
     if WEBAPP_URL:
         url = f"{WEBAPP_URL.rstrip('/')}{WEBHOOK_PATH}"
         await bot.set_webhook(url, drop_pending_updates=True)
-        logging.info("Webhook: %s", url)
+        logging.info("Webhook set")
     else:
         logging.warning("WEBAPP_URL не задан — webhook не установлен")
+    await set_bot_commands(bot)
     yield
     if WEBAPP_URL:
         await bot.delete_webhook()
