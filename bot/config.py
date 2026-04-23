@@ -14,5 +14,9 @@ if not BOT_TOKEN:
 
 # VIP users — lifetime free access, no monetization restrictions
 VIP_USER_IDS: set[int] = {
-    # Add tg_id integers here
+    6135518022,  # Петр (admin)
+    1199979214,  # Лера — Свобода попугаям
+    923353879,   # Вика — АгроКиса
+    494349908,   # Артём — Кабанчик
+    1635982841,  # Аник — Ануарчик
 }
