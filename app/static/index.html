@@ -6,354 +6,935 @@
 <title>P.A.R.K.E.R.</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',sans-serif;background:var(--tg-theme-bg-color,#fff);color:var(--tg-theme-text-color,#000);min-height:100vh}
-.wrap{max-width:480px;margin:0 auto;padding:16px 16px 120px}
-/* progress */
-.prog-bar{height:4px;background:var(--tg-theme-secondary-bg-color,#f0f0f0);border-radius:2px;margin-bottom:6px}
-.prog-fill{height:100%;background:var(--tg-theme-button-color,#2481cc);border-radius:2px;transition:width .35s ease}
-.prog-label{font-size:12px;color:var(--tg-theme-hint-color,#999);margin-bottom:20px}
-/* title */
-.ttl{font-size:21px;font-weight:700;line-height:1.25;margin-bottom:18px}
-/* options */
-.opts{display:flex;flex-direction:column;gap:10px}
-.opt{display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:14px;background:var(--tg-theme-secondary-bg-color,#f0f0f0);border:2px solid transparent;cursor:pointer;font-size:15px;color:var(--tg-theme-text-color,#000);text-align:left;width:100%;-webkit-tap-highlight-color:transparent;transition:border-color .15s,opacity .1s}
-.opt:active{opacity:.7}
-.opt.sel{border-color:var(--tg-theme-button-color,#2481cc)}
-.oi{font-size:22px;width:28px;text-align:center;flex-shrink:0}
-.ot{flex:1}
-.os{font-size:12px;color:var(--tg-theme-hint-color,#999);margin-top:2px}
-.ck{font-size:16px;color:var(--tg-theme-button-color,#2481cc);opacity:0;transition:opacity .15s}
-.opt.sel .ck{opacity:1}
-/* input */
-.iw{position:relative;margin-bottom:6px}
-.ni{width:100%;padding:17px 52px 17px 16px;font-size:26px;font-weight:600;background:var(--tg-theme-secondary-bg-color,#f0f0f0);border:2px solid transparent;border-radius:14px;color:var(--tg-theme-text-color,#000);outline:none;text-align:center;-webkit-appearance:none;transition:border-color .15s}
-.ni:focus{border-color:var(--tg-theme-button-color,#2481cc)}
-.nu{position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:16px;color:var(--tg-theme-hint-color,#999)}
-.hint{font-size:13px;color:var(--tg-theme-hint-color,#999);text-align:center;margin-bottom:4px}
-.err{font-size:13px;color:#ff3b30;text-align:center;min-height:18px;margin-top:4px}
-/* toggle */
-.trow{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--tg-theme-secondary-bg-color,#f0f0f0);border-radius:14px;cursor:pointer;margin-bottom:12px;-webkit-tap-highlight-color:transparent}
-.sw{width:46px;height:26px;background:var(--tg-theme-hint-color,#ccc);border-radius:13px;position:relative;transition:background .2s;flex-shrink:0}
-.sw.on{background:var(--tg-theme-button-color,#2481cc)}
-.kn{position:absolute;top:3px;left:3px;width:20px;height:20px;background:#fff;border-radius:50%;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:transform .2s}
-.sw.on .kn{transform:translateX(20px)}
-/* nav */
-.nav{display:flex;gap:10px;margin-top:20px}
-.btn{flex:1;padding:15px;border-radius:14px;border:none;font-size:16px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:opacity .1s}
-.btn:active{opacity:.7}
-.btn-p{background:var(--tg-theme-button-color,#2481cc);color:var(--tg-theme-button-text-color,#fff)}
-.btn-s{background:var(--tg-theme-secondary-bg-color,#f0f0f0);color:var(--tg-theme-text-color,#000);flex:0 0 54px}
-/* step */
-.step{display:none}.step.active{display:block}
-/* loading */
-#ldg{display:none;flex-direction:column;align-items:center;justify-content:center;padding:80px 0;gap:16px}
-.spin{width:44px;height:44px;border:3px solid var(--tg-theme-secondary-bg-color,#f0f0f0);border-top-color:var(--tg-theme-button-color,#2481cc);border-radius:50%;animation:sp .75s linear infinite}
+:root {
+  --bg:      #070710;
+  --bg2:     #0d0d1a;
+  --gold:    #f5c518;
+  --gold2:   #e6a800;
+  --blue:    #4488ff;
+  --red:     #ff3355;
+  --green:   #22cc66;
+  --text:    #e8e8f0;
+  --muted:   #6b6b88;
+  --card:    rgba(255,255,255,0.04);
+  --border:  rgba(255,255,255,0.08);
+  --gg: rgba(245,197,24,0.3);
+  --gb: rgba(68,136,255,0.3);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',sans-serif;
+  background:var(--bg);color:var(--text);position:relative;
+}
+
+/* ── Ambient background ── */
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(ellipse 300px 250px at 95% 5%,  rgba(245,197,24,.06) 0%,transparent 70%),
+    radial-gradient(ellipse 350px 300px at 0%  85%, rgba(68,136,255,.05) 0%,transparent 70%),
+    radial-gradient(ellipse 200px 200px at 50% 50%, rgba(255,51,85,.03)  0%,transparent 70%);
+}
+/* Gym silhouettes */
+body::after{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.04;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'%3E%3Cg fill='%23ffffff'%3E%3Ccircle cx='100' cy='28' r='10'/%3E%3Crect x='97' y='38' width='6' height='35'/%3E%3Crect x='30' y='52' width='140' height='8' rx='4'/%3E%3Crect x='18' y='44' width='24' height='22' rx='4'/%3E%3Crect x='158' y='44' width='24' height='22' rx='4'/%3E%3Crect x='97' y='73' width='6' height='28'/%3E%3Crect x='78' y='101' width='6' height='36' rx='3' transform='rotate(15 81 119)'/%3E%3Crect x='116' y='101' width='6' height='36' rx='3' transform='rotate(-15 119 119)'/%3E%3C/g%3E%3C/svg%3E");
+  background-size:200px 200px;
+}
+
+/* ── Layout ── */
+#app{position:relative;z-index:1;width:100%;height:100%;display:flex;flex-direction:column;max-width:480px;margin:0 auto}
+
+/* ── Header ── */
+.hdr{
+  display:flex;align-items:center;gap:10px;
+  padding:14px 20px 10px;
+  background:rgba(7,7,16,.95);backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);
+  flex-shrink:0;
+}
+.logo{font-size:13px;font-weight:800;color:var(--gold);letter-spacing:2px;
+  text-shadow:0 0 16px rgba(245,197,24,.5)}
+.hdr-sub{flex:1;font-size:12px;color:var(--muted)}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--green);
+  box-shadow:0 0 6px var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* ── Screens ── */
+.screen{display:none;flex:1;overflow:hidden;flex-direction:column}
+.screen.on{display:flex}
+
+/* ── Bottom nav ── */
+.nav{
+  display:none;flex-shrink:0;
+  background:rgba(7,7,16,.98);backdrop-filter:blur(20px);
+  border-top:1px solid var(--border);
+}
+.nav.on{display:flex}
+.ntab{
+  flex:1;padding:9px 4px 10px;display:flex;flex-direction:column;
+  align-items:center;gap:3px;cursor:pointer;border:none;background:none;
+  color:var(--muted);font-size:10px;font-weight:600;transition:color .15s;
+}
+.ntab .ni{font-size:22px;line-height:1}
+.ntab.on{color:var(--gold)}
+
+/* ── Chat wrapper ── */
+.chat-wrap{flex:1;overflow-y:auto;padding:14px 14px 10px;
+  display:flex;flex-direction:column;gap:10px;
+  scroll-behavior:smooth;
+  -webkit-overflow-scrolling:touch;
+}
+/* input area */
+.iarea{
+  flex-shrink:0;padding:10px 12px 14px;
+  background:rgba(7,7,16,.97);backdrop-filter:blur(20px);
+  border-top:1px solid var(--border);
+}
+.irow{display:flex;gap:8px;align-items:flex-end}
+.itxt{
+  flex:1;background:var(--card);border:1px solid var(--border);
+  border-radius:22px;padding:11px 14px;color:var(--text);
+  font-size:15px;outline:none;resize:none;max-height:96px;
+  font-family:inherit;transition:border-color .15s;
+  -webkit-appearance:none;
+}
+.itxt:focus{border-color:rgba(245,197,24,.5);box-shadow:0 0 0 2px rgba(245,197,24,.1)}
+.itxt::placeholder{color:var(--muted)}
+.sbtn{
+  width:44px;height:44px;border-radius:50%;border:none;flex-shrink:0;
+  background:linear-gradient(135deg,var(--gold),var(--gold2));
+  color:#000;font-size:18px;cursor:pointer;display:flex;
+  align-items:center;justify-content:center;
+  box-shadow:0 0 16px rgba(245,197,24,.35);
+  transition:transform .15s;
+}
+.sbtn:active{transform:scale(.88)}
+
+/* ── Messages ── */
+.msg{display:flex;flex-direction:column;max-width:86%;animation:mi .25s ease}
+@keyframes mi{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.msg.p{align-self:flex-start}
+.msg.u{align-self:flex-end}
+.mname{font-size:11px;color:var(--gold);font-weight:700;margin-bottom:3px;letter-spacing:.3px}
+.mbub{
+  padding:10px 14px;border-radius:16px;
+  font-size:14px;line-height:1.55;white-space:pre-wrap;word-break:break-word;
+}
+.msg.p .mbub{
+  background:rgba(68,136,255,.1);border:1px solid rgba(68,136,255,.22);
+  border-top-left-radius:4px;
+}
+.msg.u .mbub{
+  background:linear-gradient(135deg,rgba(245,197,24,.18),rgba(245,197,24,.08));
+  border:1px solid rgba(245,197,24,.25);border-top-right-radius:4px;
+  text-align:right;
+}
+/* typing dots */
+.typing{display:flex;gap:4px;padding:12px 14px;
+  background:rgba(68,136,255,.08);border:1px solid rgba(68,136,255,.18);
+  border-radius:16px;border-top-left-radius:4px;width:fit-content;align-self:flex-start}
+.typing span{width:6px;height:6px;background:var(--blue);border-radius:50%;animation:td 1.2s infinite}
+.typing span:nth-child(2){animation-delay:.2s}.typing span:nth-child(3){animation-delay:.4s}
+@keyframes td{0%,60%,100%{transform:translateY(0);opacity:.5}30%{transform:translateY(-6px);opacity:1}}
+
+/* Quick replies */
+.qrs{display:flex;flex-wrap:wrap;gap:7px;padding:4px 14px 6px;animation:mi .25s ease}
+.qr{
+  padding:8px 14px;border-radius:18px;cursor:pointer;
+  border:1px solid rgba(245,197,24,.4);
+  background:rgba(245,197,24,.07);
+  color:var(--gold);font-size:13px;font-weight:600;
+  transition:all .15s;
+}
+.qr:active{transform:scale(.94)}
+.qr.sel{background:var(--gold);color:#000;border-color:var(--gold)}
+.qr.msel{background:rgba(245,197,24,.25);color:var(--gold);border-color:rgba(245,197,24,.6)}
+/* confirm multi */
+.qr-confirm{
+  padding:10px 20px;border-radius:18px;cursor:pointer;border:none;
+  background:linear-gradient(135deg,var(--gold),var(--gold2));
+  color:#000;font-size:14px;font-weight:700;margin-top:4px;
+  box-shadow:0 0 14px rgba(245,197,24,.3);
+}
+
+/* Number widget */
+.nwidget{padding:6px 14px 4px;animation:mi .25s ease}
+.nwrap{position:relative;display:flex;align-items:center;gap:8px}
+.ninput{
+  flex:1;background:var(--card);
+  border:1.5px solid rgba(245,197,24,.3);border-radius:12px;
+  padding:13px 48px 13px 16px;color:var(--text);
+  font-size:22px;font-weight:700;outline:none;text-align:center;
+  -webkit-appearance:none;
+}
+.ninput:focus{border-color:var(--gold);box-shadow:0 0 0 2px rgba(245,197,24,.15)}
+.nunit{position:absolute;right:14px;top:50%;transform:translateY(-50%);
+  font-size:13px;color:var(--muted);pointer-events:none}
+.nok{
+  padding:13px 18px;border-radius:12px;border:none;
+  background:var(--gold);color:#000;font-size:15px;font-weight:700;cursor:pointer;
+}
+
+/* ── Plan screen ── */
+.pscr{overflow-y:auto;padding:14px 14px 14px;display:flex;flex-direction:column;gap:12px}
+.macro-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.mcard{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:14px;padding:13px 10px;text-align:center;
+  position:relative;overflow:hidden;
+}
+.mcard::after{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.mcard.c::after{background:var(--red)}.mcard.p::after{background:var(--blue)}
+.mcard.f::after{background:var(--gold)}.mcard.u::after{background:var(--green)}
+.mval{font-size:24px;font-weight:700}
+.mlbl{font-size:11px;color:var(--muted);margin-top:3px;text-transform:uppercase;letter-spacing:.4px}
+.ptabs{display:flex;gap:8px}
+.ptab{
+  flex:1;padding:10px;border-radius:10px;cursor:pointer;
+  border:1px solid var(--border);background:var(--card);
+  color:var(--muted);font-size:13px;font-weight:600;transition:all .15s;
+}
+.ptab.on{background:rgba(245,197,24,.12);border-color:rgba(245,197,24,.4);color:var(--gold)}
+.pbox{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:14px;padding:14px;
+  font-size:13px;line-height:1.75;white-space:pre-wrap;word-break:break-word;
+}
+.sec-lbl{font-size:11px;font-weight:700;color:var(--muted);
+  text-transform:uppercase;letter-spacing:1px;margin-top:4px}
+.empty{
+  display:flex;flex-direction:column;align-items:center;
+  gap:14px;padding:52px 20px;text-align:center;
+}
+.empty-ico{font-size:52px}
+.empty-txt{font-size:14px;color:var(--muted);line-height:1.5}
+.go-chat{
+  padding:12px 24px;border-radius:12px;border:none;
+  background:linear-gradient(135deg,var(--gold),var(--gold2));
+  color:#000;font-size:14px;font-weight:700;cursor:pointer;
+  box-shadow:0 0 14px rgba(245,197,24,.3);
+}
+.disc{font-size:11px;color:var(--muted);text-align:center;padding:4px 0 2px}
+
+/* ── Tracker screen ── */
+.tscr{overflow-y:auto;padding:14px}
+.tcard{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:16px;padding:18px;margin-bottom:12px;
+}
+.tcardttl{font-size:14px;font-weight:700;margin-bottom:14px;color:var(--gold)}
+.tform-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.tlbl{font-size:13px;color:var(--muted);width:80px;flex-shrink:0}
+.tinput{
+  flex:1;background:var(--bg2);border:1px solid var(--border);
+  border-radius:10px;padding:9px 12px;color:var(--text);
+  font-size:15px;font-weight:600;outline:none;-webkit-appearance:none;
+}
+.tinput:focus{border-color:rgba(245,197,24,.4)}
+.tunit{font-size:13px;color:var(--muted);width:28px}
+.tbtn{
+  width:100%;padding:13px;border-radius:12px;border:none;
+  background:linear-gradient(135deg,var(--gold),var(--gold2));
+  color:#000;font-size:15px;font-weight:700;cursor:pointer;
+  box-shadow:0 0 12px rgba(245,197,24,.25);margin-top:4px;
+}
+.tlog-empty{font-size:13px;color:var(--muted);text-align:center;padding:16px 0}
+.tlog-row{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:10px 0;border-bottom:1px solid var(--border);font-size:13px;
+}
+.tlog-row:last-child{border:none}
+.tlog-date{color:var(--muted)}
+.tlog-val{font-weight:700;color:var(--gold)}
+
+/* ── Profile screen ── */
+.profscr{overflow-y:auto;padding:14px}
+.profcard{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:16px;padding:20px;margin-bottom:12px;
+  display:flex;align-items:center;gap:16px;
+}
+.profavatar{
+  width:60px;height:60px;border-radius:50%;flex-shrink:0;
+  background:linear-gradient(135deg,var(--gold),#e68000);
+  display:flex;align-items:center;justify-content:center;
+  font-size:26px;font-weight:800;color:#000;
+  box-shadow:0 0 20px rgba(245,197,24,.3);
+}
+.profname{font-size:18px;font-weight:700}
+.profgoal{font-size:12px;color:var(--muted);margin-top:3px}
+.prow{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:12px 0;border-bottom:1px solid var(--border);font-size:14px;
+}
+.prow:last-child{border:none}
+.prow-lbl{color:var(--muted)}
+.prow-val{font-weight:600}
+.prst{
+  width:100%;padding:13px;border-radius:12px;border:1px solid var(--border);
+  background:var(--card);color:var(--text);
+  font-size:14px;font-weight:600;cursor:pointer;margin-top:4px;
+}
+
+/* ── Spinner ── */
+.spin{width:44px;height:44px;border:3px solid var(--border);
+  border-top-color:var(--gold);border-radius:50%;animation:sp .75s linear infinite}
 @keyframes sp{to{transform:rotate(360deg)}}
-/* result */
-#res{display:none}
-.sec-lbl{font-size:12px;color:var(--tg-theme-hint-color,#999);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin:16px 0 8px}
-.mg{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:4px}
-.mc{background:var(--tg-theme-secondary-bg-color,#f0f0f0);border-radius:14px;padding:14px 12px;text-align:center}
-.mv{font-size:24px;font-weight:700}
-.mn{font-size:12px;color:var(--tg-theme-hint-color,#999);margin-top:3px}
-/* tabs */
-.tabs{display:flex;gap:8px;margin:16px 0 12px}
-.tab{flex:1;padding:10px;border-radius:10px;border:none;font-size:14px;font-weight:600;cursor:pointer;background:var(--tg-theme-secondary-bg-color,#f0f0f0);color:var(--tg-theme-hint-color,#999);-webkit-tap-highlight-color:transparent}
-.tab.active{background:var(--tg-theme-button-color,#2481cc);color:var(--tg-theme-button-text-color,#fff)}
-.plan-box{background:var(--tg-theme-secondary-bg-color,#f0f0f0);border-radius:14px;padding:16px;font-size:14px;line-height:1.7;white-space:pre-wrap;word-break:break-word}
-.disc{margin-top:12px;font-size:12px;color:var(--tg-theme-hint-color,#999);text-align:center}
 </style>
 </head>
 <body>
-<!-- FORM -->
-<div class="wrap" id="fv">
-  <div class="prog-bar"><div class="prog-fill" id="pf" style="width:11%"></div></div>
-  <div class="prog-label" id="pl">Шаг 1 из 9</div>
+<div id="app">
+  <!-- HEADER -->
+  <div class="hdr">
+    <div class="logo">P.A.R.K.E.R.</div>
+    <div class="hdr-sub" id="hdr-sub">Персональный тренер</div>
+    <div class="dot"></div>
+  </div>
 
-  <!-- 1 Goal -->
-  <div class="step active" id="s1">
-    <div class="ttl">🎯 Какова твоя цель?</div>
-    <div class="opts">
-      <button class="opt" data-g="goal" data-v="lose_weight"><span class="oi">🔥</span><div class="ot">Похудеть</div><span class="ck">✓</span></button>
-      <button class="opt" data-g="goal" data-v="gain_muscle"><span class="oi">💪</span><div class="ot">Набрать мышечную массу</div><span class="ck">✓</span></button>
-      <button class="opt" data-g="goal" data-v="maintain"><span class="oi">⚖️</span><div class="ot">Поддержать форму</div><span class="ck">✓</span></button>
-      <button class="opt" data-g="goal" data-v="recomposition"><span class="oi">🔄</span><div class="ot">Рекомпозиция тела</div><span class="ck">✓</span></button>
+  <!-- ONBOARDING SCREEN -->
+  <div class="screen on" id="sc-onboard">
+    <div class="chat-wrap" id="onb-msgs"></div>
+    <div id="onb-widgets"></div>
+    <div class="iarea" id="onb-iarea" style="display:none">
+      <div class="irow">
+        <textarea class="itxt" id="onb-input" rows="1" placeholder="Напиши ответ..."></textarea>
+        <button class="sbtn" id="onb-send">➤</button>
+      </div>
     </div>
   </div>
 
-  <!-- 2 Gender -->
-  <div class="step" id="s2">
-    <div class="ttl">👤 Биологический пол</div>
-    <div class="opts">
-      <button class="opt" data-g="gender" data-v="male"><span class="oi">👨</span><div class="ot">Мужской</div><span class="ck">✓</span></button>
-      <button class="opt" data-g="gender" data-v="female"><span class="oi">👩</span><div class="ot">Женский</div><span class="ck">✓</span></button>
+  <!-- CHAT SCREEN -->
+  <div class="screen" id="sc-chat">
+    <div class="chat-wrap" id="chat-msgs"></div>
+    <div class="iarea">
+      <div class="irow">
+        <textarea class="itxt" id="chat-input" rows="1" placeholder="Спроси Петра..."></textarea>
+        <button class="sbtn" id="chat-send">➤</button>
+      </div>
     </div>
   </div>
 
-  <!-- 3 Age -->
-  <div class="step" id="s3">
-    <div class="ttl">🔢 Возраст</div>
-    <div class="iw"><input class="ni" id="i-age" type="number" inputmode="numeric" placeholder="25" min="10" max="100"><span class="nu">лет</span></div>
-    <div class="hint">От 10 до 100 лет</div><div class="err" id="e-age"></div>
-    <div class="nav"><button class="btn btn-s" onclick="prev()">←</button><button class="btn btn-p" onclick="next()">Далее →</button></div>
+  <!-- PLAN SCREEN -->
+  <div class="screen" id="sc-plan">
+    <div class="pscr" id="plan-content"></div>
   </div>
 
-  <!-- 4 Height -->
-  <div class="step" id="s4">
-    <div class="ttl">📏 Рост</div>
-    <div class="iw"><input class="ni" id="i-ht" type="number" inputmode="numeric" placeholder="175" min="100" max="250"><span class="nu">см</span></div>
-    <div class="hint">От 100 до 250 см</div><div class="err" id="e-ht"></div>
-    <div class="nav"><button class="btn btn-s" onclick="prev()">←</button><button class="btn btn-p" onclick="next()">Далее →</button></div>
+  <!-- TRACKER SCREEN -->
+  <div class="screen" id="sc-tracker">
+    <div class="tscr" id="tracker-content"></div>
   </div>
 
-  <!-- 5 Weight -->
-  <div class="step" id="s5">
-    <div class="ttl">⚖️ Вес</div>
-    <div class="iw"><input class="ni" id="i-wt" type="number" inputmode="decimal" placeholder="80" min="20" max="500" step="0.1"><span class="nu">кг</span></div>
-    <div class="hint">От 20 до 500 кг</div><div class="err" id="e-wt"></div>
-    <div class="nav"><button class="btn btn-s" onclick="prev()">←</button><button class="btn btn-p" onclick="next()">Далее →</button></div>
+  <!-- PROFILE SCREEN -->
+  <div class="screen" id="sc-profile">
+    <div class="profscr" id="profile-content"></div>
   </div>
 
-  <!-- 6 Body Fat -->
-  <div class="step" id="s6">
-    <div class="ttl">💧 % подкожного жира</div>
-    <div class="trow" onclick="toggleBF()">
-      <span style="font-size:15px">Знаю свой % жира (точнее)</span>
-      <div class="sw" id="bf-sw"><div class="kn"></div></div>
-    </div>
-    <div id="bf-w" style="display:none">
-      <div class="iw"><input class="ni" id="i-bf" type="number" inputmode="decimal" placeholder="18" min="3" max="60" step="0.1"><span class="nu">%</span></div>
-      <div class="err" id="e-bf"></div>
-    </div>
-    <div class="hint" style="margin-top:10px">Без % жира — используем формулу Миффлин-Сан Жеор</div>
-    <div class="nav"><button class="btn btn-s" onclick="prev()">←</button><button class="btn btn-p" onclick="next()">Далее →</button></div>
+  <!-- BOTTOM NAV -->
+  <div class="nav" id="nav">
+    <button class="ntab on" data-sc="chat" onclick="goTab('chat')"><div class="ni">💬</div>Чат</button>
+    <button class="ntab"    data-sc="plan" onclick="goTab('plan')"><div class="ni">📋</div>План</button>
+    <button class="ntab"    data-sc="tracker" onclick="goTab('tracker')"><div class="ni">📊</div>Трекер</button>
+    <button class="ntab"    data-sc="profile" onclick="goTab('profile')"><div class="ni">👤</div>Профиль</button>
   </div>
-
-  <!-- 7 Schedule -->
-  <div class="step" id="s7">
-    <div class="ttl">⏰ Рабочий график</div>
-    <div class="opts">
-      <button class="opt" data-g="schedule" data-v="standard"><span class="oi">🕗</span><div class="ot">Стандартный<div class="os">~8 часов в день</div></div><span class="ck">✓</span></button>
-      <button class="opt" data-g="schedule" data-v="12h"><span class="oi">⚡</span><div class="ot">Интенсивный<div class="os">12 часов</div></div><span class="ck">✓</span></button>
-      <button class="opt" data-g="schedule" data-v="16h+"><span class="oi">🔴</span><div class="ot">Тяжёлый<div class="os">16+ часов</div></div><span class="ck">✓</span></button>
-      <button class="opt" data-g="schedule" data-v="shift"><span class="oi">🔄</span><div class="ot">Сменный<div class="os">2/2, 3/3 и т.д.</div></div><span class="ck">✓</span></button>
-    </div>
-  </div>
-
-  <!-- 8 Health -->
-  <div class="step" id="s8">
-    <div class="ttl">🏥 Состояние здоровья</div>
-    <div style="font-size:13px;color:var(--tg-theme-hint-color,#999);margin-bottom:12px">Выбери всё актуальное (можно несколько)</div>
-    <div class="opts">
-      <button class="opt" data-g="health" data-v="none"><span class="oi">✅</span><div class="ot">Нет проблем</div><span class="ck">✓</span></button>
-      <button class="opt" data-g="health" data-v="back_problems"><span class="oi">🦴</span><div class="ot">Проблемы со спиной / сколиоз</div><span class="ck">✓</span></button>
-      <button class="opt" data-g="health" data-v="knee_issues"><span class="oi">🦵</span><div class="ot">Проблемы с коленями</div><span class="ck">✓</span></button>
-      <button class="opt" data-g="health" data-v="hypertension"><span class="oi">❤️</span><div class="ot">Гипертония</div><span class="ck">✓</span></button>
-    </div>
-    <div class="nav"><button class="btn btn-s" onclick="prev()">←</button><button class="btn btn-p" onclick="next()">Далее →</button></div>
-  </div>
-
-  <!-- 9 Equipment -->
-  <div class="step" id="s9">
-    <div class="ttl">🏋️ Оборудование</div>
-    <div style="font-size:13px;color:var(--tg-theme-hint-color,#999);margin-bottom:12px">Выбери всё доступное</div>
-    <div class="opts">
-      <button class="opt" data-g="equip" data-v="none"><span class="oi">🏠</span><div class="ot">Без оборудования</div><span class="ck">✓</span></button>
-      <button class="opt" data-g="equip" data-v="dumbbells"><span class="oi">🏋️</span><div class="ot">Гантели</div><span class="ck">✓</span></button>
-      <button class="opt" data-g="equip" data-v="barbell"><span class="oi">💪</span><div class="ot">Штанга / гриф</div><span class="ck">✓</span></button>
-      <button class="opt" data-g="equip" data-v="gym"><span class="oi">🏟️</span><div class="ot">Спортзал (всё оборудование)</div><span class="ck">✓</span></button>
-      <button class="opt" data-g="equip" data-v="pool"><span class="oi">🏊</span><div class="ot">Бассейн</div><span class="ck">✓</span></button>
-    </div>
-    <div class="nav"><button class="btn btn-s" onclick="prev()">←</button><button class="btn btn-p" onclick="submit()">Получить план 🚀</button></div>
-  </div>
-</div>
-
-<!-- LOADING -->
-<div class="wrap" id="ldg">
-  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 0;gap:16px">
-    <div class="spin"></div>
-    <div style="font-size:17px;font-weight:700">P.A.R.K.E.R. строит твой план...</div>
-    <div style="font-size:13px;color:var(--tg-theme-hint-color,#999)">Анализирую профиль и рассчитываю протокол</div>
-  </div>
-</div>
-
-<!-- RESULT -->
-<div class="wrap" id="res">
-  <div style="font-size:22px;font-weight:700;margin-bottom:4px">🎉 Твой протокол готов</div>
-  <div style="font-size:13px;color:var(--tg-theme-hint-color,#999);margin-bottom:16px">P.A.R.K.E.R. рассчитал всё под тебя</div>
-
-  <div class="sec-lbl">📊 КБЖУ на день</div>
-  <div class="mg">
-    <div class="mc"><div class="mv" id="r-cal">—</div><div class="mn">🔥 Калории</div></div>
-    <div class="mc"><div class="mv" id="r-pro">—</div><div class="mn">🥩 Белки, г</div></div>
-    <div class="mc"><div class="mv" id="r-fat">—</div><div class="mn">🫒 Жиры, г</div></div>
-    <div class="mc"><div class="mv" id="r-carb">—</div><div class="mn">🍞 Углеводы, г</div></div>
-  </div>
-
-  <div class="tabs">
-    <button class="tab active" id="tab-n" onclick="showTab('n')">🍽 Питание</button>
-    <button class="tab" id="tab-w" onclick="showTab('w')">🏋️ Тренировки</button>
-  </div>
-  <div class="plan-box" id="r-plan"></div>
-  <div class="disc">⚠️ Проконсультируйся с врачом перед началом программы</div>
-
-  <button class="btn btn-p" style="margin-top:20px;width:100%" onclick="restart()">🔄 Пересчитать</button>
 </div>
 
 <script>
-const tg = window.Telegram.WebApp;
-tg.ready(); tg.expand();
+const tg = window.Telegram?.WebApp;
+if (tg) { tg.ready(); tg.expand(); }
 
-let cur = 1;
-const TOTAL = 9;
-const fd = {goal:null,gender:null,age:null,height_cm:null,weight_kg:null,
-            body_fat_pct:null,schedule:null,health_issues:[],equipment:[]};
-let bfOn = false;
-let plans = {n:'', w:''};
+// ── State ──────────────────────────────────────────────────────────────────
+let profile  = JSON.parse(localStorage.getItem('parker_profile')  || 'null');
+let chatHist = JSON.parse(localStorage.getItem('parker_history')  || '[]');
+let planData = JSON.parse(localStorage.getItem('parker_plan')     || 'null');
+let logs     = JSON.parse(localStorage.getItem('parker_logs')     || '[]');
 
-function setProgress(n){
-  cur = n;
-  document.getElementById('pf').style.width = Math.round(n/TOTAL*100)+'%';
-  document.getElementById('pl').textContent = 'Шаг '+n+' из '+TOTAL;
-}
-function showStep(n){
-  document.querySelectorAll('.step').forEach(s=>s.classList.remove('active'));
-  document.getElementById('s'+n).classList.add('active');
-  setProgress(n); window.scrollTo(0,0);
+function save() {
+  localStorage.setItem('parker_profile', JSON.stringify(profile));
+  localStorage.setItem('parker_history', JSON.stringify(chatHist));
+  if (planData) localStorage.setItem('parker_plan', JSON.stringify(planData));
+  localStorage.setItem('parker_logs', JSON.stringify(logs));
 }
 
-// radio
-document.querySelectorAll('.opt[data-g="goal"],.opt[data-g="gender"],.opt[data-g="schedule"]').forEach(b=>{
-  b.addEventListener('click',function(){
-    const g=this.dataset.g, v=this.dataset.v;
-    document.querySelectorAll('.opt[data-g="'+g+'"]').forEach(x=>x.classList.remove('sel'));
-    this.classList.add('sel'); fd[g]=v;
-    setTimeout(()=>next(),180);
+function getTgId() {
+  try {
+    const u = JSON.parse(new URLSearchParams(tg?.initData || '').get('user') || '{}');
+    return u.id || null;
+  } catch { return null; }
+}
+
+// ── Tab navigation ─────────────────────────────────────────────────────────
+const SCREENS = { chat:'sc-chat', plan:'sc-plan', tracker:'sc-tracker', profile:'sc-profile' };
+let curTab = 'chat';
+
+function goTab(name) {
+  curTab = name;
+  Object.keys(SCREENS).forEach(k => {
+    document.getElementById(SCREENS[k]).classList.toggle('on', k === name);
+    document.querySelector(`.ntab[data-sc="${k}"]`).classList.toggle('on', k === name);
   });
-});
+  if (name === 'plan')    renderPlan();
+  if (name === 'tracker') renderTracker();
+  if (name === 'profile') renderProfile();
+}
 
-// multi health
-document.querySelectorAll('.opt[data-g="health"]').forEach(b=>{
-  b.addEventListener('click',function(){
-    const v=this.dataset.v;
-    if(v==='none'){
-      document.querySelectorAll('.opt[data-g="health"]').forEach(x=>x.classList.remove('sel'));
-      if(!fd.health_issues.includes('none')){fd.health_issues=['none'];this.classList.add('sel');}
-      else fd.health_issues=[];
-    } else {
-      document.querySelector('.opt[data-g="health"][data-v="none"]').classList.remove('sel');
-      fd.health_issues=fd.health_issues.filter(x=>x!=='none');
-      if(fd.health_issues.includes(v)){fd.health_issues=fd.health_issues.filter(x=>x!==v);this.classList.remove('sel');}
-      else{fd.health_issues.push(v);this.classList.add('sel');}
+// ── Onboarding ─────────────────────────────────────────────────────────────
+const GOALS = [
+  {l:'🔥 Похудеть',       v:'lose_weight'},
+  {l:'💪 Набрать мышцы',  v:'gain_muscle'},
+  {l:'⚖️ Поддержать форму',v:'maintain'},
+  {l:'🔄 Рекомпозиция',   v:'recomposition'},
+];
+const SCHEDULES = [
+  {l:'🕗 Стандартный (~8ч)', v:'standard'},
+  {l:'⚡ Интенсивный (12ч)', v:'12h'},
+  {l:'🔴 Тяжёлый (16ч+)',    v:'16h+'},
+  {l:'🔄 Сменный (2/2, 3/3)',v:'shift'},
+];
+const HEALTH = [
+  {l:'✅ Нет проблем',          v:'none'},
+  {l:'🦴 Спина / сколиоз',      v:'back_problems'},
+  {l:'🦵 Проблемы с коленями',  v:'knee_issues'},
+  {l:'❤️ Гипертония',           v:'hypertension'},
+];
+const EQUIP = [
+  {l:'🏠 Только тело',     v:'none'},
+  {l:'🏋️ Гантели дома',   v:'dumbbells'},
+  {l:'💪 Штанга дома',     v:'barbell'},
+  {l:'🏟️ Спортзал',       v:'gym'},
+  {l:'🏊 Бассейн',         v:'pool'},
+];
+
+const GOAL_LABELS = {
+  lose_weight:'похудение', gain_muscle:'набор мышечной массы',
+  maintain:'поддержание формы', recomposition:'рекомпозиция тела'
+};
+
+let onbStep = 0;
+let onbData = {};
+let multiSel = [];
+
+const steps = [
+  { key:'name',       type:'text',   q: () => 'Привет! Я — Петр, твой личный тренер и нутрициолог в P.A.R.K.E.R.\n\nКак тебя зовут?' },
+  { key:'goal',       type:'choice', q: () => `Отлично, ${onbData.name}! 💪\n\nКакова твоя главная цель?`, opts: GOALS },
+  { key:'gender',     type:'choice', q: () => 'Биологический пол — нужно для точного расчёта калорий.',
+    opts:[{l:'👨 Мужской',v:'male'},{l:'👩 Женский',v:'female'}] },
+  { key:'age',        type:'num',    q: () => 'Сколько тебе лет?',   ph:'25', unit:'лет',  min:10,  max:100 },
+  { key:'height_cm',  type:'num',    q: () => 'Рост?',               ph:'175',unit:'см',   min:100, max:250 },
+  { key:'weight_kg',  type:'num',    q: () => 'Вес прямо сейчас?',   ph:'80', unit:'кг',   min:20,  max:500, dec:true },
+  { key:'body_fat_pct', type:'bodyfat', q: () =>
+    'Знаешь свой % подкожного жира?\n\nЕсли нет — просто пропусти. Я воспользуюсь другой формулой.\n\n📏 Как примерно определить:\nМужчины: обхват талии (пупок, см) − рост × 0.5 ÷ рост × 100\nЖенщины: (талия + бёдра − шея, см) × 0.15 ≈ % жира\nИли используй фитнес-весы с биоимпедансом.',
+    ph:'18', unit:'%', min:3, max:60, dec:true
+  },
+  { key:'schedule',     type:'choice', q: () => 'Какой у тебя рабочий/жизненный график?', opts: SCHEDULES },
+  { key:'health_issues',type:'multi',  q: () => 'Есть проблемы со здоровьем или травмы?\nВыбери всё актуальное:', opts: HEALTH },
+  { key:'equipment',    type:'multi',  q: () => 'Что есть для тренировок?\nМожно выбрать несколько:', opts: EQUIP },
+];
+
+const omsg = document.getElementById('onb-msgs');
+const owdg = document.getElementById('onb-widgets');
+const oiarea = document.getElementById('onb-iarea');
+const oinput = document.getElementById('onb-input');
+const osend  = document.getElementById('onb-send');
+
+function scrollChat(el) {
+  setTimeout(() => { el.scrollTop = el.scrollHeight; }, 60);
+}
+
+function addMsg(el, role, text) {
+  const d = document.createElement('div');
+  d.className = 'msg ' + (role === 'petr' ? 'p' : 'u');
+  d.innerHTML = (role === 'petr' ? '<div class="mname">Петр</div>' : '') +
+    `<div class="mbub">${escHtml(text)}</div>`;
+  el.appendChild(d);
+  scrollChat(el);
+}
+
+function escHtml(t) {
+  return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+          .replace(/\n/g,'<br>');
+}
+
+function showTyping(el) {
+  const d = document.createElement('div');
+  d.className = 'typing'; d.id = 'typ-'+Date.now();
+  d.innerHTML = '<span></span><span></span><span></span>';
+  el.appendChild(d); scrollChat(el);
+  return d;
+}
+
+function clearWidgets() {
+  owdg.innerHTML = '';
+  oiarea.style.display = 'none';
+}
+
+function onbAsk(idx) {
+  onbStep = idx;
+  const step = steps[idx];
+  clearWidgets();
+
+  const typ = showTyping(omsg);
+  setTimeout(() => {
+    typ.remove();
+    const q = step.q();
+    addMsg(omsg, 'petr', q);
+
+    if (step.type === 'text') {
+      oiarea.style.display = 'block';
+      oinput.value = '';
+      oinput.placeholder = 'Введи своё имя...';
+      setTimeout(() => oinput.focus(), 100);
+
+    } else if (step.type === 'choice') {
+      const wrap = document.createElement('div'); wrap.className = 'qrs';
+      step.opts.forEach(o => {
+        const b = document.createElement('button'); b.className = 'qr';
+        b.textContent = o.l;
+        b.onclick = () => onbChoose(o.v, o.l);
+        wrap.appendChild(b);
+      });
+      owdg.appendChild(wrap);
+
+    } else if (step.type === 'num') {
+      renderNumWidget(step);
+
+    } else if (step.type === 'bodyfat') {
+      // Optional — skip or enter
+      const wrap = document.createElement('div'); wrap.className = 'nwidget';
+      const row = document.createElement('div'); row.className = 'nwrap';
+      const inp = document.createElement('input');
+      inp.type = 'number'; inp.inputMode = 'decimal';
+      inp.className = 'ninput'; inp.placeholder = step.ph;
+      inp.min = step.min; inp.max = step.max; inp.step = step.dec ? '0.1' : '1';
+      const u = document.createElement('span'); u.className = 'nunit'; u.textContent = step.unit;
+      const ok = document.createElement('button'); ok.className = 'nok'; ok.textContent = '✓';
+      ok.onclick = () => {
+        const v = parseFloat(inp.value);
+        if (v && v >= step.min && v <= step.max) {
+          onbData[step.key] = v;
+          addMsg(omsg, 'user', v + ' ' + step.unit);
+        } else {
+          onbData[step.key] = null;
+          addMsg(omsg, 'user', 'Пропустить');
+        }
+        onbNext();
+      };
+      row.appendChild(inp); row.appendChild(u); row.appendChild(ok);
+      // skip button
+      const sk = document.createElement('button'); sk.className = 'qr';
+      sk.textContent = 'Пропустить →'; sk.style.marginTop='8px';
+      sk.onclick = () => { onbData[step.key] = null; addMsg(omsg,'user','Пропустить'); onbNext(); };
+      wrap.appendChild(row); wrap.appendChild(sk);
+      owdg.appendChild(wrap);
+
+    } else if (step.type === 'multi') {
+      multiSel = [];
+      renderMulti(step);
     }
-  });
-});
 
-// multi equip
-document.querySelectorAll('.opt[data-g="equip"]').forEach(b=>{
-  b.addEventListener('click',function(){
-    const v=this.dataset.v;
-    if(v==='none'){
-      document.querySelectorAll('.opt[data-g="equip"]').forEach(x=>x.classList.remove('sel'));
-      if(!fd.equipment.includes('none')){fd.equipment=['none'];this.classList.add('sel');}
-      else fd.equipment=[];
-    } else {
-      document.querySelector('.opt[data-g="equip"][data-v="none"]').classList.remove('sel');
-      fd.equipment=fd.equipment.filter(x=>x!=='none');
-      if(fd.equipment.includes(v)){fd.equipment=fd.equipment.filter(x=>x!==v);this.classList.remove('sel');}
-      else{fd.equipment.push(v);this.classList.add('sel');}
+  }, 600);
+}
+
+function renderNumWidget(step) {
+  const wrap = document.createElement('div'); wrap.className = 'nwidget';
+  const row = document.createElement('div'); row.className = 'nwrap';
+  const inp = document.createElement('input');
+  inp.type = 'number'; inp.inputMode = step.dec ? 'decimal' : 'numeric';
+  inp.className = 'ninput'; inp.placeholder = step.ph;
+  inp.min = step.min; inp.max = step.max; inp.step = step.dec ? '0.1' : '1';
+  const u = document.createElement('span'); u.className = 'nunit'; u.textContent = step.unit;
+  const ok = document.createElement('button'); ok.className = 'nok'; ok.textContent = '→';
+  ok.onclick = () => {
+    const v = step.dec ? parseFloat(inp.value) : parseInt(inp.value);
+    if (!v || v < step.min || v > step.max) {
+      inp.style.borderColor = 'var(--red)';
+      setTimeout(() => inp.style.borderColor = '', 800);
+      return;
     }
+    onbData[step.key] = v;
+    addMsg(omsg, 'user', v + ' ' + step.unit);
+    onbNext();
+  };
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter') ok.click(); });
+  row.appendChild(inp); row.appendChild(u); row.appendChild(ok);
+  wrap.appendChild(row);
+  owdg.appendChild(wrap);
+  setTimeout(() => inp.focus(), 100);
+}
+
+function renderMulti(step) {
+  const wrap = document.createElement('div'); wrap.className = 'qrs';
+  step.opts.forEach(o => {
+    const b = document.createElement('button');
+    b.className = 'qr'; b.textContent = o.l; b.dataset.v = o.v;
+    b.onclick = () => toggleMulti(b, o.v, step);
+    wrap.appendChild(b);
   });
-});
-
-function toggleBF(){
-  bfOn=!bfOn;
-  document.getElementById('bf-sw').classList.toggle('on',bfOn);
-  document.getElementById('bf-w').style.display=bfOn?'block':'none';
-  if(!bfOn) fd.body_fat_pct=null;
+  const conf = document.createElement('button'); conf.className = 'qr-confirm';
+  conf.textContent = 'Готово →';
+  conf.onclick = () => {
+    if (multiSel.length === 0) multiSel = ['none'];
+    onbData[step.key] = multiSel;
+    addMsg(omsg, 'user', step.opts.filter(o => multiSel.includes(o.v)).map(o=>o.l).join(', '));
+    onbNext();
+  };
+  wrap.appendChild(conf);
+  owdg.appendChild(wrap);
 }
 
-function validate(){
-  if(cur===3){const v=parseInt(document.getElementById('i-age').value);if(!v||v<10||v>100){document.getElementById('e-age').textContent='❌ Возраст от 10 до 100';return false;}document.getElementById('e-age').textContent='';fd.age=v;return true;}
-  if(cur===4){const v=parseInt(document.getElementById('i-ht').value);if(!v||v<100||v>250){document.getElementById('e-ht').textContent='❌ Рост от 100 до 250 см';return false;}document.getElementById('e-ht').textContent='';fd.height_cm=v;return true;}
-  if(cur===5){const v=parseFloat(String(document.getElementById('i-wt').value).replace(',','.'));if(!v||v<20||v>500){document.getElementById('e-wt').textContent='❌ Вес от 20 до 500 кг';return false;}document.getElementById('e-wt').textContent='';fd.weight_kg=v;return true;}
-  if(cur===6&&bfOn){const v=parseFloat(String(document.getElementById('i-bf').value).replace(',','.'));if(!v||v<3||v>60){document.getElementById('e-bf').textContent='❌ % жира от 3 до 60';return false;}document.getElementById('e-bf').textContent='';fd.body_fat_pct=v;return true;}
-  if(cur===8&&fd.health_issues.length===0){fd.health_issues=['none'];document.querySelector('.opt[data-g="health"][data-v="none"]').classList.add('sel');}
-  if(cur===9&&fd.equipment.length===0){fd.equipment=['none'];document.querySelector('.opt[data-g="equip"][data-v="none"]').classList.add('sel');}
-  return true;
-}
-
-function next(){
-  if(!validate()) return;
-  if(cur===1&&!fd.goal){tg.showAlert('Выбери цель');return;}
-  if(cur===2&&!fd.gender){tg.showAlert('Выбери пол');return;}
-  if(cur===7&&!fd.schedule){tg.showAlert('Выбери рабочий график');return;}
-  if(cur<TOTAL) showStep(cur+1);
-}
-function prev(){if(cur>1) showStep(cur-1);}
-
-// inject tg_id from initData
-function getTgId(){
-  try{
-    const p=new URLSearchParams(tg.initData);
-    const u=JSON.parse(p.get('user')||'{}');
-    return u.id||null;
-  }catch{return null;}
-}
-
-async function submit(){
-  if(!validate()) return;
-  const tgId = getTgId();
-  if(tgId) fd.tg_id = tgId;
-
-  document.getElementById('fv').style.display='none';
-  document.getElementById('ldg').style.display='block';
-
-  try{
-    const r=await fetch('/api/profile',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(fd)});
-    if(!r.ok){const e=await r.json().catch(()=>({detail:'Ошибка сервера'}));throw new Error(e.detail||'Ошибка сервера');}
-    const data=await r.json();
-    showResult(data);
-  }catch(e){
-    document.getElementById('ldg').style.display='none';
-    document.getElementById('fv').style.display='block';
-    tg.showAlert('Ошибка: '+e.message);
+function toggleMulti(btn, val, step) {
+  if (val === 'none') {
+    multiSel = multiSel.includes('none') ? [] : ['none'];
+    document.querySelectorAll('.qrs .qr').forEach(b => b.classList.remove('msel'));
+    if (multiSel.includes('none')) btn.classList.add('msel');
+  } else {
+    multiSel = multiSel.filter(v => v !== 'none');
+    document.querySelector(`.qrs .qr[data-v="none"]`)?.classList.remove('msel');
+    if (multiSel.includes(val)) {
+      multiSel = multiSel.filter(v => v !== val);
+      btn.classList.remove('msel');
+    } else {
+      multiSel.push(val);
+      btn.classList.add('msel');
+    }
   }
 }
 
-function showResult(data){
-  document.getElementById('ldg').style.display='none';
-  document.getElementById('res').style.display='block';
-  const m=data.macros;
-  document.getElementById('r-cal').textContent=m.calories;
-  document.getElementById('r-pro').textContent=m.protein_g;
-  document.getElementById('r-fat').textContent=m.fat_g;
-  document.getElementById('r-carb').textContent=m.carb_g;
-  plans.n=clean(data.nutrition_plan||'');
-  plans.w=clean(data.workout_plan||'');
-  showTab('n');
-  window.scrollTo(0,0);
+function onbChoose(val, label) {
+  onbData[steps[onbStep].key] = val;
+  clearWidgets();
+  addMsg(omsg, 'user', label);
+  onbNext();
 }
 
-function clean(t){return t.replace(/\*([^*\n]+)\*/g,'$1').replace(/_([^_\n]+)_/g,'$1').trim();}
-
-function showTab(t){
-  document.getElementById('tab-n').classList.toggle('active',t==='n');
-  document.getElementById('tab-w').classList.toggle('active',t==='w');
-  document.getElementById('r-plan').textContent=plans[t];
+function onbNext() {
+  clearWidgets();
+  const next = onbStep + 1;
+  if (next < steps.length) {
+    onbAsk(next);
+  } else {
+    finishOnboarding();
+  }
 }
 
-function restart(){
-  Object.assign(fd,{goal:null,gender:null,age:null,height_cm:null,weight_kg:null,body_fat_pct:null,schedule:null,health_issues:[],equipment:[]});
-  bfOn=false; plans={n:'',w:''};
-  document.getElementById('bf-sw').classList.remove('on');
-  document.getElementById('bf-w').style.display='none';
-  document.querySelectorAll('.opt').forEach(b=>b.classList.remove('sel'));
-  document.querySelectorAll('.ni').forEach(i=>i.value='');
-  document.getElementById('res').style.display='none';
-  document.getElementById('fv').style.display='block';
-  showStep(1);
+function finishOnboarding() {
+  profile = Object.assign({}, onbData);
+  const tgId = getTgId();
+  if (tgId) profile.tg_id = tgId;
+
+  const typ = showTyping(omsg);
+  setTimeout(() => {
+    typ.remove();
+    const goalLbl = GOAL_LABELS[profile.goal] || profile.goal;
+    addMsg(omsg, 'petr',
+      `Отлично, ${profile.name}! 🎯\n\nЦель: ${goalLbl}\nВес: ${profile.weight_kg} кг | Рост: ${profile.height_cm} см\n\nСтрою твой персональный план — питание + тренировки. Займёт около минуты...`
+    );
+
+    // show loader
+    const ld = document.createElement('div');
+    ld.style.cssText = 'display:flex;justify-content:center;padding:20px';
+    ld.innerHTML = '<div class="spin"></div>';
+    omsg.appendChild(ld); scrollChat(omsg);
+
+    generatePlan();
+  }, 700);
+}
+
+async function generatePlan() {
+  try {
+    const r = await fetch('/api/profile', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(profile)
+    });
+    if (!r.ok) throw new Error('server error');
+    const data = await r.json();
+    planData = data;
+    save();
+
+    // remove loader
+    omsg.querySelectorAll('div[style*="justify-content:center"]').forEach(d=>d.remove());
+
+    addMsg(omsg, 'petr',
+      `Готово, ${profile.name}! 🚀\n\nТвой план питания и тренировок составлен.\nПерейди на вкладку 📋 План — там всё подробно.\n\nА здесь, в чате, ты можешь спрашивать меня о чём угодно: по питанию, тренировкам, прогрессу. Я всегда на связи!`
+    );
+
+    chatHist.push({
+      role: 'assistant',
+      content: `Я составил персональный план для ${profile.name}. Цель: ${profile.goal}. Вес: ${profile.weight_kg} кг, рост: ${profile.height_cm} см.`
+    });
+
+    setTimeout(launchApp, 1200);
+  } catch(e) {
+    omsg.querySelectorAll('div[style*="justify-content:center"]').forEach(d=>d.remove());
+    addMsg(omsg, 'petr', 'Что-то пошло не так при генерации плана. Попробуй ещё раз — нажми кнопку "Пересоздать план" в профиле, или напиши мне.');
+    launchApp();
+  }
+}
+
+function launchApp() {
+  save();
+  document.getElementById('sc-onboard').classList.remove('on');
+  document.getElementById('nav').classList.add('on');
+  goTab('chat');
+  initChat();
+}
+
+// ── Text input for onboarding ───────────────────────────────────────────────
+osend.onclick = () => {
+  const v = oinput.value.trim();
+  if (!v) return;
+  onbData[steps[onbStep].key] = v;
+  addMsg(omsg, 'user', v);
+  clearWidgets();
+  onbNext();
+};
+oinput.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); osend.click(); }
+});
+autoResize(oinput);
+
+// ── Chat ───────────────────────────────────────────────────────────────────
+const cmsg   = document.getElementById('chat-msgs');
+const cinput = document.getElementById('chat-input');
+const csend  = document.getElementById('chat-send');
+
+function initChat() {
+  cmsg.innerHTML = '';
+  document.getElementById('hdr-sub').textContent = 'Петр на связи';
+
+  if (chatHist.length === 0) {
+    addMsg(cmsg, 'petr',
+      `Привет, ${profile?.name || ''}! 💪\n\nЯ здесь — спрашивай про питание, тренировки, прогресс. Всё что нужно знай — я отвечу конкретно.`
+    );
+  } else {
+    // Restore last few messages for context
+    const recent = chatHist.slice(-10);
+    recent.forEach(m => addMsg(cmsg, m.role === 'assistant' ? 'petr' : 'user', m.content));
+  }
+}
+
+csend.onclick = sendChat;
+cinput.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); }
+});
+autoResize(cinput);
+
+async function sendChat() {
+  const msg = cinput.value.trim();
+  if (!msg) return;
+  cinput.value = '';
+
+  addMsg(cmsg, 'user', msg);
+  chatHist.push({role:'user', content:msg});
+
+  const typ = showTyping(cmsg);
+  csend.disabled = true;
+
+  try {
+    const r = await fetch('/api/chat', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ message: msg, history: chatHist.slice(-16), profile })
+    });
+    const data = await r.json();
+    typ.remove();
+    const reply = data.reply || 'Не удалось получить ответ.';
+    addMsg(cmsg, 'petr', reply);
+    chatHist.push({role:'assistant', content:reply});
+    if (chatHist.length > 40) chatHist = chatHist.slice(-40);
+    save();
+  } catch {
+    typ.remove();
+    addMsg(cmsg, 'petr', 'Связь прервалась. Попробуй ещё раз.');
+  }
+  csend.disabled = false;
+}
+
+// ── Plan ───────────────────────────────────────────────────────────────────
+let planTab = 'n';
+function renderPlan() {
+  const el = document.getElementById('plan-content');
+  if (!planData) {
+    el.innerHTML = `<div class="empty">
+      <div class="empty-ico">📋</div>
+      <div class="empty-txt">Твой план ещё не готов.<br>Завершй знакомство с Петром!</div>
+      <button class="go-chat" onclick="goTab('chat')">Перейти в чат →</button>
+    </div>`;
+    return;
+  }
+  const m = planData.macros || {};
+  el.innerHTML = `
+    <div class="sec-lbl">КБЖУ на день</div>
+    <div class="macro-grid">
+      <div class="mcard c"><div class="mval" id="r-cal">${m.calories||'—'}</div><div class="mlbl">🔥 Калории</div></div>
+      <div class="mcard p"><div class="mval" id="r-pro">${m.protein_g||'—'}</div><div class="mlbl">🥩 Белки г</div></div>
+      <div class="mcard f"><div class="mval" id="r-fat">${m.fat_g||'—'}</div><div class="mlbl">🫒 Жиры г</div></div>
+      <div class="mcard u"><div class="mval" id="r-carb">${m.carb_g||'—'}</div><div class="mlbl">🍞 Углеводы г</div></div>
+    </div>
+    <div class="ptabs">
+      <button class="ptab on" id="ptab-n" onclick="switchPlanTab('n')">🍽 Питание</button>
+      <button class="ptab"    id="ptab-w" onclick="switchPlanTab('w')">🏋️ Тренировки</button>
+    </div>
+    <div class="pbox" id="pbox"></div>
+    <div class="disc">⚠️ Проконсультируйся с врачом перед началом программы</div>
+  `;
+  planTab = 'n';
+  switchPlanTab('n');
+}
+
+function switchPlanTab(t) {
+  planTab = t;
+  document.getElementById('ptab-n')?.classList.toggle('on', t==='n');
+  document.getElementById('ptab-w')?.classList.toggle('on', t==='w');
+  const content = t === 'n' ? (planData?.nutrition_plan||'') : (planData?.workout_plan||'');
+  const pbox = document.getElementById('pbox');
+  if (pbox) pbox.textContent = content.replace(/\*\*?([^*\n]+)\*\*?/g,'$1').trim();
+}
+
+// ── Tracker ─────────────────────────────────────────────────────────────────
+function renderTracker() {
+  const el = document.getElementById('tracker-content');
+  const today = new Date().toLocaleDateString('ru-RU');
+
+  el.innerHTML = `
+    <div class="tcard">
+      <div class="tcardttl">📅 Сегодня — ${today}</div>
+      <div class="tform-row">
+        <div class="tlbl">Вес</div>
+        <input class="tinput" id="t-wt" type="number" inputmode="decimal" placeholder="${profile?.weight_kg||80}" step="0.1">
+        <div class="tunit">кг</div>
+      </div>
+      <div class="tform-row">
+        <div class="tlbl">Калории</div>
+        <input class="tinput" id="t-cal" type="number" inputmode="numeric" placeholder="2000">
+        <div class="tunit">ккал</div>
+      </div>
+      <div class="tform-row">
+        <div class="tlbl">Сон</div>
+        <input class="tinput" id="t-sl" type="number" inputmode="decimal" placeholder="7" step="0.5">
+        <div class="tunit">ч</div>
+      </div>
+      <div class="tform-row">
+        <div class="tlbl">Вода</div>
+        <input class="tinput" id="t-wt2" type="number" inputmode="numeric" placeholder="2000">
+        <div class="tunit">мл</div>
+      </div>
+      <button class="tbtn" onclick="saveLog()">Сохранить запись ✓</button>
+    </div>
+    <div class="tcard">
+      <div class="tcardttl">📈 История</div>
+      ${renderLogRows()}
+    </div>
+  `;
+}
+
+function renderLogRows() {
+  if (!logs.length) return '<div class="tlog-empty">Пока нет записей</div>';
+  return logs.slice(-10).reverse().map(l =>
+    `<div class="tlog-row">
+      <span class="tlog-date">${l.date}</span>
+      <span class="tlog-val">${l.weight ? l.weight+'кг' : ''} ${l.calories ? l.calories+'ккал' : ''}</span>
+    </div>`
+  ).join('');
+}
+
+function saveLog() {
+  const wt  = parseFloat(document.getElementById('t-wt')?.value);
+  const cal = parseInt(document.getElementById('t-cal')?.value);
+  const sl  = parseFloat(document.getElementById('t-sl')?.value);
+  const w2  = parseInt(document.getElementById('t-wt2')?.value);
+  const entry = {
+    date: new Date().toLocaleDateString('ru-RU'),
+    ts:   Date.now(),
+    weight:   wt  || null,
+    calories: cal || null,
+    sleep:    sl  || null,
+    water:    w2  || null,
+  };
+  logs.push(entry);
+  save();
+
+  // Update profile weight if entered
+  if (wt && profile) { profile.weight_kg = wt; save(); }
+
+  renderTracker();
+  if (tg?.showAlert) tg.showAlert('Записано! 💪');
+}
+
+// ── Profile ────────────────────────────────────────────────────────────────
+function renderProfile() {
+  const el = document.getElementById('profile-content');
+  if (!profile) { el.innerHTML = '<div class="tlog-empty">Профиль не заполнен</div>'; return; }
+  const goal = { lose_weight:'🔥 Похудение', gain_muscle:'💪 Набор мышц',
+    maintain:'⚖️ Поддержание', recomposition:'🔄 Рекомпозиция' }[profile.goal] || profile.goal;
+
+  el.innerHTML = `
+    <div class="profcard">
+      <div class="profavatar">${(profile.name||'?')[0].toUpperCase()}</div>
+      <div>
+        <div class="profname">${profile.name || 'Пользователь'}</div>
+        <div class="profgoal">${goal}</div>
+      </div>
+    </div>
+    <div class="tcard">
+      <div class="prow"><span class="prow-lbl">Пол</span><span class="prow-val">${profile.gender==='male'?'Мужской':'Женский'}</span></div>
+      <div class="prow"><span class="prow-lbl">Возраст</span><span class="prow-val">${profile.age} лет</span></div>
+      <div class="prow"><span class="prow-lbl">Рост</span><span class="prow-val">${profile.height_cm} см</span></div>
+      <div class="prow"><span class="prow-lbl">Вес</span><span class="prow-val">${profile.weight_kg} кг</span></div>
+      ${profile.body_fat_pct ? `<div class="prow"><span class="prow-lbl">% жира</span><span class="prow-val">${profile.body_fat_pct}%</span></div>` : ''}
+      <div class="prow"><span class="prow-lbl">График</span><span class="prow-val">${profile.schedule}</span></div>
+    </div>
+    <button class="prst" onclick="resetProfile()">🔄 Начать заново</button>
+  `;
+}
+
+function resetProfile() {
+  if (tg?.showConfirm) {
+    tg.showConfirm('Сбросить профиль и начать заново?', ok => { if (ok) doReset(); });
+  } else if (confirm('Сбросить профиль?')) { doReset(); }
+}
+
+function doReset() {
+  profile = null; chatHist = []; planData = null; logs = [];
+  localStorage.clear();
+  document.getElementById('nav').classList.remove('on');
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('on'));
+  document.getElementById('sc-onboard').classList.add('on');
+  document.getElementById('onb-msgs').innerHTML = '';
+  document.getElementById('onb-widgets').innerHTML = '';
+  oiarea.style.display = 'none';
+  onbData = {}; multiSel = [];
+  startOnboarding();
+}
+
+// ── Auto resize textarea ───────────────────────────────────────────────────
+function autoResize(el) {
+  el.addEventListener('input', () => {
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 96) + 'px';
+  });
+}
+
+// ── Boot ───────────────────────────────────────────────────────────────────
+function startOnboarding() {
+  onbStep = 0; onbData = {};
+  // Greeting with delay
+  setTimeout(() => {
+    addMsg(omsg, 'petr', '👋');
+    setTimeout(() => onbAsk(0), 400);
+  }, 300);
+}
+
+if (profile && planData) {
+  // Already onboarded
+  document.getElementById('sc-onboard').classList.remove('on');
+  document.getElementById('nav').classList.add('on');
+  goTab('chat');
+  initChat();
+} else {
+  startOnboarding();
 }
 </script>
 </body>

@@ -1,6 +1,43 @@
 import logging
 from bot.config import ANTHROPIC_API_KEY
 
+GOAL_LABELS = {
+    "lose_weight": "похудение",
+    "gain_muscle": "набор мышечной массы",
+    "maintain": "поддержание формы",
+    "recomposition": "рекомпозиция тела",
+}
+
+SCHEDULE_LABELS = {
+    "standard": "стандартный (~8 ч)",
+    "12h": "интенсивный (12 ч)",
+    "16h+": "тяжёлый (16+ ч)",
+    "shift": "сменный график",
+}
+
+PARKER_CHAT_SYSTEM = """Ты — Петр, персональный тренер, нутрициолог и наставник пользователя в приложении P.A.R.K.E.R.
+
+ЛИЧНОСТЬ:
+Говоришь как близкий друг который реально разбирается в спорте и питании.
+Прямо, тепло, иногда с лёгким юмором, но всегда конкретно — никакой воды.
+Не сюсюкаешь, но поддерживаешь. Ты тренер, а не мотивационный спикер.
+Даёшь советы с конкретными цифрами: граммы, подходы, время, проценты.
+Знаешь биохимию и физиологию на уровне эксперта.
+Понимаешь реальную жизнь — не идеальные условия, а усталость и нехватку времени.
+
+ПРОФИЛЬ ПОЛЬЗОВАТЕЛЯ:
+{profile_block}
+
+ЗАПРЕТЫ ПО ЗДОРОВЬЮ (АБСОЛЮТНЫЕ):
+{health_rules}
+
+ПРАВИЛА:
+- Отвечай коротко если вопрос простой, развёрнуто если нужны детали
+- Если просят план или расчёт — давай конкретные цифры
+- Медицинский дисклеймер добавляй только если речь идёт о серьёзных изменениях в питании или тренировках
+- Всегда на русском языке
+- Обращайся по имени если знаешь его"""
+
 PARKER_SYSTEM_PROMPT = """Ты — P.A.R.K.E.R. (Personal Adaptive Resource & Kinetic Energy Regulator).
 Ты персональный AI-нутрициолог и тренер. Ты — цифровой двойник лучшего специалиста.
 Твоя задача: заменить живого тренера и диетолога на 100%.
@@ -103,6 +140,70 @@ WORKOUT_USER_TEMPLATE = """\
 • Если 16ч+ — тренировка не более 30 минут, или только растяжка
 • Подбери частоту тренировок под рабочий график
 • Укажи подходы × повторения, время отдыха, примерный вес"""
+
+
+def _build_profile_block(profile: dict) -> str:
+    if not profile:
+        return "Профиль ещё не заполнен."
+    lines = []
+    if profile.get("name"):
+        lines.append(f"Имя: {profile['name']}")
+    if profile.get("goal"):
+        lines.append(f"Цель: {GOAL_LABELS.get(profile['goal'], profile['goal'])}")
+    if profile.get("gender"):
+        lines.append(f"Пол: {'мужской' if profile['gender'] == 'male' else 'женский'}")
+    if profile.get("age"):
+        lines.append(f"Возраст: {profile['age']} лет")
+    if profile.get("height_cm"):
+        lines.append(f"Рост: {profile['height_cm']} см")
+    if profile.get("weight_kg"):
+        lines.append(f"Вес: {profile['weight_kg']} кг")
+    if profile.get("body_fat_pct"):
+        lines.append(f"% жира: {profile['body_fat_pct']}%")
+    if profile.get("schedule"):
+        lines.append(f"График: {SCHEDULE_LABELS.get(profile['schedule'], profile['schedule'])}")
+    hi = profile.get("health_issues", [])
+    if hi and hi != ["none"]:
+        lines.append(f"Здоровье/травмы: {', '.join(hi)}")
+    eq = profile.get("equipment", [])
+    if eq:
+        lines.append(f"Оборудование: {', '.join(eq)}")
+    return "\n".join(lines) if lines else "Профиль частично заполнен."
+
+
+def _build_health_rules(profile: dict) -> str:
+    health = profile.get("health_issues", [])
+    rules = []
+    if "back_problems" in health:
+        rules.append("Спина/сколиоз → НЕЛЬЗЯ: становая тяга, приседания со штангой, гиперэкстензия, наклоны с весом")
+    if "knee_issues" in health:
+        rules.append("Колени → НЕЛЬЗЯ: глубокие приседания с весом, выпады с отягощением, прыжки на тумбу, бег по асфальту")
+    if "hypertension" in health:
+        rules.append("Гипертония → НЕЛЬЗЯ: тяжёлый жим над головой, натуживание, упражнения головой вниз")
+    return "\n".join(rules) if rules else "Ограничений нет."
+
+
+async def generate_chat_response(message: str, history: list, profile: dict) -> str:
+    if not ANTHROPIC_API_KEY:
+        return "AI временно недоступен. Попробуй позже."
+    try:
+        import anthropic
+        client = anthropic.AsyncAnthropic(api_key=ANTHROPIC_API_KEY)
+        system = PARKER_CHAT_SYSTEM.format(
+            profile_block=_build_profile_block(profile),
+            health_rules=_build_health_rules(profile),
+        )
+        messages = history[-20:] + [{"role": "user", "content": message}]
+        msg = await client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=1000,
+            system=system,
+            messages=messages,
+        )
+        return msg.content[0].text
+    except Exception:
+        logging.exception("Claude chat error")
+        return "Не удалось получить ответ. Попробуй ещё раз."
 
 
 async def generate_nutrition_plan(profile: dict, macros: dict) -> str:

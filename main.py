@@ -11,6 +11,7 @@ from aiogram.types import Update
 from bot.config import BOT_TOKEN, WEBAPP_URL
 from bot.handlers import start
 from app.api.profile import router as profile_router
+from app.api.chat import router as chat_router
 
 logging.basicConfig(
     level=logging.INFO,
@@ -41,6 +42,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 app.include_router(profile_router)
+app.include_router(chat_router)
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 
