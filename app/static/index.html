@@ -398,6 +398,7 @@ body::after{
 .fli-name{flex:1;font-size:13px;color:var(--text)}
 .fli-cal{font-size:13px;font-weight:700;color:var(--gold)}
 .fli-del{font-size:16px;color:var(--text3);padding:0 4px}
+.fli-edit{font-size:14px;color:var(--text3);padding:0 2px;opacity:.7}
 .fli-time{font-size:11px;color:var(--text3);display:block;margin-top:2px}
 .day-total-row{
   display:flex;justify-content:space-between;
@@ -464,6 +465,44 @@ body::after{
 .meas-table tr:last-child td{border:none}
 .delta-pos{color:var(--red);font-size:11px}
 .delta-neg{color:var(--green);font-size:11px}
+
+/* Quick-edit bottom sheet */
+.qe-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:200;opacity:0;pointer-events:none;transition:opacity .2s}
+.qe-overlay.on{opacity:1;pointer-events:all}
+.qe-sheet{
+  position:fixed;bottom:0;left:0;right:0;z-index:201;
+  background:var(--bg2);border-radius:20px 20px 0 0;
+  padding:16px 20px 40px;
+  transform:translateY(100%);transition:transform .26s cubic-bezier(.32,1,.23,1);
+}
+.qe-sheet.on{transform:translateY(0)}
+.qe-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 16px}
+.qe-title{font-size:16px;font-weight:700;margin-bottom:14px}
+.qe-input{
+  width:100%;background:var(--bg3);border:1.5px solid var(--border);
+  border-radius:var(--radius-sm);padding:12px 14px;
+  color:var(--text);font-size:17px;font-weight:700;
+  outline:none;margin-bottom:14px;-webkit-appearance:none;
+}
+.qe-input:focus{border-color:rgba(245,197,24,.4)}
+.qe-btns{display:flex;gap:10px}
+.qe-btn-cancel{flex:1;padding:13px;border-radius:var(--radius-sm);font-size:14px;font-weight:700;background:var(--surface2);color:var(--text2)}
+.qe-btn-save{flex:1;padding:13px;border-radius:var(--radius-sm);font-size:14px;font-weight:700;background:linear-gradient(135deg,var(--gold),var(--gold2));color:#000}
+
+/* Adapt card */
+.adapt-card{
+  background:linear-gradient(135deg,rgba(61,127,255,.12),rgba(61,127,255,.04));
+  border:1px solid rgba(61,127,255,.25);border-radius:20px;padding:18px;
+}
+.adapt-result{font-size:13px;color:var(--text2);line-height:1.7;margin-top:12px;white-space:pre-wrap}
+.wlog-row{
+  display:flex;align-items:center;gap:8px;padding:10px 0;
+  border-bottom:1px solid rgba(255,255,255,.04);font-size:13px;
+}
+.wlog-row:last-child{border:none}
+.wlog-date{flex:1;color:var(--text2)}
+.wlog-val{font-weight:700;font-size:14px}
+.wlog-act{font-size:14px;color:var(--text3);padding:0 3px}
 
 /* ═══════════════════════════════════════════
    PROFILE
@@ -791,6 +830,18 @@ body::after{
 
   <!-- hidden photo input -->
   <input type="file" id="photo-input" accept="image/*" capture="environment">
+
+  <!-- QUICK EDIT SHEET -->
+  <div class="qe-overlay" id="qe-overlay" onclick="closeQE()"></div>
+  <div class="qe-sheet" id="qe-sheet">
+    <div class="qe-handle"></div>
+    <div class="qe-title" id="qe-title">Редактировать</div>
+    <input class="qe-input" id="qe-input" type="number" inputmode="decimal" step="0.1">
+    <div class="qe-btns">
+      <button class="qe-btn-cancel" onclick="closeQE()">Отмена</button>
+      <button class="qe-btn-save" onclick="saveQE()">Сохранить</button>
+    </div>
+  </div>
 
   <!-- TOAST -->
   <div class="toast" id="toast"></div>
@@ -1495,6 +1546,7 @@ function renderFoodLog(items) {
         <span class="fli-time">${new Date(f.ts).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})}</span>
       </div>
       <div class="fli-cal">${Math.round(f.total?.calories||0)} ккал</div>
+      <div class="fli-edit" onclick="editFoodEntry(${f.ts})">✏️</div>
       <div class="fli-del" onclick="deleteFoodEntry(${f.ts})">✕</div>
     </div>`).join('');
   const tot = todayFoodTotal();
@@ -1508,6 +1560,18 @@ function renderFoodLog(items) {
 function deleteFoodEntry(ts) {
   foodLogs = foodLogs.filter(f=>f.ts!==ts);
   persist(); renderTracker(); if(curTab==='home') renderHome();
+}
+
+function editFoodEntry(ts) {
+  const entry = foodLogs.find(f=>f.ts===ts);
+  if (!entry) return;
+  foodLogs = foodLogs.filter(f=>f.ts!==ts);
+  persist();
+  const ta = document.getElementById('food-ta');
+  if (ta) { ta.value = entry.text; autoResize(ta); }
+  document.getElementById('food-result').style.display = 'none';
+  goTab('tracker');
+  toast('Отредактируй и пересчитай 📝');
 }
 
 async function calcFood() {
@@ -1712,7 +1776,33 @@ function renderProgress() {
       </div>`;
   })();
 
+  // Weight log history rows (last 7 entries)
+  const wlogRows = weightLogs.slice(-7).reverse().map(l=>`
+    <div class="wlog-row">
+      <span class="wlog-date">${l.date}</span>
+      <span class="wlog-val">${l.weight} кг</span>
+      <span class="wlog-act" onclick="editWeightLog('${l.date}')">✏️</span>
+      <span class="wlog-act" onclick="deleteWeightLog('${l.date}')">✕</span>
+    </div>`).join('');
+  const wlogSection = weightLogs.length ? `
+    <div class="chart-card" style="margin-top:0">
+      <div class="chart-hd"><div class="chart-ttl">📋 История веса</div></div>
+      ${wlogRows}
+    </div>` : '';
+
+  // Adapt block
+  const adaptHtml = `
+    <div class="adapt-card">
+      <div class="chart-hd">
+        <div class="chart-ttl">🤖 Адаптация плана</div>
+      </div>
+      <div style="font-size:13px;color:var(--text2);margin-bottom:12px">Петр проанализирует твои данные за неделю и скорректирует КБЖУ и программу</div>
+      <button class="save-btn-blue" id="adapt-btn" onclick="getWeeklyAdapt()">Получить адаптацию ↗</button>
+      <div class="adapt-result" id="adapt-result" style="display:none"></div>
+    </div>`;
+
   el.innerHTML = `
+    ${adaptHtml}
     <div class="chart-card">
       <div class="chart-hd">
         <div class="chart-ttl">⚖️ Динамика веса</div>
@@ -1720,6 +1810,7 @@ function renderProgress() {
       </div>
       ${weightChart}
     </div>
+    ${wlogSection}
     <div class="chart-card">
       <div class="chart-hd">
         <div class="chart-ttl">🔥 Калории / день</div>
@@ -1806,9 +1897,96 @@ function doReset() {
   location.reload();
 }
 
+// ════════════════════════════════════════════
+//  QUICK-EDIT BOTTOM SHEET
+// ════════════════════════════════════════════
+let _qeCallback = null;
+
+function openQE(title, defaultVal, callback) {
+  _qeCallback = callback;
+  document.getElementById('qe-title').textContent = title;
+  const inp = document.getElementById('qe-input');
+  inp.value = defaultVal || '';
+  document.getElementById('qe-overlay').classList.add('on');
+  document.getElementById('qe-sheet').classList.add('on');
+  setTimeout(() => inp.focus(), 280);
+}
+
+function closeQE() {
+  document.getElementById('qe-overlay').classList.remove('on');
+  document.getElementById('qe-sheet').classList.remove('on');
+  _qeCallback = null;
+}
+
+function saveQE() {
+  const val = parseFloat(document.getElementById('qe-input').value);
+  if (isNaN(val)) { toast('Введи число'); return; }
+  if (_qeCallback) _qeCallback(val);
+  closeQE();
+}
+
+// ════════════════════════════════════════════
+//  WEIGHT LOG EDIT / DELETE
+// ════════════════════════════════════════════
+function editWeightLog(date) {
+  const entry = logs.find(l=>l.date===date);
+  if (!entry) return;
+  openQE(`Вес за ${date} (кг)`, entry.weight, (val) => {
+    if (val < 20 || val > 300) { toast('Проверь значение'); return; }
+    entry.weight = val;
+    if (profile) profile.weight_kg = val;
+    persist(); renderProgress();
+    toast('Вес обновлён ✓');
+  });
+}
+
+function deleteWeightLog(date) {
+  logs = logs.map(l => l.date===date ? {...l, weight:null} : l);
+  persist(); renderProgress();
+  toast('Запись удалена');
+}
+
+// ════════════════════════════════════════════
+//  WEEKLY ADAPTATION
+// ════════════════════════════════════════════
+async function getWeeklyAdapt() {
+  if (!profile) { toast('Сначала заполни профиль'); return; }
+  const btn = document.getElementById('adapt-btn');
+  const res = document.getElementById('adapt-result');
+  if (!btn || !res) return;
+  btn.textContent = 'Петр анализирует...'; btn.disabled = true;
+  res.style.display = 'none';
+  try {
+    const r = await fetch('/api/adapt', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        profile,
+        logs: logs.slice(-14),
+        food_logs: foodLogs.slice(-50),
+        current_macros: planData?.macros || {}
+      })
+    });
+    const data = await r.json();
+    if (data.error) { res.style.display='block'; res.textContent=data.error; return; }
+    const text = data.recommendations || data.summary || JSON.stringify(data, null, 2);
+    res.style.display = 'block';
+    res.textContent = text;
+    addXP(25);
+    toast('Анализ готов! +25 XP 🤖');
+  } catch {
+    res.style.display = 'block';
+    res.textContent = 'Ошибка соединения — попробуй позже.';
+  } finally {
+    btn.textContent = 'Обновить адаптацию ↻'; btn.disabled = false;
+  }
+}
+
 // Expose for inline onclick
 window.activateTheme = activateTheme;
 window.buyTheme = buyTheme;
+window.editWeightLog = editWeightLog;
+window.deleteWeightLog = deleteWeightLog;
 
 // ════════════════════════════════════════════
 //  BOOT
