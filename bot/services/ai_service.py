@@ -238,9 +238,9 @@ async def calculate_food_macros(text: str) -> dict:
         if not m:
             return {"error": "Не удалось распознать продукты"}
         return json.loads(m.group())
-    except Exception:
-        logging.exception("food calc error")
-        return {"error": "Ошибка расчёта КБЖУ"}
+    except Exception as e:
+        logging.exception("food calc error: %s", e)
+        return {"error": f"Ошибка расчёта КБЖУ ({type(e).__name__})"}
 
 
 PHOTO_FOOD_SYSTEM = """Ты — эксперт-нутрициолог. Тебе показывают фотографию еды или блюда.
@@ -344,17 +344,34 @@ async def generate_weekly_adaptation(profile: dict, logs: list, food_logs: list,
         return {"error": "Ошибка анализа"}
 
 
+def _sanitize_history(history: list) -> list:
+    """Remove consecutive same-role messages to satisfy Anthropic API requirements."""
+    clean = []
+    for msg in history:
+        if clean and clean[-1]["role"] == msg.get("role"):
+            continue
+        if msg.get("role") in ("user", "assistant") and msg.get("content"):
+            clean.append({"role": msg["role"], "content": str(msg["content"])})
+    return clean
+
+
 async def generate_chat_response(message: str, history: list, profile: dict) -> str:
     if not ANTHROPIC_API_KEY:
         return "AI временно недоступен. Попробуй позже."
     try:
         import anthropic
         client = anthropic.AsyncAnthropic(api_key=ANTHROPIC_API_KEY)
-        system = PARKER_CHAT_SYSTEM.format(
-            profile_block=_build_profile_block(profile),
-            health_rules=_build_health_rules(profile),
+        # Use replace() instead of format() to avoid KeyError on user-entered braces
+        system = (
+            PARKER_CHAT_SYSTEM
+            .replace("{profile_block}", _build_profile_block(profile))
+            .replace("{health_rules}", _build_health_rules(profile))
         )
-        messages = history[-20:] + [{"role": "user", "content": message}]
+        safe_history = _sanitize_history(history[-20:])
+        # Ensure history ends on assistant so we can append user message
+        if safe_history and safe_history[-1]["role"] == "user":
+            safe_history = safe_history[:-1]
+        messages = safe_history + [{"role": "user", "content": message}]
         msg = await client.messages.create(
             model="claude-sonnet-4-6",
             max_tokens=1000,
@@ -362,9 +379,9 @@ async def generate_chat_response(message: str, history: list, profile: dict) -> 
             messages=messages,
         )
         return msg.content[0].text
-    except Exception:
-        logging.exception("Claude chat error")
-        return "Не удалось получить ответ. Попробуй ещё раз."
+    except Exception as e:
+        logging.exception("Claude chat error: %s", e)
+        return f"Арни временно недоступен — {type(e).__name__}. Попробуй ещё раз."
 
 
 async def generate_nutrition_plan(profile: dict, macros: dict) -> str:

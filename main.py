@@ -71,3 +71,21 @@ async def serve_miniapp():
 @app.get("/health")
 async def health():
     return {"status": "ok", "bot": "P.A.R.K.E.R."}
+
+
+@app.get("/debug/ai")
+async def debug_ai():
+    from bot.config import ANTHROPIC_API_KEY
+    if not ANTHROPIC_API_KEY:
+        return {"status": "error", "reason": "ANTHROPIC_API_KEY not set"}
+    try:
+        import anthropic
+        client = anthropic.AsyncAnthropic(api_key=ANTHROPIC_API_KEY)
+        msg = await client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=20,
+            messages=[{"role": "user", "content": "ping"}],
+        )
+        return {"status": "ok", "model": "claude-sonnet-4-6", "reply": msg.content[0].text}
+    except Exception as e:
+        return {"status": "error", "type": type(e).__name__, "detail": str(e)}

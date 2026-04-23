@@ -466,6 +466,29 @@ body::after{
 .delta-pos{color:var(--red);font-size:11px}
 .delta-neg{color:var(--green);font-size:11px}
 
+/* Plan cards (7-day nutrition + workout) */
+.plan-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:20px;overflow:hidden;
+}
+.plan-hd{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:16px 18px;cursor:pointer;user-select:none;
+}
+.plan-hd:active{opacity:.8}
+.plan-ttl{font-size:15px;font-weight:700}
+.plan-chevron{font-size:12px;color:var(--text3);transition:transform .2s}
+.plan-card.open .plan-chevron{transform:rotate(180deg)}
+.plan-body{
+  display:none;
+  padding:0 18px 16px;
+  font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',sans-serif;
+  font-size:13px;line-height:1.7;color:var(--text2);
+  white-space:pre-wrap;word-break:break-word;
+  border-top:1px solid var(--border);padding-top:14px;
+}
+.plan-card.open .plan-body{display:block}
+
 /* Quick-edit bottom sheet */
 .qe-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:200;opacity:0;pointer-events:none;transition:opacity .2s}
 .qe-overlay.on{opacity:1;pointer-events:all}
@@ -1317,8 +1340,32 @@ function renderHome() {
     </div>
 
     ${planData?.workout_plan ? renderTodayWorkoutCard() : ''}
+
+    <!-- 7-day plans -->
+    ${planData?.nutrition_plan ? `
+    <div class="plan-card" id="home-nutr-card">
+      <div class="plan-hd" onclick="togglePlanCard('home-nutr-card')">
+        <div class="plan-ttl">🍽 Рацион на 7 дней</div>
+        <div class="plan-chevron" id="home-nutr-chev">▼</div>
+      </div>
+      <pre class="plan-body" id="home-nutr-body">${escHtml(planData.nutrition_plan)}</pre>
+    </div>` : ''}
+
+    ${planData?.workout_plan ? `
+    <div class="plan-card" id="home-wrkt-card">
+      <div class="plan-hd" onclick="togglePlanCard('home-wrkt-card')">
+        <div class="plan-ttl">🏋️ Программа на неделю</div>
+        <div class="plan-chevron" id="home-wrkt-chev">▼</div>
+      </div>
+      <pre class="plan-body" id="home-wrkt-body">${escHtml(planData.workout_plan)}</pre>
+    </div>` : ''}
+
     <div class="disc">⚠️ Перед началом программы проконсультируйся с врачом</div>
   `;
+}
+
+function togglePlanCard(id) {
+  document.getElementById(id)?.classList.toggle('open');
 }
 
 function renderTodayWorkoutCard() {
@@ -1424,6 +1471,16 @@ document.getElementById('chat-in').addEventListener('keydown', e=>{
 });
 autoResize(document.getElementById('chat-in'));
 
+function sanitizeHist(h) {
+  const clean = [];
+  for (const m of h) {
+    if (!m?.role || !m?.content) continue;
+    if (clean.length && clean[clean.length-1].role === m.role) continue;
+    clean.push({role: m.role, content: String(m.content)});
+  }
+  return clean;
+}
+
 async function sendChat() {
   const inp = document.getElementById('chat-in');
   const msg = inp.value.trim();
@@ -1438,9 +1495,10 @@ async function sendChat() {
   const typ = addTyping(el);
 
   try {
+    const safeHist = sanitizeHist(chatHist.slice(-20));
     const r = await fetch('/api/chat',{
       method:'POST', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({message:msg, history:chatHist.slice(-16), profile})
+      body:JSON.stringify({message:msg, history:safeHist, profile})
     });
     const data = await r.json();
     typ.remove();
