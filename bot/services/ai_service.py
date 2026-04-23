@@ -183,6 +183,47 @@ def _build_health_rules(profile: dict) -> str:
     return "\n".join(rules) if rules else "Ограничений нет."
 
 
+FOOD_SYSTEM = """Ты — эксперт-нутрициолог. Тебе дают список продуктов с граммовкой на русском языке.
+Рассчитай КБЖУ каждого продукта и суммарные значения по стандартным таблицам питательности.
+
+Верни ТОЛЬКО валидный JSON без какого-либо текста до или после:
+{
+  "items": [
+    {"name": "название продукта", "amount_g": 200, "calories": 330, "protein_g": 46.0, "fat_g": 7.2, "carb_g": 0.0}
+  ],
+  "total": {"calories": 330, "protein_g": 46.0, "fat_g": 7.2, "carb_g": 0.0}
+}
+
+Правила:
+- Округляй калории до целых, БЖУ до 1 знака после запятой
+- Если граммовка не указана — предполагай стандартную порцию (100г, 1 шт и т.д.) и укажи её
+- Если продукт не распознан — включи его с нулевыми значениями и пометь name как "? [название]"
+- Используй значения для варёных/готовых продуктов если не указано иное"""
+
+
+async def calculate_food_macros(text: str) -> dict:
+    if not ANTHROPIC_API_KEY:
+        return {"error": "AI недоступен"}
+    try:
+        import anthropic, json, re
+        client = anthropic.AsyncAnthropic(api_key=ANTHROPIC_API_KEY)
+        msg = await client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=800,
+            system=FOOD_SYSTEM,
+            messages=[{"role": "user", "content": f"Рассчитай КБЖУ: {text}"}],
+        )
+        raw = msg.content[0].text.strip()
+        # Extract JSON even if there's extra text
+        m = re.search(r'\{.*\}', raw, re.DOTALL)
+        if not m:
+            return {"error": "Не удалось распознать продукты"}
+        return json.loads(m.group())
+    except Exception:
+        logging.exception("food calc error")
+        return {"error": "Ошибка расчёта КБЖУ"}
+
+
 async def generate_chat_response(message: str, history: list, profile: dict) -> str:
     if not ANTHROPIC_API_KEY:
         return "AI временно недоступен. Попробуй позже."

@@ -247,6 +247,53 @@ body::after{
 }
 .tlog-row:last-child{border:none}
 .tlog-date{color:var(--muted)}
+/* food calc */
+.ftextarea{
+  width:100%;background:var(--bg2);border:1.5px solid var(--border);
+  border-radius:12px;padding:12px 14px;color:var(--text);
+  font-size:14px;line-height:1.5;outline:none;resize:none;
+  font-family:inherit;min-height:72px;
+}
+.ftextarea:focus{border-color:rgba(245,197,24,.4)}
+.ftextarea::placeholder{color:var(--muted)}
+.fhint{font-size:12px;color:var(--muted);margin:6px 0 10px;line-height:1.4}
+.fresult{margin-top:12px;display:none}
+.ftable{width:100%;border-collapse:collapse;font-size:12px}
+.ftable th{color:var(--muted);text-align:left;padding:5px 6px;font-weight:600;
+  border-bottom:1px solid var(--border)}
+.ftable td{padding:7px 6px;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:top}
+.ftable tr:last-child td{border:none}
+.ftable .fname{color:var(--text);font-weight:600}
+.ftable .fnum{text-align:right;color:var(--text);font-weight:600}
+.ftotal{
+  display:flex;justify-content:space-around;
+  background:rgba(245,197,24,.08);border:1px solid rgba(245,197,24,.2);
+  border-radius:12px;padding:12px;margin-top:10px;
+}
+.ftot-item{text-align:center}
+.ftot-val{font-size:18px;font-weight:700;color:var(--gold)}
+.ftot-lbl{font-size:10px;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:.3px}
+.fsave{
+  width:100%;padding:12px;border-radius:12px;border:none;
+  background:linear-gradient(135deg,var(--green),#1aaa55);
+  color:#fff;font-size:14px;font-weight:700;cursor:pointer;margin-top:10px;
+}
+.fday-log{margin-top:4px}
+.fday-row{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:9px 0;border-bottom:1px solid var(--border);font-size:13px;
+}
+.fday-row:last-child{border:none}
+.fday-name{color:var(--text);flex:1;margin-right:8px}
+.fday-cal{color:var(--gold);font-weight:700;font-size:13px}
+.fday-del{color:var(--muted);font-size:16px;cursor:pointer;padding:0 4px}
+.fday-total{
+  display:flex;justify-content:space-between;
+  padding:10px 0 0;margin-top:6px;border-top:1px solid rgba(245,197,24,.2);
+  font-size:13px;
+}
+.fday-total span{color:var(--muted)}
+.fday-total strong{color:var(--gold)}
 .tlog-val{font-weight:700;color:var(--gold)}
 
 /* ── Profile screen ── */
@@ -794,22 +841,68 @@ function switchPlanTab(t) {
 }
 
 // ── Tracker ─────────────────────────────────────────────────────────────────
+let foodLogs = JSON.parse(localStorage.getItem('parker_food') || '[]');
+let pendingFood = null; // result from API not yet saved
+
+function saveFoodLogs() {
+  localStorage.setItem('parker_food', JSON.stringify(foodLogs));
+}
+
+function todayKey() {
+  return new Date().toLocaleDateString('ru-RU');
+}
+
+function todayFoodLogs() {
+  return foodLogs.filter(f => f.date === todayKey());
+}
+
+function todayFoodTotal() {
+  const items = todayFoodLogs();
+  return items.reduce((acc, f) => ({
+    calories:  acc.calories  + (f.total.calories  || 0),
+    protein_g: acc.protein_g + (f.total.protein_g || 0),
+    fat_g:     acc.fat_g     + (f.total.fat_g     || 0),
+    carb_g:    acc.carb_g    + (f.total.carb_g    || 0),
+  }), {calories:0, protein_g:0, fat_g:0, carb_g:0});
+}
+
 function renderTracker() {
   const el = document.getElementById('tracker-content');
-  const today = new Date().toLocaleDateString('ru-RU');
+  const today = todayKey();
+  const tot = todayFoodTotal();
+  const dayLogs = todayFoodLogs();
 
   el.innerHTML = `
+    <!-- Food calc -->
     <div class="tcard">
-      <div class="tcardttl">📅 Сегодня — ${today}</div>
+      <div class="tcardttl">🍽 Что съел сегодня?</div>
+      <textarea class="ftextarea" id="food-input" placeholder="куриная грудка 200г, гречка 180г, помидор 50г, масло оливковое 10г..."></textarea>
+      <div class="fhint">Пиши в свободной форме — Петр всё поймёт и посчитает КБЖУ</div>
+      <button class="tbtn" id="food-calc-btn" onclick="calcFood()">Посчитать КБЖУ →</button>
+      <div class="fresult" id="food-result"></div>
+    </div>
+
+    <!-- Today summary -->
+    <div class="tcard">
+      <div class="tcardttl">📊 Сегодня — ${today}</div>
+      <div class="ftotal">
+        <div class="ftot-item"><div class="ftot-val">${Math.round(tot.calories)}</div><div class="ftot-lbl">ккал</div></div>
+        <div class="ftot-item"><div class="ftot-val">${tot.protein_g.toFixed(1)}</div><div class="ftot-lbl">белки г</div></div>
+        <div class="ftot-item"><div class="ftot-val">${tot.fat_g.toFixed(1)}</div><div class="ftot-lbl">жиры г</div></div>
+        <div class="ftot-item"><div class="ftot-val">${tot.carb_g.toFixed(1)}</div><div class="ftot-lbl">углев г</div></div>
+      </div>
+      <div class="fday-log" id="fday-log">
+        ${dayLogs.length ? renderFoodLogRows(dayLogs) : '<div class="tlog-empty">Ещё ничего не добавлено</div>'}
+      </div>
+    </div>
+
+    <!-- Body metrics -->
+    <div class="tcard">
+      <div class="tcardttl">⚖️ Параметры тела</div>
       <div class="tform-row">
         <div class="tlbl">Вес</div>
         <input class="tinput" id="t-wt" type="number" inputmode="decimal" placeholder="${profile?.weight_kg||80}" step="0.1">
         <div class="tunit">кг</div>
-      </div>
-      <div class="tform-row">
-        <div class="tlbl">Калории</div>
-        <input class="tinput" id="t-cal" type="number" inputmode="numeric" placeholder="2000">
-        <div class="tunit">ккал</div>
       </div>
       <div class="tform-row">
         <div class="tlbl">Сон</div>
@@ -818,16 +911,113 @@ function renderTracker() {
       </div>
       <div class="tform-row">
         <div class="tlbl">Вода</div>
-        <input class="tinput" id="t-wt2" type="number" inputmode="numeric" placeholder="2000">
+        <input class="tinput" id="t-water" type="number" inputmode="numeric" placeholder="2000">
         <div class="tunit">мл</div>
       </div>
-      <button class="tbtn" onclick="saveLog()">Сохранить запись ✓</button>
+      <button class="tbtn" onclick="saveLog()">Сохранить ✓</button>
     </div>
+
+    <!-- Weight history -->
     <div class="tcard">
-      <div class="tcardttl">📈 История</div>
+      <div class="tcardttl">📈 История веса</div>
       ${renderLogRows()}
     </div>
   `;
+}
+
+function renderFoodLogRows(items) {
+  const rows = items.map((f, i) => `
+    <div class="fday-row">
+      <div class="fday-name">${f.text.length > 40 ? f.text.slice(0,40)+'…' : f.text}</div>
+      <div class="fday-cal">${Math.round(f.total.calories)} ккал</div>
+      <div class="fday-del" onclick="deleteFoodLog(${f.ts})">✕</div>
+    </div>`).join('');
+  const tot = todayFoodTotal();
+  return rows + `
+    <div class="fday-total">
+      <span>Итого за день:</span>
+      <strong>${Math.round(tot.calories)} ккал | Б:${tot.protein_g.toFixed(0)}г Ж:${tot.fat_g.toFixed(0)}г У:${tot.carb_g.toFixed(0)}г</strong>
+    </div>`;
+}
+
+function deleteFoodLog(ts) {
+  foodLogs = foodLogs.filter(f => f.ts !== ts);
+  saveFoodLogs();
+  renderTracker();
+}
+
+async function calcFood() {
+  const text = document.getElementById('food-input')?.value.trim();
+  if (!text) return;
+
+  const btn = document.getElementById('food-calc-btn');
+  const res = document.getElementById('food-result');
+  btn.textContent = 'Считаю...';
+  btn.disabled = true;
+  res.style.display = 'none';
+  pendingFood = null;
+
+  try {
+    const r = await fetch('/api/food', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({text})
+    });
+    const data = await r.json();
+
+    if (data.error) {
+      res.style.display = 'block';
+      res.innerHTML = `<div style="color:var(--red);font-size:13px;margin-top:8px">${data.error}</div>`;
+      return;
+    }
+
+    pendingFood = { ts: Date.now(), date: todayKey(), text, items: data.items, total: data.total };
+
+    const rows = (data.items || []).map(it =>
+      `<tr>
+        <td class="fname">${escHtml(it.name)}<br><span style="color:var(--muted);font-size:11px">${it.amount_g}г</span></td>
+        <td class="fnum">${Math.round(it.calories)}</td>
+        <td class="fnum">${it.protein_g.toFixed(1)}</td>
+        <td class="fnum">${it.fat_g.toFixed(1)}</td>
+        <td class="fnum">${it.carb_g.toFixed(1)}</td>
+      </tr>`
+    ).join('');
+
+    const tot = data.total;
+    res.style.display = 'block';
+    res.innerHTML = `
+      <table class="ftable">
+        <thead><tr>
+          <th>Продукт</th><th style="text-align:right">ккал</th>
+          <th style="text-align:right">Б</th><th style="text-align:right">Ж</th><th style="text-align:right">У</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <div class="ftotal">
+        <div class="ftot-item"><div class="ftot-val">${Math.round(tot.calories)}</div><div class="ftot-lbl">ккал</div></div>
+        <div class="ftot-item"><div class="ftot-val">${tot.protein_g.toFixed(1)}</div><div class="ftot-lbl">белки г</div></div>
+        <div class="ftot-item"><div class="ftot-val">${tot.fat_g.toFixed(1)}</div><div class="ftot-lbl">жиры г</div></div>
+        <div class="ftot-item"><div class="ftot-val">${tot.carb_g.toFixed(1)}</div><div class="ftot-lbl">углев г</div></div>
+      </div>
+      <button class="fsave" onclick="saveFoodEntry()">Записать в дневник ✓</button>
+    `;
+  } catch {
+    res.style.display = 'block';
+    res.innerHTML = `<div style="color:var(--red);font-size:13px;margin-top:8px">Ошибка соединения, попробуй ещё раз</div>`;
+  } finally {
+    btn.textContent = 'Посчитать КБЖУ →';
+    btn.disabled = false;
+  }
+}
+
+function saveFoodEntry() {
+  if (!pendingFood) return;
+  foodLogs.push(pendingFood);
+  saveFoodLogs();
+  pendingFood = null;
+  document.getElementById('food-input').value = '';
+  document.getElementById('food-result').style.display = 'none';
+  renderTracker();
 }
 
 function renderLogRows() {
@@ -835,30 +1025,19 @@ function renderLogRows() {
   return logs.slice(-10).reverse().map(l =>
     `<div class="tlog-row">
       <span class="tlog-date">${l.date}</span>
-      <span class="tlog-val">${l.weight ? l.weight+'кг' : ''} ${l.calories ? l.calories+'ккал' : ''}</span>
+      <span class="tlog-val">${l.weight ? l.weight+' кг' : '—'}</span>
     </div>`
   ).join('');
 }
 
 function saveLog() {
-  const wt  = parseFloat(document.getElementById('t-wt')?.value);
-  const cal = parseInt(document.getElementById('t-cal')?.value);
-  const sl  = parseFloat(document.getElementById('t-sl')?.value);
-  const w2  = parseInt(document.getElementById('t-wt2')?.value);
-  const entry = {
-    date: new Date().toLocaleDateString('ru-RU'),
-    ts:   Date.now(),
-    weight:   wt  || null,
-    calories: cal || null,
-    sleep:    sl  || null,
-    water:    w2  || null,
-  };
+  const wt    = parseFloat(document.getElementById('t-wt')?.value);
+  const sl    = parseFloat(document.getElementById('t-sl')?.value);
+  const water = parseInt(document.getElementById('t-water')?.value);
+  const entry = { date: todayKey(), ts: Date.now(), weight: wt||null, sleep: sl||null, water: water||null };
   logs.push(entry);
+  if (wt && profile) { profile.weight_kg = wt; }
   save();
-
-  // Update profile weight if entered
-  if (wt && profile) { profile.weight_kg = wt; save(); }
-
   renderTracker();
   if (tg?.showAlert) tg.showAlert('Записано! 💪');
 }
