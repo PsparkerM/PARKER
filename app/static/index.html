@@ -1148,7 +1148,11 @@ async function submitOnboarding() {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify(onbData)
     });
-    if (!r.ok) throw new Error('server error');
+    if (!r.ok) {
+      let errMsg = `Ошибка сервера (${r.status})`;
+      try { const e = await r.json(); errMsg = e.detail || e.error || errMsg; } catch {}
+      throw new Error(errMsg);
+    }
     const data = await r.json();
     planData = data;
     profile = {...onbData};
@@ -1157,7 +1161,7 @@ async function submitOnboarding() {
     launchApp();
   } catch(e) {
     document.getElementById(`os-7`).innerHTML = `
-      <div style="color:var(--red);text-align:center;padding:20px">Ошибка соединения. Попробуй ещё раз.</div>
+      <div style="color:var(--red);text-align:center;padding:20px">${escHtml(e.message||'Ошибка. Попробуй ещё раз.')}</div>
       <button class="btn-primary" onclick="submitOnboarding()">Повторить</button>`;
   }
 }
@@ -1428,7 +1432,6 @@ async function sendChat() {
 
   const el = document.getElementById('chat-msgs');
   addMsg(el,'u',msg);
-  chatHist.push({role:'user',content:msg});
 
   const btn = document.getElementById('chat-send');
   btn.disabled = true;
@@ -1443,9 +1446,9 @@ async function sendChat() {
     typ.remove();
     const reply = data.reply || 'Не удалось получить ответ.';
     addMsg(el,'p',reply);
+    chatHist.push({role:'user',content:msg});
     chatHist.push({role:'assistant',content:reply});
     persist();
-    // check chat badge
     if (chatHist.filter(m=>m.role==='user').length >= 10) checkBadge('chat_10');
   } catch {
     typ.remove();
@@ -1969,9 +1972,19 @@ async function getWeeklyAdapt() {
     });
     const data = await r.json();
     if (data.error) { res.style.display='block'; res.textContent=data.error; return; }
-    const text = data.recommendations || data.summary || JSON.stringify(data, null, 2);
+    let txt = '';
+    if (data.summary) txt += data.summary + '\n\n';
+    if (data.calorie_adjust && data.calorie_adjust !== 0) {
+      const sign = data.calorie_adjust > 0 ? '+' : '';
+      txt += `📊 Корректировка КБЖУ: ${sign}${data.calorie_adjust} ккал к норме\n\n`;
+    }
+    if (Array.isArray(data.recommendations) && data.recommendations.length) {
+      txt += data.recommendations.map((r,i)=>`${i+1}. ${r}`).join('\n');
+    }
+    if (data.motivation) txt += '\n\n💪 ' + data.motivation;
+    if (!txt) txt = JSON.stringify(data, null, 2);
     res.style.display = 'block';
-    res.textContent = text;
+    res.textContent = txt;
     addXP(25);
     toast('Анализ готов! +25 XP 🤖');
   } catch {
