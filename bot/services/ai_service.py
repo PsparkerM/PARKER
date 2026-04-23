@@ -1,535 +1,470 @@
 import logging
+import json
+import re
+import anthropic
+
 from bot.config import ANTHROPIC_API_KEY
 
+logger = logging.getLogger(__name__)
+
+# ──────────────────────────────────────────────
+#  Shared client (lazy, singleton)
+# ──────────────────────────────────────────────
+_client: anthropic.AsyncAnthropic | None = None
+
+
+def _get_client() -> anthropic.AsyncAnthropic:
+    global _client
+    if _client is None:
+        if not ANTHROPIC_API_KEY:
+            raise RuntimeError("ANTHROPIC_API_KEY не задан")
+        _client = anthropic.AsyncAnthropic(
+            api_key=ANTHROPIC_API_KEY,
+            timeout=30.0,
+            max_retries=1,
+        )
+    return _client
+
+
+MODEL = "claude-sonnet-4-6"
+
+# ──────────────────────────────────────────────
+#  Label maps
+# ──────────────────────────────────────────────
 GOAL_LABELS = {
-    "lose_weight": "похудение",
-    "gain_muscle": "набор мышечной массы",
-    "maintain": "поддержание формы",
+    "lose_weight":   "похудение",
+    "gain_muscle":   "набор мышечной массы",
+    "maintain":      "поддержание формы",
     "recomposition": "рекомпозиция тела",
 }
 
 SCHEDULE_LABELS = {
     "standard": "стандартный (~8 ч)",
-    "12h": "интенсивный (12 ч)",
-    "16h+": "тяжёлый (16+ ч)",
-    "shift": "сменный график",
+    "12h":      "интенсивный (12 ч)",
+    "16h+":     "тяжёлый (16+ ч)",
+    "shift":    "сменный график",
 }
 
-PARKER_CHAT_SYSTEM = """Ты — Арнольд (Арни), персональный тренер, нутрициолог и наставник пользователя в приложении P.A.R.K.E.R.
+# ──────────────────────────────────────────────
+#  System prompts
+# ──────────────────────────────────────────────
+ARNI_SYSTEM = """\
+Ты — Арнольд, он же Арни. Персональный тренер, нутрициолог и наставник в приложении P.A.R.K.E.R.
 
 ЛИЧНОСТЬ:
-Говоришь как близкий друг который реально разбирается в спорте и питании.
-Прямо, тепло, иногда с лёгким юмором, но всегда конкретно — никакой воды.
+Говоришь как близкий друг, который реально разбирается в спорте и питании.
+Прямо, тепло, иногда с лёгким юмором — но всегда конкретно, никакой воды.
 Не сюсюкаешь, но поддерживаешь. Ты тренер, а не мотивационный спикер.
 Даёшь советы с конкретными цифрами: граммы, подходы, время, проценты.
 Знаешь биохимию и физиологию на уровне эксперта.
-Понимаешь реальную жизнь — не идеальные условия, а усталость и нехватку времени.
+Понимаешь реальную жизнь — усталость, нехватку времени, стресс.
 
 ПРОФИЛЬ ПОЛЬЗОВАТЕЛЯ:
-{profile_block}
+%%PROFILE%%
 
 ЗАПРЕТЫ ПО ЗДОРОВЬЮ (АБСОЛЮТНЫЕ):
-{health_rules}
+%%HEALTH%%
 
-ПРАВИЛА:
-- Отвечай коротко если вопрос простой, развёрнуто если нужны детали
-- Если просят план или расчёт — давай конкретные цифры
-- Медицинский дисклеймер добавляй только если речь идёт о серьёзных изменениях в питании или тренировках
-- Всегда на русском языке
-- Обращайся по имени если знаешь его"""
+ПРАВИЛА ОТВЕТОВ:
+- Короткий вопрос → короткий ответ. Просят расчёт → конкретные цифры.
+- Обращайся по имени если знаешь его.
+- Всегда на русском языке.
+- Медицинский дисклеймер только при серьёзных изменениях питания/тренировок.\
+"""
 
-PARKER_SYSTEM_PROMPT = """Ты — P.A.R.K.E.R. (Personal Adaptive Resource & Kinetic Energy Regulator).
-Ты персональный AI-нутрициолог и тренер. Ты — цифровой двойник лучшего специалиста.
-Твоя задача: заменить живого тренера и диетолога на 100%.
+PARKER_SYSTEM_PROMPT = """\
+Ты — P.A.R.K.E.R. AI-нутрициолог и тренер. Цифровой двойник лучшего специалиста.
+Говоришь прямо, конкретно, без воды. Знаешь биохимию и физиологию на уровне эксперта.
+Понимаешь реальную жизнь: смены 16 ч, нестабильный сон, ограниченное время.
 
-═══ ТВОЯ ЛИЧНОСТЬ ═══
-Ты профессионал. Говоришь прямо, конкретно, без воды.
-Ты знаешь биохимию, физиологию, нутрициологию на уровне эксперта.
-Ты понимаешь реальную жизнь людей — не идеальные условия, а смены по 16 часов и нестабильный сон.
-Ты заботишься о пользователе, но не сюсюкаешь. Ты тренер, а не мотивационный спикер.
+ЗАПРЕТЫ ПО ЗДОРОВЬЮ — АБСОЛЮТНЫЕ:
+back_problems → НИКОГДА: становая тяга, приседания со штангой, гиперэкстензия с весом
+knee_issues → НИКОГДА: глубокие приседания с весом, выпады с отягощением, прыжки на тумбу
+hypertension → НИКОГДА: тяжёлый жим над головой, натуживание, упражнения головой вниз
 
-═══ ЖЁСТКИЕ ПРАВИЛА (НАРУШАТЬ НЕЛЬЗЯ) ═══
+РЕЖИМ 16Ч+: максимум 3 приёма, жидкие калории, тренировка ≤30 мин или только растяжка.
 
-1. ЗАПРЕТЫ ПО ЗДОРОВЬЮ — АБСОЛЮТНЫЕ:
-   • back_problems / сколиоз → НИКОГДА: становая тяга, приседания со штангой,
-     гиперэкстензия с весом, наклоны с отягощением, жим ногами с полной амплитудой
-   • knee_issues → НИКОГДА: глубокие приседания с весом, выпады с отягощением,
-     запрыгивания на тумбу, бег по твёрдой поверхности
-   • hypertension → НИКОГДА: тяжёлый жим над головой, натуживание (задержка дыхания),
-     упражнения головой вниз
+Каждый план заканчивается строкой:
+⚠️ Проконсультируйся с врачом перед началом программы.\
+"""
 
-2. РЕЖИМ «16Ч+»:
-   Максимум 3 приёма пищи. Всё съедается за 2–3 минуты.
-   Упор на жидкие калории (гейнер, протеин, смузи). Никаких блюд с готовкой.
-   Тренировка: только если есть 30 минут. Иначе — 5 мин растяжки + витамины.
-
-3. ТОЧНОСТЬ:
-   Всегда указывай: граммы продуктов, время приёмов, количество подходов × повторений,
-   вес отягощения (если известен), время отдыха между подходами.
-
-4. МЕДИЦИНСКИЙ ДИСКЛЕЙМЕР:
-   Каждый план заканчивается строкой:
-   ⚠️ Проконсультируйся с врачом перед началом программы.
-
-═══ ФОРМАТ ПЛАНА ПИТАНИЯ ═══
-🍽 ПЛАН ПИТАНИЯ — [цель] | [КБЖУ]
-
-[время] [Приём N]:
-• [Продукт] — [граммы]
-• [Продукт] — [граммы]
-Итого: ~[ккал] ккал | Б:[г]г Ж:[г]г У:[г]г
-
-[Повтори для каждого приёма]
-
-💧 Вода: [норма] мл/день
-💊 Добавки: [список если нужны]
-
-⚠️ Проконсультируйся с врачом перед началом программы.
-
-═══ ФОРМАТ ТРЕНИРОВОЧНОГО ПЛАНА ═══
-🏋️ ТРЕНИРОВОЧНЫЙ ПЛАН — [тип: Дом/Зал/Бассейн/ЛФК]
-
-[Если есть ограничения здоровья — сначала блок:]
-⚠️ ИСКЛЮЧЕНО из-за [причина]: [список упражнений]
-
-[День N] — [группа мышц/тип]:
-1. [Упражнение] — [N×N] [вес если есть] | Отдых: [сек]
-2. [Упражнение] — [N×N] | Отдых: [сек]
-...
-
-Общее время: ~[мин] мин
-Частота: [N] раз в неделю
-
-⚠️ Проконсультируйся с врачом перед началом программы."""
-
-NUTRITION_USER_TEMPLATE = """\
+NUTRITION_TEMPLATE = """\
 Составь персональный план питания на 7 дней (Пн–Вс).
 
 ПРОФИЛЬ:
-• Цель: {goal}
-• Пол: {gender} | Возраст: {age} лет
-• Рост: {height_cm} см | Вес: {weight_kg} кг
-• % жира: {body_fat}
-• Рабочий график: {schedule}
-• Проблемы со здоровьем: {health}
-• Оборудование: {equipment}
+Цель: {goal}
+Пол: {gender} | Возраст: {age} лет
+Рост: {height_cm} см | Вес: {weight_kg} кг
+Жир: {body_fat}
+График: {schedule}
+Здоровье: {health}
+Оборудование: {equipment}
 
-КБЖУ (рассчитано):
-🔥 {calories} ккал | 🥩 Б:{protein_g}г | 🫒 Ж:{fat_g}г | 🍞 У:{carb_g}г
+КБЖУ: {calories} ккал | Б:{protein_g}г | Ж:{fat_g}г | У:{carb_g}г
 
-ФОРМАТ — для каждого дня:
+ФОРМАТ — строго для каждого дня:
 [ДЕНЬ] Понедельник
-Завтрак (08:00): продукт — Xг, продукт — Xг → ~Xккал
+Завтрак (08:00): продукт — Xг → ~Xккал
 Обед (13:00): ...
 Ужин (19:00): ...
 💧 Вода: X мл
 
 Требования:
-• Чередуй продукты между днями — не повторяй одно и то же каждый день
-• Адаптируй под рабочий график (если 16ч+ — максимум 3 приёма, быстрые варианты)
-• Точные граммовки для каждого продукта
-• В конце — краткий блок ДОБАВКИ если нужны"""
+- Разные продукты каждый день, не повторяй
+- Под график (16ч+ — 3 приёма, быстрые варианты)
+- Точные граммовки
+- В конце — ДОБАВКИ если нужны\
+"""
 
-WORKOUT_USER_TEMPLATE = """\
-Составь персональное расписание тренировок на неделю с конкретными задачами на каждый день.
+WORKOUT_TEMPLATE = """\
+Составь программу тренировок на неделю (Пн–Вс).
 
 ПРОФИЛЬ:
-• Цель: {goal}
-• Пол: {gender} | Возраст: {age} лет
-• Рост: {height_cm} см | Вес: {weight_kg} кг
-• Рабочий график: {schedule}
-• Проблемы со здоровьем: {health}
-• Доступное оборудование: {equipment}
+Цель: {goal}
+Пол: {gender} | Возраст: {age} лет | Вес: {weight_kg} кг
+График: {schedule}
+Здоровье: {health}
+Оборудование: {equipment}
 
-ФОРМАТ — строго по дням недели:
-[ДЕНЬ] Понедельник — Грудь + Трицепс (Зал)
-1. Жим штанги лёжа — 4×8, отдых 90 сек
-2. ...
+ФОРМАТ — строго по дням:
+[ДЕНЬ] Понедельник — Грудь + Трицепс
+1. Жим лёжа — 4×8, отдых 90 сек
+...
 ⏱ Время: ~60 мин
 
-[ДЕНЬ] Вторник — ОТДЫХ / Активное восстановление
-• Лёгкая прогулка 30 мин или растяжка
+[ДЕНЬ] Вторник — ОТДЫХ
+Лёгкая прогулка 30 мин
 
-... и так для каждого дня Пн–Вс.
+Требования:
+- Строго исключи запрещённые упражнения по здоровью
+- Спина/сколиоз → ЛФК-разминка 5 мин перед тренировкой
+- 16ч+ → тренировки ≤30 мин или только растяжка
+- Подходы × повторения, отдых, вес для каждого упражнения\
+"""
 
-ТРЕБОВАНИЯ:
-• Расставь тренировочные дни под рабочий график
-• Строго исключи запрещённые упражнения по здоровью
-• Если есть спина/сколиоз — ЛФК-разминка 5 мин перед каждой тренировкой
-• Если 16ч+ — тренировки ≤30 мин или только растяжка
-• Для каждого упражнения: подходы × повторения, отдых, вес (если актуально)
-• Если дома + зал — распредели: часть дней дома, часть в зале"""
+FOOD_SYSTEM = """\
+Ты — эксперт-нутрициолог. Тебе дают список продуктов с граммовкой.
+Рассчитай КБЖУ каждого продукта и суммарные значения по стандартным таблицам.
+
+Верни ТОЛЬКО валидный JSON (без текста до/после):
+{"items":[{"name":"...","amount_g":200,"calories":330,"protein_g":46.0,"fat_g":7.2,"carb_g":0.0}],"total":{"calories":330,"protein_g":46.0,"fat_g":7.2,"carb_g":0.0}}
+
+Правила:
+- Калории — целые, БЖУ — 1 знак после запятой
+- Граммовка не указана → стандартная порция (100г / 1 шт)
+- Продукт не распознан → name "? название", нули
+- Используй значения для варёных/готовых если не указано иное\
+"""
+
+PHOTO_FOOD_SYSTEM = """\
+Ты — эксперт-нутрициолог. Тебе показывают фото еды. Определи продукты, оцени граммы, рассчитай КБЖУ.
+
+Верни ТОЛЬКО валидный JSON:
+{"items":[{"name":"...","amount_g":150,"calories":200,"protein_g":15.0,"fat_g":8.0,"carb_g":18.0}],"total":{"calories":200,"protein_g":15.0,"fat_g":8.0,"carb_g":18.0},"description":"Краткое описание блюда"}
+
+Правила:
+- Оценивай количество по размеру порции (ладонь = ~150г белка, стандартная тарелка)
+- Составное блюдо — разбей на компоненты
+- Если еда не видна → {"error":"Не удалось распознать еду на фото"}\
+"""
+
+ADAPT_SYSTEM = """\
+Ты — Арни, персональный тренер и нутрициолог. Анализируй недельный прогресс.
+Дай конкретные рекомендации по корректировке плана.
+
+Верни ТОЛЬКО валидный JSON:
+{"summary":"2-3 предложения о прогрессе","weight_trend":"gaining","calorie_adjust":200,"recommendations":["рекомендация 1","рекомендация 2","рекомендация 3"],"motivation":"мотивирующее сообщение от Арни"}
+
+weight_trend: gaining | losing | stable
+calorie_adjust: число со знаком (+/-), 0 если менять не нужно\
+"""
 
 
+# ──────────────────────────────────────────────
+#  Helpers
+# ──────────────────────────────────────────────
 def _build_profile_block(profile: dict) -> str:
     if not profile:
-        return "Профиль ещё не заполнен."
-    lines = []
-    if profile.get("name"):
-        lines.append(f"Имя: {profile['name']}")
-    if profile.get("goal"):
-        lines.append(f"Цель: {GOAL_LABELS.get(profile['goal'], profile['goal'])}")
-    if profile.get("gender"):
-        lines.append(f"Пол: {'мужской' if profile['gender'] == 'male' else 'женский'}")
-    if profile.get("age"):
-        lines.append(f"Возраст: {profile['age']} лет")
-    if profile.get("height_cm"):
-        lines.append(f"Рост: {profile['height_cm']} см")
-    if profile.get("weight_kg"):
-        lines.append(f"Вес: {profile['weight_kg']} кг")
-    if profile.get("body_fat_pct"):
-        lines.append(f"% жира: {profile['body_fat_pct']}%")
-    if profile.get("schedule"):
-        lines.append(f"График: {SCHEDULE_LABELS.get(profile['schedule'], profile['schedule'])}")
-    hi = profile.get("health_issues", [])
-    if hi and hi != ["none"]:
-        lines.append(f"Здоровье/травмы: {', '.join(hi)}")
+        return "Профиль не заполнен."
+    parts = []
+    if profile.get("name"):        parts.append(f"Имя: {profile['name']}")
+    if profile.get("goal"):        parts.append(f"Цель: {GOAL_LABELS.get(profile['goal'], profile['goal'])}")
+    if profile.get("gender"):      parts.append(f"Пол: {'мужской' if profile['gender']=='male' else 'женский'}")
+    if profile.get("age"):         parts.append(f"Возраст: {profile['age']} лет")
+    if profile.get("height_cm"):   parts.append(f"Рост: {profile['height_cm']} см")
+    if profile.get("weight_kg"):   parts.append(f"Вес: {profile['weight_kg']} кг")
+    if profile.get("body_fat_pct"):parts.append(f"% жира: {profile['body_fat_pct']}%")
+    if profile.get("schedule"):    parts.append(f"График: {SCHEDULE_LABELS.get(profile['schedule'], profile['schedule'])}")
+    hi = [x for x in profile.get("health_issues", []) if x != "none"]
+    if hi: parts.append(f"Здоровье/травмы: {', '.join(hi)}")
     eq = profile.get("equipment", [])
-    if eq:
-        lines.append(f"Оборудование: {', '.join(eq)}")
-    return "\n".join(lines) if lines else "Профиль частично заполнен."
+    if eq: parts.append(f"Оборудование: {', '.join(eq)}")
+    return "\n".join(parts) or "Профиль частично заполнен."
 
 
 def _build_health_rules(profile: dict) -> str:
     health = profile.get("health_issues", [])
     rules = []
     if "back_problems" in health:
-        rules.append("Спина/сколиоз → НЕЛЬЗЯ: становая тяга, приседания со штангой, гиперэкстензия, наклоны с весом")
+        rules.append("Спина → НЕЛЬЗЯ: становая тяга, приседания со штангой, гиперэкстензия")
     if "knee_issues" in health:
-        rules.append("Колени → НЕЛЬЗЯ: глубокие приседания с весом, выпады с отягощением, прыжки на тумбу, бег по асфальту")
+        rules.append("Колени → НЕЛЬЗЯ: глубокие приседания с весом, выпады с отягощением, прыжки")
     if "hypertension" in health:
-        rules.append("Гипертония → НЕЛЬЗЯ: тяжёлый жим над головой, натуживание, упражнения головой вниз")
-    return "\n".join(rules) if rules else "Ограничений нет."
+        rules.append("Гипертония → НЕЛЬЗЯ: тяжёлый жим над головой, натуживание")
+    return "\n".join(rules) or "Ограничений нет."
 
 
-FOOD_SYSTEM = """Ты — эксперт-нутрициолог. Тебе дают список продуктов с граммовкой на русском языке.
-Рассчитай КБЖУ каждого продукта и суммарные значения по стандартным таблицам питательности.
+def _sanitize_history(history: list) -> list:
+    """Ensure valid alternating user/assistant sequence for Anthropic API."""
+    clean = []
+    for msg in history:
+        role = msg.get("role") if isinstance(msg, dict) else getattr(msg, "role", None)
+        content = msg.get("content") if isinstance(msg, dict) else getattr(msg, "content", None)
+        if role not in ("user", "assistant") or not content:
+            continue
+        content = str(content).strip()
+        if not content:
+            continue
+        if clean and clean[-1]["role"] == role:
+            # merge consecutive same-role messages
+            clean[-1]["content"] += "\n" + content
+        else:
+            clean.append({"role": role, "content": content})
+    return clean
 
-Верни ТОЛЬКО валидный JSON без какого-либо текста до или после:
-{
-  "items": [
-    {"name": "название продукта", "amount_g": 200, "calories": 330, "protein_g": 46.0, "fat_g": 7.2, "carb_g": 0.0}
-  ],
-  "total": {"calories": 330, "protein_g": 46.0, "fat_g": 7.2, "carb_g": 0.0}
-}
 
-Правила:
-- Округляй калории до целых, БЖУ до 1 знака после запятой
-- Если граммовка не указана — предполагай стандартную порцию (100г, 1 шт и т.д.) и укажи её
-- Если продукт не распознан — включи его с нулевыми значениями и пометь name как "? [название]"
-- Используй значения для варёных/готовых продуктов если не указано иное"""
+def _extract_json(raw: str) -> dict:
+    """Extract first JSON object from raw text."""
+    raw = raw.strip()
+    # Try direct parse first
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError:
+        pass
+    # Find the outermost {...}
+    m = re.search(r'\{[\s\S]*\}', raw)
+    if m:
+        try:
+            return json.loads(m.group())
+        except json.JSONDecodeError:
+            pass
+    raise ValueError(f"No valid JSON in response: {raw[:200]}")
 
 
+# ──────────────────────────────────────────────
+#  Chat
+# ──────────────────────────────────────────────
+async def generate_chat_response(message: str, history: list, profile: dict) -> str:
+    if not ANTHROPIC_API_KEY:
+        return "Арни временно недоступен — API ключ не задан."
+    try:
+        client = _get_client()
+        system = (
+            ARNI_SYSTEM
+            .replace("%%PROFILE%%", _build_profile_block(profile))
+            .replace("%%HEALTH%%", _build_health_rules(profile))
+        )
+        safe_hist = _sanitize_history(history)
+        # Must end on assistant (or be empty) before we append user
+        if safe_hist and safe_hist[-1]["role"] == "user":
+            safe_hist = safe_hist[:-1]
+        messages = safe_hist[-18:] + [{"role": "user", "content": message}]
+        msg = await client.messages.create(
+            model=MODEL,
+            max_tokens=1200,
+            system=system,
+            messages=messages,
+        )
+        return msg.content[0].text
+    except anthropic.AuthenticationError:
+        logger.error("Anthropic auth error — check ANTHROPIC_API_KEY")
+        return "Арни недоступен — проблема с API ключом. Обратись к администратору."
+    except anthropic.RateLimitError:
+        logger.warning("Anthropic rate limit hit")
+        return "Слишком много запросов — подожди минуту и попробуй ещё раз."
+    except anthropic.APITimeoutError:
+        logger.warning("Anthropic timeout")
+        return "Арни думает дольше обычного — попробуй ещё раз."
+    except Exception as e:
+        logger.exception("generate_chat_response failed: %s", e)
+        return "Арни временно недоступен. Попробуй ещё раз через минуту."
+
+
+# ──────────────────────────────────────────────
+#  Food calc
+# ──────────────────────────────────────────────
 async def calculate_food_macros(text: str) -> dict:
     if not ANTHROPIC_API_KEY:
-        return {"error": "AI недоступен"}
+        return {"error": "AI недоступен — API ключ не задан"}
     try:
-        import anthropic, json, re
-        client = anthropic.AsyncAnthropic(api_key=ANTHROPIC_API_KEY)
+        client = _get_client()
         msg = await client.messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=800,
+            model=MODEL,
+            max_tokens=900,
             system=FOOD_SYSTEM,
             messages=[{"role": "user", "content": f"Рассчитай КБЖУ: {text}"}],
         )
-        raw = msg.content[0].text.strip()
-        # Extract JSON even if there's extra text
-        m = re.search(r'\{.*\}', raw, re.DOTALL)
-        if not m:
-            return {"error": "Не удалось распознать продукты"}
-        return json.loads(m.group())
+        return _extract_json(msg.content[0].text)
+    except (anthropic.AuthenticationError, anthropic.RateLimitError, anthropic.APITimeoutError) as e:
+        logger.error("food_macros API error: %s", e)
+        return {"error": f"AI недоступен: {type(e).__name__}"}
+    except ValueError as e:
+        logger.error("food_macros JSON parse error: %s", e)
+        return {"error": "Не удалось разобрать ответ AI — попробуй переформулировать"}
     except Exception as e:
-        logging.exception("food calc error: %s", e)
-        return {"error": f"Ошибка расчёта КБЖУ ({type(e).__name__})"}
-
-
-PHOTO_FOOD_SYSTEM = """Ты — эксперт-нутрициолог. Тебе показывают фотографию еды или блюда.
-Определи все видимые продукты, оцени их количество (граммы) и рассчитай КБЖУ.
-
-Верни ТОЛЬКО валидный JSON без какого-либо текста до или после:
-{
-  "items": [
-    {"name": "название", "amount_g": 150, "calories": 200, "protein_g": 15.0, "fat_g": 8.0, "carb_g": 18.0}
-  ],
-  "total": {"calories": 200, "protein_g": 15.0, "fat_g": 8.0, "carb_g": 18.0},
-  "description": "Краткое описание блюда"
-}
-
-Правила:
-- Оценивай количество по размеру порции на фото (стандартные тарелки, ладонь = ~150г белка и т.д.)
-- Если блюдо составное — разбей на компоненты
-- Округляй калории до целых, БЖУ до 1 знака
-- Если еда не видна или фото нечёткое — верни {"error": "Не удалось распознать еду на фото"}"""
-
-ADAPT_SYSTEM = """Ты — персональный тренер и нутрициолог Арнольд (Арни). Анализируешь недельный прогресс пользователя.
-
-На основе данных за неделю дай конкретные рекомендации по корректировке плана.
-
-Верни JSON:
-{
-  "summary": "2-3 предложения о прогрессе за неделю",
-  "weight_trend": "gaining|losing|stable",
-  "calorie_adjust": 0,  // +/- ккал к текущей норме
-  "recommendations": [
-    "конкретная рекомендация 1",
-    "конкретная рекомендация 2",
-    "конкретная рекомендация 3"
-  ],
-  "motivation": "мотивирующее сообщение от Арни, 1 предложение"
-}"""
+        logger.exception("calculate_food_macros failed: %s", e)
+        return {"error": "Ошибка расчёта КБЖУ — попробуй ещё раз"}
 
 
 async def calculate_food_macros_from_photo(image_b64: str, media_type: str = "image/jpeg") -> dict:
     if not ANTHROPIC_API_KEY:
         return {"error": "AI недоступен"}
     try:
-        import anthropic, json, re
-        client = anthropic.AsyncAnthropic(api_key=ANTHROPIC_API_KEY)
+        client = _get_client()
         msg = await client.messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=800,
+            model=MODEL,
+            max_tokens=900,
             system=PHOTO_FOOD_SYSTEM,
             messages=[{
                 "role": "user",
                 "content": [
                     {"type": "image", "source": {"type": "base64", "media_type": media_type, "data": image_b64}},
-                    {"type": "text", "text": "Что за еда на фото? Рассчитай КБЖУ."}
-                ]
+                    {"type": "text", "text": "Что на фото? Рассчитай КБЖУ."},
+                ],
             }],
         )
-        raw = msg.content[0].text.strip()
-        m = re.search(r'\{.*\}', raw, re.DOTALL)
-        if not m:
-            return {"error": "Не удалось распознать еду"}
-        return json.loads(m.group())
-    except Exception:
-        logging.exception("photo food error")
+        return _extract_json(msg.content[0].text)
+    except (anthropic.AuthenticationError, anthropic.RateLimitError, anthropic.APITimeoutError) as e:
+        logger.error("photo_food API error: %s", e)
+        return {"error": f"AI недоступен: {type(e).__name__}"}
+    except ValueError:
+        return {"error": "Не удалось распознать еду на фото"}
+    except Exception as e:
+        logger.exception("calculate_food_macros_from_photo failed: %s", e)
         return {"error": "Ошибка распознавания фото"}
 
 
-async def generate_weekly_adaptation(profile: dict, logs: list, food_logs: list, macros: dict) -> dict:
-    if not ANTHROPIC_API_KEY:
-        return {"error": "AI недоступен"}
-    try:
-        import anthropic, json, re
-        client = anthropic.AsyncAnthropic(api_key=ANTHROPIC_API_KEY)
-
-        weight_vals = [l["weight"] for l in logs if l.get("weight")]
-        avg_cal = 0
-        if food_logs:
-            avg_cal = sum(f["total"]["calories"] for f in food_logs if f.get("total")) / len(food_logs)
-
-        summary_text = (
-            f"Пользователь: {profile.get('name','—')}, цель: {profile.get('goal','—')}\n"
-            f"Текущие макросы: {macros.get('calories','—')} ккал\n"
-            f"Записей за неделю: {len(logs)}\n"
-            f"Вес: {weight_vals[0] if weight_vals else '—'} кг → {weight_vals[-1] if weight_vals else '—'} кг\n"
-            f"Среднее потребление калорий: {round(avg_cal)} ккал/день\n"
-            f"Записей сна: {sum(1 for l in logs if l.get('sleep'))}\n"
-        )
-
-        msg = await client.messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=600,
-            system=ADAPT_SYSTEM,
-            messages=[{"role": "user", "content": f"Проанализируй прогресс за неделю:\n{summary_text}"}],
-        )
-        raw = msg.content[0].text.strip()
-        m = re.search(r'\{.*\}', raw, re.DOTALL)
-        if not m:
-            return {"error": "Не удалось сформировать анализ"}
-        return json.loads(m.group())
-    except Exception:
-        logging.exception("adapt error")
-        return {"error": "Ошибка анализа"}
-
-
-def _sanitize_history(history: list) -> list:
-    """Remove consecutive same-role messages to satisfy Anthropic API requirements."""
-    clean = []
-    for msg in history:
-        if clean and clean[-1]["role"] == msg.get("role"):
-            continue
-        if msg.get("role") in ("user", "assistant") and msg.get("content"):
-            clean.append({"role": msg["role"], "content": str(msg["content"])})
-    return clean
-
-
-async def generate_chat_response(message: str, history: list, profile: dict) -> str:
-    if not ANTHROPIC_API_KEY:
-        return "AI временно недоступен. Попробуй позже."
-    try:
-        import anthropic
-        client = anthropic.AsyncAnthropic(api_key=ANTHROPIC_API_KEY)
-        # Use replace() instead of format() to avoid KeyError on user-entered braces
-        system = (
-            PARKER_CHAT_SYSTEM
-            .replace("{profile_block}", _build_profile_block(profile))
-            .replace("{health_rules}", _build_health_rules(profile))
-        )
-        safe_history = _sanitize_history(history[-20:])
-        # Ensure history ends on assistant so we can append user message
-        if safe_history and safe_history[-1]["role"] == "user":
-            safe_history = safe_history[:-1]
-        messages = safe_history + [{"role": "user", "content": message}]
-        msg = await client.messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=1000,
-            system=system,
-            messages=messages,
-        )
-        return msg.content[0].text
-    except Exception as e:
-        logging.exception("Claude chat error: %s", e)
-        return f"Арни временно недоступен — {type(e).__name__}. Попробуй ещё раз."
-
-
+# ──────────────────────────────────────────────
+#  Plans (nutrition + workout)
+# ──────────────────────────────────────────────
 async def generate_nutrition_plan(profile: dict, macros: dict) -> str:
-    if ANTHROPIC_API_KEY:
-        return await _claude_nutrition(profile, macros)
-    return _fallback_nutrition(profile, macros)
-
-
-async def generate_workout_plan(profile: dict) -> str:
-    if ANTHROPIC_API_KEY:
-        return await _claude_workout(profile)
-    return _fallback_workout(profile)
-
-
-async def _claude_nutrition(profile: dict, macros: dict) -> str:
+    if not ANTHROPIC_API_KEY:
+        return _fallback_nutrition(profile, macros)
     try:
-        import anthropic
-        client = anthropic.AsyncAnthropic(api_key=ANTHROPIC_API_KEY)
-        health = ", ".join(profile.get("health_issues", [])) or "нет"
-        equip = ", ".join(profile.get("equipment", [])) or "нет"
-        body_fat = f"{profile.get('body_fat_pct')}%" if profile.get("body_fat_pct") else "не указан"
-
-        prompt = NUTRITION_USER_TEMPLATE.format(
-            goal=profile.get("goal"),
+        client = _get_client()
+        hi = [x for x in profile.get("health_issues", []) if x != "none"]
+        prompt = NUTRITION_TEMPLATE.format(
+            goal=GOAL_LABELS.get(profile.get("goal", ""), profile.get("goal", "—")),
             gender="Мужской" if profile.get("gender") == "male" else "Женский",
-            age=profile.get("age"),
-            height_cm=profile.get("height_cm"),
-            weight_kg=profile.get("weight_kg"),
-            body_fat=body_fat,
-            schedule=profile.get("schedule"),
-            health=health,
-            equipment=equip,
+            age=profile.get("age", "—"),
+            height_cm=profile.get("height_cm", "—"),
+            weight_kg=profile.get("weight_kg", "—"),
+            body_fat=f"{profile['body_fat_pct']}%" if profile.get("body_fat_pct") else "не указан",
+            schedule=SCHEDULE_LABELS.get(profile.get("schedule", ""), profile.get("schedule", "—")),
+            health=", ".join(hi) if hi else "нет ограничений",
+            equipment=", ".join(profile.get("equipment", [])) or "нет",
             calories=macros["calories"],
             protein_g=macros["protein_g"],
             fat_g=macros["fat_g"],
             carb_g=macros["carb_g"],
         )
-
         msg = await client.messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=2000,
+            model=MODEL,
+            max_tokens=2500,
             system=PARKER_SYSTEM_PROMPT,
             messages=[{"role": "user", "content": prompt}],
         )
         return msg.content[0].text
-    except Exception:
-        logging.exception("Claude nutrition error")
+    except Exception as e:
+        logger.exception("generate_nutrition_plan failed: %s", e)
         return _fallback_nutrition(profile, macros)
 
 
-async def _claude_workout(profile: dict) -> str:
+async def generate_workout_plan(profile: dict) -> str:
+    if not ANTHROPIC_API_KEY:
+        return _fallback_workout(profile)
     try:
-        import anthropic
-        client = anthropic.AsyncAnthropic(api_key=ANTHROPIC_API_KEY)
-        health = ", ".join(profile.get("health_issues", [])) or "нет"
-        equip = ", ".join(profile.get("equipment", [])) or "нет"
-
-        prompt = WORKOUT_USER_TEMPLATE.format(
-            goal=profile.get("goal"),
+        client = _get_client()
+        hi = [x for x in profile.get("health_issues", []) if x != "none"]
+        prompt = WORKOUT_TEMPLATE.format(
+            goal=GOAL_LABELS.get(profile.get("goal", ""), profile.get("goal", "—")),
             gender="Мужской" if profile.get("gender") == "male" else "Женский",
-            age=profile.get("age"),
-            height_cm=profile.get("height_cm"),
-            weight_kg=profile.get("weight_kg"),
-            schedule=profile.get("schedule"),
-            health=health,
-            equipment=equip,
+            age=profile.get("age", "—"),
+            weight_kg=profile.get("weight_kg", "—"),
+            schedule=SCHEDULE_LABELS.get(profile.get("schedule", ""), profile.get("schedule", "—")),
+            health=", ".join(hi) if hi else "нет ограничений",
+            equipment=", ".join(profile.get("equipment", [])) or "нет",
         )
-
         msg = await client.messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=2000,
+            model=MODEL,
+            max_tokens=2500,
             system=PARKER_SYSTEM_PROMPT,
             messages=[{"role": "user", "content": prompt}],
         )
         return msg.content[0].text
-    except Exception:
-        logging.exception("Claude workout error")
+    except Exception as e:
+        logger.exception("generate_workout_plan failed: %s", e)
         return _fallback_workout(profile)
 
 
+# ──────────────────────────────────────────────
+#  Weekly adaptation
+# ──────────────────────────────────────────────
+async def generate_weekly_adaptation(profile: dict, logs: list, food_logs: list, macros: dict) -> dict:
+    if not ANTHROPIC_API_KEY:
+        return {"error": "AI недоступен"}
+    try:
+        client = _get_client()
+        weight_vals = [l["weight"] for l in logs if isinstance(l, dict) and l.get("weight")]
+        cal_entries = [f.get("total", {}).get("calories", 0) for f in food_logs if isinstance(f, dict) and f.get("total")]
+        avg_cal = round(sum(cal_entries) / len(cal_entries)) if cal_entries else 0
+
+        user_msg = (
+            f"Пользователь: {profile.get('name','—')}, цель: {GOAL_LABELS.get(profile.get('goal',''), '—')}\n"
+            f"Текущие макросы: {macros.get('calories','—')} ккал\n"
+            f"Записей за период: {len(logs)}\n"
+            f"Вес: {weight_vals[0] if weight_vals else '—'} → {weight_vals[-1] if len(weight_vals)>1 else '—'} кг\n"
+            f"Среднее калорий/день: {avg_cal} ккал\n"
+            f"Записей сна: {sum(1 for l in logs if isinstance(l,dict) and l.get('sleep'))}\n"
+        )
+        msg = await client.messages.create(
+            model=MODEL,
+            max_tokens=700,
+            system=ADAPT_SYSTEM,
+            messages=[{"role": "user", "content": user_msg}],
+        )
+        return _extract_json(msg.content[0].text)
+    except ValueError:
+        return {"error": "Не удалось разобрать ответ адаптации"}
+    except Exception as e:
+        logger.exception("generate_weekly_adaptation failed: %s", e)
+        return {"error": "Ошибка анализа прогресса"}
+
+
+# ──────────────────────────────────────────────
+#  Fallbacks (no API)
+# ──────────────────────────────────────────────
 def _fallback_nutrition(profile: dict, macros: dict) -> str:
     cal = macros["calories"]
     pro = macros["protein_g"]
     fat = macros["fat_g"]
     carb = macros["carb_g"]
     schedule = profile.get("schedule", "standard")
-
     if schedule == "16h+":
         return (
-            f"🍽 ПЛАН ПИТАНИЯ — Режим 16ч+\n"
-            f"📊 {cal} ккал | Б:{pro}г Ж:{fat}г У:{carb}г\n\n"
-            "🌅 До смены (07:00):\n"
-            "• Гейнер / протеиновый коктейль на молоке — 600 мл (~500 ккал)\n"
-            "• Банан — 1 шт\n\n"
-            "⏰ На смене (перерыв, 2–3 мин):\n"
-            "• Творог 5% — 200г\n"
-            "• Протеиновый батончик — 1 шт\n\n"
-            "🌙 После смены:\n"
-            "• Куриная грудка — 250г\n"
-            "• Гречка отварная — 200г\n"
-            "• Овощной салат с оливковым маслом\n\n"
-            "💊 Добавки: Магний + ZMA перед сном, Витамин D3\n\n"
+            f"🍽 ПЛАН ПИТАНИЯ — Режим 16ч+\n📊 {cal} ккал | Б:{pro}г Ж:{fat}г У:{carb}г\n\n"
+            "🌅 До смены (07:00):\n• Протеиновый коктейль на молоке — 600 мл\n• Банан — 1 шт\n\n"
+            "⏰ На смене:\n• Творог 5% — 200г\n• Протеиновый батончик — 1 шт\n\n"
+            "🌙 После смены:\n• Куриная грудка — 250г\n• Гречка — 200г\n• Овощной салат\n\n"
             "⚠️ Проконсультируйся с врачом перед началом программы."
         )
-
-    if schedule == "12h":
-        return (
-            f"🍽 ПЛАН ПИТАНИЯ — График 12ч\n"
-            f"📊 {cal} ккал | Б:{pro}г Ж:{fat}г У:{carb}г\n\n"
-            "🌅 Завтрак (07:00):\n"
-            "• Овсянка на молоке — 100г сухой\n"
-            "• 3 яйца (омлет)\n"
-            "• Фрукты — 150г\n\n"
-            "🕛 Обед (12:00):\n"
-            "• Куриная грудка / индейка — 200г\n"
-            "• Рис / гречка — 150г\n"
-            "• Овощи свежие — 200г\n\n"
-            "🕔 Перекус (16:00):\n"
-            "• Творог 5% — 200г\n"
-            "• Орехи — 30г\n\n"
-            "🌙 Ужин (после смены):\n"
-            "• Рыба / говядина — 200г\n"
-            "• Овощной салат с маслом\n"
-            "• Кефир 1% — 250 мл\n\n"
-            "💊 Добавки: Омега-3, Магний\n\n"
-            "⚠️ Проконсультируйся с врачом перед началом программы."
-        )
-
     return (
-        f"🍽 ПЛАН ПИТАНИЯ — Стандартный график\n"
-        f"📊 {cal} ккал | Б:{pro}г Ж:{fat}г У:{carb}г\n\n"
-        "🌅 Завтрак (07:30):\n"
-        "• Овсянка — 80г + фрукты\n"
-        "• 3 яйца\n\n"
-        "🕙 Перекус (10:30):\n"
-        "• Творог 5% — 150г\n"
-        "• Горсть орехов — 25г\n\n"
-        "🕐 Обед (13:00):\n"
-        "• Куриная грудка — 200г\n"
-        "• Гречка / рис — 200г\n"
-        "• Овощи + оливковое масло\n\n"
-        "🕔 Перекус (16:00):\n"
-        "• Яблоко + 20г миндаля\n"
-        "• Кефир 1% — 200 мл\n\n"
-        "🌙 Ужин (19:00):\n"
-        "• Рыба / говядина / индейка — 200г\n"
-        "• Овощи на пару\n"
-        "• Кефир 1% — 250 мл\n\n"
+        f"🍽 ПЛАН ПИТАНИЯ\n📊 {cal} ккал | Б:{pro}г Ж:{fat}г У:{carb}г\n\n"
+        "🌅 Завтрак (07:30): Овсянка 80г + 3 яйца\n"
+        "🕙 Перекус (10:30): Творог 5% 150г + орехи 25г\n"
+        "🕐 Обед (13:00): Куриная грудка 200г + гречка 200г + овощи\n"
+        "🕔 Перекус (16:00): Яблоко + кефир 200 мл\n"
+        "🌙 Ужин (19:00): Рыба/говядина 200г + овощи на пару\n\n"
         "⚠️ Проконсультируйся с врачом перед началом программы."
     )
 
@@ -537,75 +472,26 @@ def _fallback_nutrition(profile: dict, macros: dict) -> str:
 def _fallback_workout(profile: dict) -> str:
     equipment = profile.get("equipment", ["none"])
     health = profile.get("health_issues", [])
-    schedule = profile.get("schedule", "standard")
-
     warnings = []
     if "back_problems" in health:
-        warnings.append("⚠️ ИСКЛЮЧЕНО (спина/сколиоз): становая тяга, приседания со штангой, гиперэкстензия")
+        warnings.append("⚠️ ИСКЛЮЧЕНО (спина): становая, приседания со штангой, гиперэкстензия")
     if "knee_issues" in health:
-        warnings.append("⚠️ ИСКЛЮЧЕНО (колени): глубокие приседания с весом, выпады с отягощением")
+        warnings.append("⚠️ ИСКЛЮЧЕНО (колени): приседания с весом, выпады, прыжки")
     if "hypertension" in health:
-        warnings.append("⚠️ ИСКЛЮЧЕНО (гипертония): тяжёлый жим над головой, натуживание")
-
-    warning_block = ("\n".join(warnings) + "\n\n") if warnings else ""
-
-    if schedule == "16h+":
-        return (
-            f"🏋️ ТРЕНИРОВОЧНЫЙ ПЛАН — Режим 16ч+\n\n"
-            f"{warning_block}"
-            "⏱ Длительность: 5–10 минут (восстановление)\n\n"
-            "Ежедневно перед сном:\n"
-            "1. Растяжка шеи и плеч — 2 мин\n"
-            "2. Растяжка спины (кошка-корова) — 2 мин\n"
-            "3. Растяжка ног и бёдер — 2 мин\n"
-            "4. Диафрагмальное дыхание — 2 мин\n\n"
-            "💊 Обязательно: Магний 400мг + Витамин D3 перед сном\n\n"
-            "⚠️ Проконсультируйся с врачом перед началом программы."
-        )
-
+        warnings.append("⚠️ ИСКЛЮЧЕНО (гипертония): жим над головой, натуживание")
+    wb = ("\n".join(warnings) + "\n\n") if warnings else ""
     if "gym" in equipment:
         return (
-            f"🏋️ ТРЕНИРОВОЧНЫЙ ПЛАН — Спортзал\n\n"
-            f"{warning_block}"
-            "Частота: 3 раза в неделю\n\n"
-            "День A — Грудь + Трицепс:\n"
-            "1. Жим штанги лёжа — 4×8 | Отдых: 90 сек\n"
-            "2. Жим гантелей на наклонной — 3×10 | Отдых: 60 сек\n"
-            "3. Разводка гантелей — 3×12 | Отдых: 60 сек\n"
-            "4. Французский жим — 3×12 | Отдых: 60 сек\n"
-            "5. Трицепс на блоке — 3×15 | Отдых: 45 сек\n\n"
-            "День B — Спина + Бицепс:\n"
-            "1. Подтягивания / тяга блока — 4×8 | Отдых: 90 сек\n"
-            "2. Тяга гантели в наклоне — 3×10 (каждая рука) | Отдых: 60 сек\n"
-            "3. Тяга нижнего блока — 3×12 | Отдых: 60 сек\n"
-            "4. Сгибание рук с гантелями — 3×12 | Отдых: 60 сек\n\n"
-            "День C — Ноги + Плечи:\n"
-            "1. Жим ногами — 4×10 | Отдых: 90 сек\n"
-            "2. Разгибание ног в тренажёре — 3×12 | Отдых: 60 сек\n"
-            "3. Сгибание ног в тренажёре — 3×12 | Отдых: 60 сек\n"
-            "4. Жим гантелей сидя — 3×10 | Отдых: 60 сек\n"
-            "5. Подъём гантелей через стороны — 3×15 | Отдых: 45 сек\n\n"
+            f"🏋️ ПЛАН — Спортзал\n\n{wb}"
+            "День A (Грудь+Трицепс): жим лёжа 4×8, жим гантелей 3×10, французский жим 3×12\n"
+            "День B (Спина+Бицепс): подтягивания 4×8, тяга гантели 3×10, сгибания 3×12\n"
+            "День C (Ноги+Плечи): жим ногами 4×10, разгибания 3×12, жим гантелей сидя 3×10\n\n"
             "⚠️ Проконсультируйся с врачом перед началом программы."
         )
-
     return (
-        f"🏋️ ТРЕНИРОВОЧНЫЙ ПЛАН — Дома\n\n"
-        f"{warning_block}"
-        "Частота: 3 раза в неделю\n\n"
-        "День A — Верх тела:\n"
-        "1. Отжимания — 4×12 | Отдых: 60 сек\n"
-        "2. Отжимания узким хватом — 3×10 | Отдых: 60 сек\n"
-        "3. Планка — 3×45 сек | Отдых: 30 сек\n"
-        "4. Обратные отжимания от стула — 3×12 | Отдых: 60 сек\n\n"
-        "День B — Низ тела:\n"
-        "1. Приседания — 4×15 | Отдых: 60 сек\n"
-        "2. Ягодичный мостик — 4×15 | Отдых: 45 сек\n"
-        "3. Выпады — 3×12 каждая нога | Отдых: 60 сек\n"
-        "4. Подъём на носки — 3×20 | Отдых: 30 сек\n\n"
-        "День C — Всё тело (кардио):\n"
-        "1. Берпи — 4×8 | Отдых: 60 сек\n"
-        "2. Прыжки с разведением рук — 3×20 | Отдых: 45 сек\n"
-        "3. Скалолаз — 3×20 (каждая нога) | Отдых: 45 сек\n"
-        "4. Планка с касанием плеч — 3×12 | Отдых: 45 сек\n\n"
+        f"🏋️ ПЛАН — Дома\n\n{wb}"
+        "День A (Верх): отжимания 4×12, планка 3×45с, обратные отжимания 3×12\n"
+        "День B (Низ): приседания 4×15, ягодичный мостик 4×15, выпады 3×12\n"
+        "День C (Кардио): берпи 4×8, прыжки 3×20, скалолаз 3×20\n\n"
         "⚠️ Проконсультируйся с врачом перед началом программы."
     )
