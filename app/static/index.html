@@ -296,6 +296,41 @@ body::after{
 .fday-total strong{color:var(--gold)}
 .tlog-val{font-weight:700;color:var(--gold)}
 
+/* ── Weight chart ── */
+.wchart{width:100%;height:80px;margin:10px 0 4px}
+.wchart-labels{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px}
+.wchart-info{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.wchart-cur{font-size:22px;font-weight:700;color:var(--gold)}
+.wchart-delta{font-size:13px;font-weight:600;padding:3px 8px;border-radius:8px}
+.wchart-delta.plus{background:rgba(255,51,85,.15);color:var(--red)}
+.wchart-delta.minus{background:rgba(34,204,102,.15);color:var(--green)}
+.wchart-delta.zero{background:var(--card);color:var(--muted)}
+/* measurements */
+.meas-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px}
+.meas-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:10px 12px}
+.meas-lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+.meas-val{font-size:18px;font-weight:700;margin-top:3px}
+/* workout checklist */
+.wex-list{display:flex;flex-direction:column;gap:8px}
+.wex-item{
+  display:flex;align-items:center;gap:12px;
+  background:var(--card);border:1px solid var(--border);
+  border-radius:12px;padding:12px 14px;cursor:pointer;transition:all .15s;
+}
+.wex-item.done{border-color:rgba(34,204,102,.3);background:rgba(34,204,102,.06)}
+.wex-cb{
+  width:22px;height:22px;border-radius:50%;border:2px solid var(--muted);
+  flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  font-size:12px;transition:all .2s;
+}
+.wex-item.done .wex-cb{border-color:var(--green);background:var(--green);color:#fff}
+.wex-name{font-size:14px;flex:1}
+.wex-meta{font-size:11px;color:var(--muted);margin-top:2px}
+.wday-badge{
+  display:inline-block;padding:4px 12px;border-radius:20px;
+  background:rgba(68,136,255,.15);border:1px solid rgba(68,136,255,.3);
+  color:var(--blue);font-size:12px;font-weight:700;margin-bottom:12px;
+}
 /* ── Gamification ── */
 .xp-bar-wrap{background:var(--bg2);border-radius:8px;height:10px;overflow:hidden;margin:10px 0 4px}
 .xp-bar-fill{height:100%;background:linear-gradient(90deg,var(--gold),#ff8800);border-radius:8px;transition:width .6s ease}
@@ -856,34 +891,96 @@ async function sendChat() {
 
 // ── Plan ───────────────────────────────────────────────────────────────────
 let planTab = 'n';
+let exDone = JSON.parse(localStorage.getItem('parker_exdone') || '{}');
+
+function saveExDone() { localStorage.setItem('parker_exdone', JSON.stringify(exDone)); }
+
+function parseTodayWorkout(workoutText) {
+  if (!workoutText) return [];
+  const DAYS_RU = ['воскресенье','понедельник','вторник','среда','четверг','пятница','суббота'];
+  const todayRu = DAYS_RU[new Date().getDay()];
+  const lines = workoutText.split('\n');
+  let inDay = false, exercises = [];
+  for (const line of lines) {
+    const l = line.toLowerCase();
+    if (l.includes(todayRu)) { inDay = true; continue; }
+    if (inDay) {
+      if (/^\[день\]/i.test(line) || (l.match(/понедельник|вторник|среда|четверг|пятница|суббота|воскресенье/) && !l.includes(todayRu))) break;
+      const m = line.match(/^\s*\d+\.\s+(.+)/);
+      if (m) exercises.push(m[1].trim());
+    }
+  }
+  return exercises;
+}
+
 function renderPlan() {
   const el = document.getElementById('plan-content');
   if (!planData) {
     el.innerHTML = `<div class="empty">
       <div class="empty-ico">📋</div>
-      <div class="empty-txt">Твой план ещё не готов.<br>Завершй знакомство с Петром!</div>
+      <div class="empty-txt">Твой план ещё не готов.<br>Заверши знакомство с Петром!</div>
       <button class="go-chat" onclick="goTab('chat')">Перейти в чат →</button>
     </div>`;
     return;
   }
   const m = planData.macros || {};
+  const DAYS_FULL = ['Воскресенье','Понедельник','Вторник','Среда','Четверг','Пятница','Суббота'];
+  const todayName = DAYS_FULL[new Date().getDay()];
+  const todayExercises = parseTodayWorkout(planData.workout_plan || '');
+  const doneKey = todayKey();
+  const doneSets = exDone[doneKey] || [];
+  const allDone = todayExercises.length > 0 && doneSets.length >= todayExercises.length;
+
+  const exHTML = todayExercises.length
+    ? `<div class="wday-badge">Сегодня: ${todayName}</div>
+       <div class="wex-list">
+         ${todayExercises.map((ex, i) => {
+           const done = doneSets.includes(i);
+           return `<div class="wex-item ${done?'done':''}" onclick="toggleExercise(${i})">
+             <div class="wex-cb">${done?'✓':''}</div>
+             <div class="wex-name">${escHtml(ex)}</div>
+           </div>`;
+         }).join('')}
+       </div>
+       ${allDone && !todayWorkoutDone()
+         ? `<button class="tbtn" style="background:linear-gradient(135deg,#22cc66,#1aaa55);margin-top:12px" onclick="markWorkoutDone()">
+              Все упражнения выполнены! +75 XP 🏆
+            </button>`
+         : allDone ? '<div style="color:var(--green);font-size:14px;font-weight:600;margin-top:12px;text-align:center">✅ Тренировка засчитана! +75 XP</div>' : ''
+       }`
+    : `<div style="color:var(--muted);font-size:13px">Для ${todayName} — день отдыха или тренировка не найдена в плане</div>`;
+
   el.innerHTML = `
     <div class="sec-lbl">КБЖУ на день</div>
     <div class="macro-grid">
-      <div class="mcard c"><div class="mval" id="r-cal">${m.calories||'—'}</div><div class="mlbl">🔥 Калории</div></div>
-      <div class="mcard p"><div class="mval" id="r-pro">${m.protein_g||'—'}</div><div class="mlbl">🥩 Белки г</div></div>
-      <div class="mcard f"><div class="mval" id="r-fat">${m.fat_g||'—'}</div><div class="mlbl">🫒 Жиры г</div></div>
-      <div class="mcard u"><div class="mval" id="r-carb">${m.carb_g||'—'}</div><div class="mlbl">🍞 Углеводы г</div></div>
+      <div class="mcard c"><div class="mval">${m.calories||'—'}</div><div class="mlbl">🔥 Калории</div></div>
+      <div class="mcard p"><div class="mval">${m.protein_g||'—'}</div><div class="mlbl">🥩 Белки г</div></div>
+      <div class="mcard f"><div class="mval">${m.fat_g||'—'}</div><div class="mlbl">🫒 Жиры г</div></div>
+      <div class="mcard u"><div class="mval">${m.carb_g||'—'}</div><div class="mlbl">🍞 Углеводы г</div></div>
     </div>
-    <div class="ptabs">
-      <button class="ptab on" id="ptab-n" onclick="switchPlanTab('n')">🍽 Питание</button>
-      <button class="ptab"    id="ptab-w" onclick="switchPlanTab('w')">🏋️ Тренировки</button>
+    <div class="tcard" style="margin-top:12px">
+      <div class="tcardttl">🏋️ Тренировка сегодня</div>
+      ${exHTML}
+    </div>
+    <div class="ptabs" style="margin-top:12px">
+      <button class="ptab on" id="ptab-n" onclick="switchPlanTab('n')">🍽 7 дней питания</button>
+      <button class="ptab"    id="ptab-w" onclick="switchPlanTab('w')">📅 Расписание</button>
     </div>
     <div class="pbox" id="pbox"></div>
     <div class="disc">⚠️ Проконсультируйся с врачом перед началом программы</div>
   `;
   planTab = 'n';
   switchPlanTab('n');
+}
+
+function toggleExercise(i) {
+  const key = todayKey();
+  if (!exDone[key]) exDone[key] = [];
+  const idx = exDone[key].indexOf(i);
+  if (idx >= 0) exDone[key].splice(idx, 1);
+  else exDone[key].push(i);
+  saveExDone();
+  renderPlan();
 }
 
 function switchPlanTab(t) {
@@ -921,18 +1018,56 @@ function todayFoodTotal() {
   }), {calories:0, protein_g:0, fat_g:0, carb_g:0});
 }
 
+function buildWeightChart(entries) {
+  if (entries.length < 2) return '<div style="color:var(--muted);font-size:13px;text-align:center;padding:16px 0">Добавь несколько записей веса — здесь появится график</div>';
+  const vals = entries.map(e => e.weight).filter(Boolean);
+  if (vals.length < 2) return '<div style="color:var(--muted);font-size:13px;text-align:center;padding:16px 0">Нужно минимум 2 записи с весом</div>';
+  const last = vals.slice(-14);
+  const min = Math.min(...last) - 1, max = Math.max(...last) + 1;
+  const W = 320, H = 70, pad = 8;
+  const x = (i) => pad + (i / (last.length - 1)) * (W - pad * 2);
+  const y = (v) => H - pad - ((v - min) / (max - min)) * (H - pad * 2);
+  let pts = last.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+  let dots = last.map((v, i) => `<circle cx="${x(i).toFixed(1)}" cy="${y(v).toFixed(1)}" r="3" fill="var(--gold)"/>`).join('');
+  const first = last[0], cur = last[last.length - 1];
+  const delta = (cur - first).toFixed(1);
+  const deltaClass = delta > 0 ? 'plus' : delta < 0 ? 'minus' : 'zero';
+  const deltaStr = delta > 0 ? `+${delta} кг` : `${delta} кг`;
+  return `
+    <div class="wchart-info">
+      <div class="wchart-cur">${cur} кг</div>
+      <div class="wchart-delta ${deltaClass}">${deltaStr} за период</div>
+    </div>
+    <svg class="wchart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="wg" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#f5c518" stop-opacity=".3"/>
+          <stop offset="100%" stop-color="#f5c518" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <polyline points="${pts}" fill="none" stroke="var(--gold)" stroke-width="2" stroke-linejoin="round"/>
+      ${dots}
+    </svg>
+    <div class="wchart-labels">
+      <span>${entries.slice(-14)[0]?.date||''}</span>
+      <span>${entries.slice(-1)[0]?.date||''}</span>
+    </div>`;
+}
+
 function renderTracker() {
   const el = document.getElementById('tracker-content');
   const today = todayKey();
   const tot = todayFoodTotal();
   const dayLogs = todayFoodLogs();
+  const weightEntries = logs.filter(l => l.weight);
+  const lastMeas = JSON.parse(localStorage.getItem('parker_meas') || 'null');
 
   el.innerHTML = `
     <!-- Food calc -->
     <div class="tcard">
       <div class="tcardttl">🍽 Что съел сегодня?</div>
       <textarea class="ftextarea" id="food-input" placeholder="куриная грудка 200г, гречка 180г, помидор 50г, масло оливковое 10г..."></textarea>
-      <div class="fhint">Пиши в свободной форме — Петр всё поймёт и посчитает КБЖУ</div>
+      <div class="fhint">Пиши в свободной форме — Петр посчитает КБЖУ по каждому продукту</div>
       <button class="tbtn" id="food-calc-btn" onclick="calcFood()">Посчитать КБЖУ →</button>
       <div class="fresult" id="food-result"></div>
     </div>
@@ -946,7 +1081,7 @@ function renderTracker() {
         <div class="ftot-item"><div class="ftot-val">${tot.fat_g.toFixed(1)}</div><div class="ftot-lbl">жиры г</div></div>
         <div class="ftot-item"><div class="ftot-val">${tot.carb_g.toFixed(1)}</div><div class="ftot-lbl">углев г</div></div>
       </div>
-      <div class="fday-log" id="fday-log">
+      <div class="fday-log">
         ${dayLogs.length ? renderFoodLogRows(dayLogs) : '<div class="tlog-empty">Ещё ничего не добавлено</div>'}
       </div>
     </div>
@@ -972,12 +1107,47 @@ function renderTracker() {
       <button class="tbtn" onclick="saveLog()">Сохранить ✓</button>
     </div>
 
-    <!-- Weight history -->
+    <!-- Measurements -->
     <div class="tcard">
-      <div class="tcardttl">📈 История веса</div>
-      ${renderLogRows()}
+      <div class="tcardttl">📐 Замеры тела</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+        <div class="tform-row" style="margin:0"><div class="tlbl" style="width:60px">Талия</div>
+          <input class="tinput" id="m-waist" type="number" inputmode="decimal" placeholder="${lastMeas?.waist||'80'}" step="0.5">
+          <div class="tunit">см</div></div>
+        <div class="tform-row" style="margin:0"><div class="tlbl" style="width:60px">Бёдра</div>
+          <input class="tinput" id="m-hips" type="number" inputmode="decimal" placeholder="${lastMeas?.hips||'95'}" step="0.5">
+          <div class="tunit">см</div></div>
+        <div class="tform-row" style="margin:0"><div class="tlbl" style="width:60px">Грудь</div>
+          <input class="tinput" id="m-chest" type="number" inputmode="decimal" placeholder="${lastMeas?.chest||'90'}" step="0.5">
+          <div class="tunit">см</div></div>
+        <div class="tform-row" style="margin:0"><div class="tlbl" style="width:60px">Бедро</div>
+          <input class="tinput" id="m-thigh" type="number" inputmode="decimal" placeholder="${lastMeas?.thigh||'55'}" step="0.5">
+          <div class="tunit">см</div></div>
+      </div>
+      <button class="tbtn" style="background:linear-gradient(135deg,#4488ff,#2255cc)" onclick="saveMeasurements()">Сохранить замеры ✓</button>
+      ${lastMeas ? `<div style="font-size:11px;color:var(--muted);margin-top:8px;text-align:center">Последние: ${lastMeas.date} — талия ${lastMeas.waist}см, бёдра ${lastMeas.hips}см</div>` : ''}
+    </div>
+
+    <!-- Weight chart -->
+    <div class="tcard">
+      <div class="tcardttl">📈 График веса</div>
+      ${buildWeightChart(weightEntries)}
     </div>
   `;
+}
+
+function saveMeasurements() {
+  const meas = {
+    date:  todayKey(),
+    waist: parseFloat(document.getElementById('m-waist')?.value) || null,
+    hips:  parseFloat(document.getElementById('m-hips')?.value)  || null,
+    chest: parseFloat(document.getElementById('m-chest')?.value) || null,
+    thigh: parseFloat(document.getElementById('m-thigh')?.value) || null,
+  };
+  localStorage.setItem('parker_meas', JSON.stringify(meas));
+  checkBadge('weight_logged');
+  renderTracker();
+  if (tg?.showAlert) tg.showAlert('Замеры сохранены! 📐');
 }
 
 function renderFoodLogRows(items) {

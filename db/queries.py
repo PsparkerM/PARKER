@@ -49,6 +49,18 @@ def save_plan(user_id: str, plan_type: str, content: str, macros: dict) -> None:
         logging.exception("save_plan error")
 
 
+def get_all_users() -> list:
+    db = get_client()
+    if not db:
+        return []
+    try:
+        result = db.table("users").select("*").order("created_at", desc=True).execute()
+        return result.data or []
+    except Exception:
+        logging.exception("get_all_users error")
+        return []
+
+
 def get_user(tg_id: int) -> dict | None:
     db = get_client()
     if not db:
