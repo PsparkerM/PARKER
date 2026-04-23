@@ -25,7 +25,7 @@ async def cmd_start(message: Message) -> None:
         "Я — *P.A.R.K.E.R.*, твой персональный тренер и нутрициолог.\n\n"
         "Не шаблонные планы — протокол под *твою* жизнь: "
         "твой график, твоё здоровье, твои цели.\n\n"
-        "👇 Открывай приложение — Петр уже ждёт."
+        "👇 Открывай приложение — Арни уже ждёт."
     )
     await message.answer(text, reply_markup=APP_BTN(), parse_mode="Markdown")
 
@@ -40,7 +40,7 @@ async def cmd_help(message: Message) -> None:
         "/restart — начать заново (сбросить профиль)\n"
         "/referral — партнёрская программа\n"
         "/help — эта справка\n\n"
-        "💬 Или просто открой приложение и спроси Петра — он ответит на всё."
+        "💬 Или просто открой приложение и спроси Арни — он ответит на всё."
     )
     await message.answer(text, reply_markup=APP_BTN(), parse_mode="Markdown")
 

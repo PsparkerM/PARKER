@@ -798,7 +798,7 @@ body::after{
     <div class="chat-wrap" id="chat-msgs"></div>
     <div class="chat-input-area">
       <div class="chat-row">
-        <textarea class="chat-in" id="chat-in" rows="1" placeholder="Спроси Петра..."></textarea>
+        <textarea class="chat-in" id="chat-in" rows="1" placeholder="Спроси Арни..."></textarea>
         <button class="send-btn" id="chat-send">➤</button>
       </div>
     </div>
@@ -1139,7 +1139,7 @@ async function submitOnboarding() {
   document.getElementById(`os-7`).innerHTML = `
     <div style="display:flex;flex-direction:column;align-items:center;gap:16px;padding:40px 0">
       <div class="spin"></div>
-      <div style="font-size:17px;font-weight:700">Петр строит твой план...</div>
+      <div style="font-size:17px;font-weight:700">Арни строит твой план...</div>
       <div style="font-size:13px;color:var(--text2)">Питание на 7 дней + расписание тренировок</div>
     </div>`;
 
@@ -1179,7 +1179,7 @@ const TAB_SCREENS = {
   tracker:'sc-tracker',   profile:'sc-profile'
 };
 const TAB_TITLES = {
-  progress:'Прогресс', chat:'Тренер Петр', home:'', tracker:'Трекер', profile:'Профиль'
+  progress:'Прогресс', chat:'Тренер Арни', home:'', tracker:'Трекер', profile:'Профиль'
 };
 let curTab = 'home';
 
@@ -1304,7 +1304,7 @@ function renderHome() {
         <div class="qi">🍽</div><div>Добавить еду</div>
       </div>
       <div class="qa blue" onclick="goTab('chat')">
-        <div class="qi">💬</div><div>Спросить Петра</div>
+        <div class="qi">💬</div><div>Спросить Арни</div>
       </div>
       <div class="qa green" onclick="markWorkoutDone()">
         <div class="qi">${wDone[today]?'✅':'🏋️'}</div>
@@ -1368,7 +1368,7 @@ function markWorkoutDone() {
   if (wDone[today]) return;
   wDone[today] = true;
   addXP(75); persist();
-  const msgs = ['Красавчик! 🔥','Так держать! 💪','Огонь! Ещё один день в плюс!','Петр гордится 🏆'];
+  const msgs = ['Красавчик! 🔥','Так держать! 💪','Огонь! Ещё один день в плюс!','Арни гордится 🏆'];
   showCongrts('🏆', msgs[Date.now()%msgs.length], `+75 XP · Всего: ${xp} XP`);
   checkBadge('first_workout');
   const streak = calcStreak();
@@ -1392,7 +1392,7 @@ function initChat() {
   const el = document.getElementById('chat-msgs');
   el.innerHTML = '';
   if (chatHist.length === 0) {
-    addMsg(el,'p',`Привет, ${profile?.name||''}! 💪\n\nЯ Петр — твой тренер и нутрициолог. Спрашивай всё: питание, тренировки, прогресс, самочувствие. Отвечу конкретно.`);
+    addMsg(el,'p',`Привет, ${profile?.name||''}! 💪\n\nЯ Арни — твой тренер и нутрициолог. Спрашивай всё: питание, тренировки, прогресс, самочувствие. Отвечу конкретно.`);
   } else {
     chatHist.slice(-12).forEach(m=>addMsg(el, m.role==='assistant'?'p':'u', m.content));
   }
@@ -1401,7 +1401,7 @@ function initChat() {
 function addMsg(el, role, text) {
   const d = document.createElement('div');
   d.className = `msg ${role}`;
-  d.innerHTML = (role==='p'?'<div class="msender">Петр</div>':'') +
+  d.innerHTML = (role==='p'?'<div class="msender">Арни</div>':'') +
     `<div class="mbub">${escHtml(text)}</div>`;
   el.appendChild(d); scrollBottom(el);
 }
@@ -1796,7 +1796,7 @@ function renderProgress() {
       <div class="chart-hd">
         <div class="chart-ttl">🤖 Адаптация плана</div>
       </div>
-      <div style="font-size:13px;color:var(--text2);margin-bottom:12px">Петр проанализирует твои данные за неделю и скорректирует КБЖУ и программу</div>
+      <div style="font-size:13px;color:var(--text2);margin-bottom:12px">Арни проанализирует твои данные за неделю и скорректирует КБЖУ и программу</div>
       <button class="save-btn-blue" id="adapt-btn" onclick="getWeeklyAdapt()">Получить адаптацию ↗</button>
       <div class="adapt-result" id="adapt-result" style="display:none"></div>
     </div>`;
@@ -1954,7 +1954,7 @@ async function getWeeklyAdapt() {
   const btn = document.getElementById('adapt-btn');
   const res = document.getElementById('adapt-result');
   if (!btn || !res) return;
-  btn.textContent = 'Петр анализирует...'; btn.disabled = true;
+  btn.textContent = 'Арни анализирует...'; btn.disabled = true;
   res.style.display = 'none';
   try {
     const r = await fetch('/api/adapt', {
