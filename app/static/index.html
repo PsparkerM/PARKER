@@ -296,6 +296,51 @@ body::after{
 .fday-total strong{color:var(--gold)}
 .tlog-val{font-weight:700;color:var(--gold)}
 
+/* ── Gamification ── */
+.xp-bar-wrap{background:var(--bg2);border-radius:8px;height:10px;overflow:hidden;margin:10px 0 4px}
+.xp-bar-fill{height:100%;background:linear-gradient(90deg,var(--gold),#ff8800);border-radius:8px;transition:width .6s ease}
+.xp-label{font-size:11px;color:var(--muted);display:flex;justify-content:space-between}
+.badge-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.badge{
+  padding:7px 12px;border-radius:20px;font-size:12px;font-weight:600;
+  border:1px solid var(--border);background:var(--card);color:var(--muted);
+}
+.badge.earned{border-color:rgba(245,197,24,.5);background:rgba(245,197,24,.1);color:var(--gold)}
+.workout-check{display:flex;flex-direction:column;gap:8px}
+.wc-row{
+  display:flex;align-items:center;gap:12px;
+  background:var(--card);border:1px solid var(--border);
+  border-radius:12px;padding:12px 14px;cursor:pointer;
+}
+.wc-row.done{border-color:rgba(34,204,102,.3);background:rgba(34,204,102,.07)}
+.wc-check{
+  width:24px;height:24px;border-radius:50%;border:2px solid var(--muted);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  font-size:12px;transition:all .2s;
+}
+.wc-row.done .wc-check{border-color:var(--green);background:var(--green);color:#fff}
+.wc-text{flex:1;font-size:14px}
+.wc-day{font-size:11px;color:var(--muted);margin-top:2px}
+.congrats{
+  position:fixed;inset:0;z-index:999;display:none;
+  align-items:center;justify-content:center;
+  background:rgba(0,0,0,.7);backdrop-filter:blur(8px);
+}
+.congrats.show{display:flex}
+.congrats-box{
+  background:var(--bg2);border:1px solid rgba(245,197,24,.4);
+  border-radius:24px;padding:32px 28px;text-align:center;
+  max-width:300px;animation:popIn .3s ease;
+}
+@keyframes popIn{from{transform:scale(.8);opacity:0}to{transform:scale(1);opacity:1}}
+.congrats-ico{font-size:56px;margin-bottom:12px}
+.congrats-ttl{font-size:20px;font-weight:800;color:var(--gold);margin-bottom:8px}
+.congrats-txt{font-size:14px;color:var(--text);line-height:1.5;margin-bottom:20px}
+.congrats-close{
+  padding:12px 32px;border-radius:12px;border:none;
+  background:linear-gradient(135deg,var(--gold),var(--gold2));
+  color:#000;font-size:15px;font-weight:700;cursor:pointer;
+}
 /* ── Profile screen ── */
 .profscr{overflow-y:auto;padding:14px}
 .profcard{
@@ -376,6 +421,16 @@ body::after{
   <!-- PROFILE SCREEN -->
   <div class="screen" id="sc-profile">
     <div class="profscr" id="profile-content"></div>
+  </div>
+
+  <!-- CONGRATS POPUP -->
+  <div class="congrats" id="congrats" onclick="closeCongrsts()">
+    <div class="congrats-box" onclick="event.stopPropagation()">
+      <div class="congrats-ico" id="cg-ico">🏆</div>
+      <div class="congrats-ttl" id="cg-ttl">Красавчик!</div>
+      <div class="congrats-txt" id="cg-txt">Тренировка выполнена!</div>
+      <button class="congrats-close" onclick="closeCongrsts()">Вперёд! 💪</button>
+    </div>
   </div>
 
   <!-- BOTTOM NAV -->
@@ -1042,22 +1097,136 @@ function saveLog() {
   if (tg?.showAlert) tg.showAlert('Записано! 💪');
 }
 
+// ── Gamification ───────────────────────────────────────────────────────────
+let xp      = parseInt(localStorage.getItem('parker_xp') || '0');
+let wDone   = JSON.parse(localStorage.getItem('parker_wdone') || '{}'); // {date: [dayIndex,...]}
+
+function saveXP() { localStorage.setItem('parker_xp', xp); }
+function saveWDone() { localStorage.setItem('parker_wdone', JSON.stringify(wDone)); }
+
+function xpLevel() {
+  if (xp < 100)  return {level:1, title:'Новичок',      next:100};
+  if (xp < 300)  return {level:2, title:'Атлет',        next:300};
+  if (xp < 600)  return {level:3, title:'Спортсмен',    next:600};
+  if (xp < 1000) return {level:4, title:'Профи',        next:1000};
+  if (xp < 1500) return {level:5, title:'Чемпион',      next:1500};
+  return          {level:6, title:'Легенда 🏆',          next:xp};
+}
+
+function addXP(amount, reason) {
+  xp += amount;
+  saveXP();
+}
+
+const BADGES = [
+  {id:'first_workout',  icon:'🏋️', title:'Первая тренировка', xpReq:0,   xpGain:50},
+  {id:'week_streak',    icon:'🔥', title:'7 дней подряд',     xpReq:200, xpGain:100},
+  {id:'food_log_5',     icon:'🥗', title:'5 приёмов пищи',    xpReq:0,   xpGain:30},
+  {id:'weight_logged',  icon:'⚖️', title:'Взвесился',         xpReq:0,   xpGain:20},
+];
+let earnedBadges = JSON.parse(localStorage.getItem('parker_badges') || '[]');
+function saveBadges() { localStorage.setItem('parker_badges', JSON.stringify(earnedBadges)); }
+
+function checkBadge(id) {
+  if (!earnedBadges.includes(id)) {
+    earnedBadges.push(id);
+    saveBadges();
+    const b = BADGES.find(x => x.id === id);
+    if (b) {
+      addXP(b.xpGain);
+      showCongrats(b.icon, `Достижение: ${b.title}`, `+${b.xpGain} XP`);
+    }
+    return true;
+  }
+  return false;
+}
+
+const WEEK_DAYS = ['Воскресенье','Понедельник','Вторник','Среда','Четверг','Пятница','Суббота'];
+
+function todayWorkoutDone() {
+  const key = todayKey();
+  return (wDone[key] || false);
+}
+
+function markWorkoutDone() {
+  const key = todayKey();
+  if (wDone[key]) return;
+  wDone[key] = true;
+  saveWDone();
+  addXP(75);
+  saveXP();
+  checkBadge('first_workout');
+
+  const day = new Date().getDay();
+  const msgs = [
+    'Красавчик! 🔥 Тренировка выполнена!',
+    'Так держать! Ты — машина 💪',
+    'Огонь! Ещё один день в плюс!',
+    'Топ результат! Петр гордится 🏆',
+  ];
+  const txt = msgs[Math.floor(Math.random() * msgs.length)];
+  showCongrats('🏆', txt, `+75 XP • Всего: ${xp} XP`);
+  renderProfile();
+}
+
+function showCongrats(ico, ttl, txt) {
+  document.getElementById('cg-ico').textContent = ico;
+  document.getElementById('cg-ttl').textContent = ttl;
+  document.getElementById('cg-txt').textContent = txt;
+  document.getElementById('congrats').classList.add('show');
+}
+function closeCongrsts() {
+  document.getElementById('congrats').classList.remove('show');
+}
+
 // ── Profile ────────────────────────────────────────────────────────────────
 function renderProfile() {
   const el = document.getElementById('profile-content');
   if (!profile) { el.innerHTML = '<div class="tlog-empty">Профиль не заполнен</div>'; return; }
+
   const goal = { lose_weight:'🔥 Похудение', gain_muscle:'💪 Набор мышц',
     maintain:'⚖️ Поддержание', recomposition:'🔄 Рекомпозиция' }[profile.goal] || profile.goal;
+
+  const lvl = xpLevel();
+  const pct = lvl.level < 6 ? Math.min(100, Math.round(xp / lvl.next * 100)) : 100;
+
+  const badgeHTML = BADGES.map(b => {
+    const earned = earnedBadges.includes(b.id);
+    return `<div class="badge ${earned?'earned':''}">${b.icon} ${b.title}</div>`;
+  }).join('');
+
+  const wToday = todayWorkoutDone();
 
   el.innerHTML = `
     <div class="profcard">
       <div class="profavatar">${(profile.name||'?')[0].toUpperCase()}</div>
-      <div>
+      <div style="flex:1">
         <div class="profname">${profile.name || 'Пользователь'}</div>
         <div class="profgoal">${goal}</div>
+        <div style="font-size:12px;color:var(--gold);margin-top:4px">Ур. ${lvl.level} • ${lvl.title} • ${xp} XP</div>
       </div>
     </div>
+
     <div class="tcard">
+      <div class="tcardttl">⚡ Прогресс</div>
+      <div class="xp-label"><span>Уровень ${lvl.level}</span><span>${xp} / ${lvl.next} XP</span></div>
+      <div class="xp-bar-wrap"><div class="xp-bar-fill" style="width:${pct}%"></div></div>
+      <div style="margin-top:12px">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:8px;font-weight:600">ДОСТИЖЕНИЯ</div>
+        <div class="badge-grid">${badgeHTML}</div>
+      </div>
+    </div>
+
+    <div class="tcard">
+      <div class="tcardttl">🏋️ Тренировка сегодня</div>
+      ${wToday
+        ? `<div style="color:var(--green);font-size:14px;font-weight:600">✅ Выполнено! +75 XP</div>`
+        : `<button class="tbtn" onclick="markWorkoutDone()" style="background:linear-gradient(135deg,#22cc66,#1aaa55)">Отметить тренировку ✓</button>`
+      }
+    </div>
+
+    <div class="tcard">
+      <div class="tcardttl">📋 Параметры</div>
       <div class="prow"><span class="prow-lbl">Пол</span><span class="prow-val">${profile.gender==='male'?'Мужской':'Женский'}</span></div>
       <div class="prow"><span class="prow-lbl">Возраст</span><span class="prow-val">${profile.age} лет</span></div>
       <div class="prow"><span class="prow-lbl">Рост</span><span class="prow-val">${profile.height_cm} см</span></div>
@@ -1065,6 +1234,7 @@ function renderProfile() {
       ${profile.body_fat_pct ? `<div class="prow"><span class="prow-lbl">% жира</span><span class="prow-val">${profile.body_fat_pct}%</span></div>` : ''}
       <div class="prow"><span class="prow-lbl">График</span><span class="prow-val">${profile.schedule}</span></div>
     </div>
+
     <button class="prst" onclick="resetProfile()">🔄 Начать заново</button>
   `;
 }
