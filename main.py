@@ -1,8 +1,8 @@
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request, HTTPException
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi import FastAPI, Request
+from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
 from aiogram import Bot, Dispatcher
@@ -10,8 +10,7 @@ from aiogram.types import Update
 
 from bot.config import BOT_TOKEN, WEBAPP_URL
 from bot.handlers import start
-from bot.services.nutrition import compute_macros_for_profile
-from bot.services.ai_service import generate_meal_plan
+from app.api.profile import router as profile_router
 
 logging.basicConfig(
     level=logging.INFO,
@@ -28,19 +27,20 @@ WEBHOOK_PATH = f"/webhook/{BOT_TOKEN}"
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     if WEBAPP_URL:
-        webhook_url = f"{WEBAPP_URL.rstrip('/')}{WEBHOOK_PATH}"
-        await bot.set_webhook(webhook_url, drop_pending_updates=True)
-        logging.info("Webhook set: %s", webhook_url)
+        url = f"{WEBAPP_URL.rstrip('/')}{WEBHOOK_PATH}"
+        await bot.set_webhook(url, drop_pending_updates=True)
+        logging.info("Webhook: %s", url)
     else:
-        logging.warning("WEBAPP_URL not set — bot won't receive Telegram updates")
+        logging.warning("WEBAPP_URL не задан — webhook не установлен")
     yield
     if WEBAPP_URL:
         await bot.delete_webhook()
     await bot.session.close()
-    logging.info("Bot stopped")
+    logging.info("Bot остановлен")
 
 
 app = FastAPI(lifespan=lifespan)
+app.include_router(profile_router)
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 
@@ -53,25 +53,11 @@ async def telegram_webhook(request: Request):
 
 
 @app.get("/")
-async def serve_app():
+async def serve_miniapp():
     with open("app/static/index.html", encoding="utf-8") as f:
         return HTMLResponse(f.read())
 
 
 @app.get("/health")
 async def health():
-    return {"status": "ok"}
-
-
-@app.post("/profile")
-async def create_profile(request: Request):
-    data = await request.json()
-    try:
-        macros = compute_macros_for_profile(data)
-        plan = await generate_meal_plan(data, macros)
-        return JSONResponse({"macros": macros, "plan": plan})
-    except KeyError as e:
-        raise HTTPException(status_code=400, detail=f"Отсутствует поле: {e}")
-    except Exception as e:
-        logging.exception("Profile generation error")
-        raise HTTPException(status_code=500, detail=str(e))
+    return {"status": "ok", "bot": "P.A.R.K.E.R."}

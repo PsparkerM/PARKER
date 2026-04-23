@@ -6,23 +6,22 @@ from bot.config import WEBAPP_URL
 
 router = Router()
 
-WELCOME_TEXT = (
-    "👋 Привет! Я *P.A.R.K.E.R.* — персональный адаптивный нутрициолог и тренер.\n\n"
-    "🎯 Подстраиваюсь под твой реальный график, состояние здоровья и цели.\n\n"
-    "📋 Заполни анкету за ~2 минуты и получи персональный план питания с КБЖУ."
+WELCOME = (
+    "👋 Привет! Я *P.A.R.K.E.R.* — твой персональный нутрициолог и тренер.\n\n"
+    "🧬 Я не даю стандартные планы — я строю протокол *под твою жизнь*:\n"
+    "твой график, твоё здоровье, твои цели.\n\n"
+    "📋 Заполни анкету — получишь персональный план питания и тренировок."
 )
 
 
 @router.message(CommandStart())
 async def cmd_start(message: Message) -> None:
+    kb = None
     if WEBAPP_URL:
         kb = InlineKeyboardMarkup(inline_keyboard=[[
             InlineKeyboardButton(
-                text="🚀 Открыть анкету",
+                text="🚀 Открыть анкету P.A.R.K.E.R.",
                 web_app=WebAppInfo(url=WEBAPP_URL),
             )
         ]])
-    else:
-        kb = None
-
-    await message.answer(WELCOME_TEXT, reply_markup=kb, parse_mode="Markdown")
+    await message.answer(WELCOME, reply_markup=kb, parse_mode="Markdown")

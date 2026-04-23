@@ -10,4 +10,4 @@ SUPABASE_URL: str = os.getenv("SUPABASE_URL", "")
 SUPABASE_SERVICE_KEY: str = os.getenv("SUPABASE_SERVICE_KEY", "")
 
 if not BOT_TOKEN:
-    raise ValueError("BOT_TOKEN не задан в .env")
+    raise ValueError("BOT_TOKEN не задан")
