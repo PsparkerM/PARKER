@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>P.A.R.K.E.R.</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, sans-serif;
+  background: var(--tg-theme-bg-color, #ffffff);
+  color: var(--tg-theme-text-color, #000000);
+  min-height: 100vh;
+}
+
+.container {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 20px 16px 120px;
+}
+
+/* ── Progress ── */
+.progress-wrap { margin-bottom: 20px; }
+.progress-bar {
+  height: 4px;
+  background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: var(--tg-theme-button-color, #2481cc);
+  border-radius: 2px;
+  transition: width 0.35s ease;
+}
+.progress-label {
+  font-size: 12px;
+  color: var(--tg-theme-hint-color, #999);
+  margin-top: 6px;
+}
+
+/* ── Step title ── */
+.step-title {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 20px;
+  line-height: 1.25;
+}
+
+/* ── Option buttons ── */
+.options { display: flex; flex-direction: column; gap: 10px; }
+
+.opt {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+  border: 2px solid transparent;
+  cursor: pointer;
+  font-size: 15px;
+  color: var(--tg-theme-text-color, #000);
+  text-align: left;
+  width: 100%;
+  transition: border-color 0.15s, opacity 0.1s;
+  -webkit-tap-highlight-color: transparent;
+}
+.opt:active { opacity: 0.7; }
+.opt.selected {
+  border-color: var(--tg-theme-button-color, #2481cc);
+}
+.opt-icon { font-size: 22px; width: 28px; text-align: center; flex-shrink: 0; }
+.opt-text { flex: 1; }
+.opt-sub { font-size: 12px; color: var(--tg-theme-hint-color, #999); margin-top: 2px; }
+.opt-check { font-size: 18px; color: var(--tg-theme-button-color, #2481cc); opacity: 0; transition: opacity 0.15s; }
+.opt.selected .opt-check { opacity: 1; }
+
+/* ── Number inputs ── */
+.input-wrap { position: relative; }
+.num-input {
+  width: 100%;
+  padding: 18px 56px 18px 16px;
+  font-size: 26px;
+  font-weight: 600;
+  background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+  border: 2px solid transparent;
+  border-radius: 14px;
+  color: var(--tg-theme-text-color, #000);
+  outline: none;
+  text-align: center;
+  transition: border-color 0.15s;
+  -webkit-appearance: none;
+}
+.num-input:focus { border-color: var(--tg-theme-button-color, #2481cc); }
+.num-unit {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 16px;
+  color: var(--tg-theme-hint-color, #999);
+}
+.input-hint {
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--tg-theme-hint-color, #999);
+  text-align: center;
+}
+.err { margin-top: 8px; font-size: 13px; color: #ff3b30; text-align: center; min-height: 18px; }
+
+/* ── Toggle (optional body fat) ── */
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+  border-radius: 14px;
+  cursor: pointer;
+  margin-bottom: 12px;
+  -webkit-tap-highlight-color: transparent;
+}
+.toggle-label { font-size: 15px; }
+.switch {
+  width: 46px; height: 26px;
+  background: var(--tg-theme-hint-color, #ccc);
+  border-radius: 13px;
+  position: relative;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+.switch.on { background: var(--tg-theme-button-color, #2481cc); }
+.knob {
+  position: absolute;
+  top: 3px; left: 3px;
+  width: 20px; height: 20px;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0,0,0,.2);
+  transition: transform 0.2s;
+}
+.switch.on .knob { transform: translateX(20px); }
+
+/* ── Nav buttons ── */
+.nav { display: flex; gap: 10px; margin-top: 20px; }
+.btn {
+  flex: 1;
+  padding: 15px;
+  border-radius: 14px;
+  border: none;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.1s;
+  -webkit-tap-highlight-color: transparent;
+}
+.btn:active { opacity: 0.7; }
+.btn-primary { background: var(--tg-theme-button-color, #2481cc); color: var(--tg-theme-button-text-color, #fff); }
+.btn-back { background: var(--tg-theme-secondary-bg-color, #f0f0f0); color: var(--tg-theme-text-color, #000); flex: 0 0 56px; }
+
+/* ── Steps visibility ── */
+.step { display: none; }
+.step.active { display: block; }
+
+/* ── Loading ── */
+#loading {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 0;
+  gap: 16px;
+}
+.spinner {
+  width: 44px; height: 44px;
+  border: 3px solid var(--tg-theme-secondary-bg-color, #f0f0f0);
+  border-top-color: var(--tg-theme-button-color, #2481cc);
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.load-text { font-size: 16px; font-weight: 600; }
+.load-sub { font-size: 13px; color: var(--tg-theme-hint-color, #999); }
+
+/* ── Result ── */
+#result { display: none; }
+.result-title { font-size: 22px; font-weight: 700; margin-bottom: 16px; }
+.section-label { font-size: 13px; color: var(--tg-theme-hint-color, #999); margin: 16px 0 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.macros-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.macro-card {
+  background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+  border-radius: 14px;
+  padding: 14px 12px;
+  text-align: center;
+}
+.macro-val { font-size: 24px; font-weight: 700; }
+.macro-name { font-size: 12px; color: var(--tg-theme-hint-color, #999); margin-top: 3px; }
+.plan-box {
+  background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+  border-radius: 14px;
+  padding: 16px;
+  font-size: 14px;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.disclaimer {
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--tg-theme-hint-color, #999);
+  text-align: center;
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════ FORM ═══════════════════ -->
+<div class="container" id="form-view">
+  <div class="progress-wrap">
+    <div class="progress-bar"><div class="progress-fill" id="prog" style="width:11%"></div></div>
+    <div class="progress-label" id="prog-label">Шаг 1 из 9</div>
+  </div>
+
+  <!-- 1. Goal -->
+  <div class="step active" id="s1">
+    <div class="step-title">🎯 Какова твоя цель?</div>
+    <div class="options">
+      <button class="opt" data-g="goal" data-v="lose_weight"><span class="opt-icon">🔥</span><div class="opt-text">Похудеть</div><span class="opt-check">✓</span></button>
+      <button class="opt" data-g="goal" data-v="gain_muscle"><span class="opt-icon">💪</span><div class="opt-text">Набрать мышечную массу</div><span class="opt-check">✓</span></button>
+      <button class="opt" data-g="goal" data-v="maintain"><span class="opt-icon">⚖️</span><div class="opt-text">Поддержать форму</div><span class="opt-check">✓</span></button>
+      <button class="opt" data-g="goal" data-v="recomposition"><span class="opt-icon">🔄</span><div class="opt-text">Рекомпозиция тела</div><span class="opt-check">✓</span></button>
+    </div>
+  </div>
+
+  <!-- 2. Gender -->
+  <div class="step" id="s2">
+    <div class="step-title">👤 Биологический пол</div>
+    <div class="options">
+      <button class="opt" data-g="gender" data-v="male"><span class="opt-icon">👨</span><div class="opt-text">Мужской</div><span class="opt-check">✓</span></button>
+      <button class="opt" data-g="gender" data-v="female"><span class="opt-icon">👩</span><div class="opt-text">Женский</div><span class="opt-check">✓</span></button>
+    </div>
+  </div>
+
+  <!-- 3. Age -->
+  <div class="step" id="s3">
+    <div class="step-title">🔢 Возраст</div>
+    <div class="input-wrap">
+      <input class="num-input" id="i-age" type="number" inputmode="numeric" placeholder="25" min="10" max="100">
+      <span class="num-unit">лет</span>
+    </div>
+    <div class="input-hint">Полных лет, от 10 до 100</div>
+    <div class="err" id="e-age"></div>
+    <div class="nav">
+      <button class="btn btn-back" onclick="prev()">←</button>
+      <button class="btn btn-primary" onclick="next()">Далее →</button>
+    </div>
+  </div>
+
+  <!-- 4. Height -->
+  <div class="step" id="s4">
+    <div class="step-title">📏 Рост</div>
+    <div class="input-wrap">
+      <input class="num-input" id="i-height" type="number" inputmode="numeric" placeholder="175" min="100" max="250">
+      <span class="num-unit">см</span>
+    </div>
+    <div class="input-hint">От 100 до 250 см</div>
+    <div class="err" id="e-height"></div>
+    <div class="nav">
+      <button class="btn btn-back" onclick="prev()">←</button>
+      <button class="btn btn-primary" onclick="next()">Далее →</button>
+    </div>
+  </div>
+
+  <!-- 5. Weight -->
+  <div class="step" id="s5">
+    <div class="step-title">⚖️ Вес</div>
+    <div class="input-wrap">
+      <input class="num-input" id="i-weight" type="number" inputmode="decimal" placeholder="80" min="20" max="500" step="0.1">
+      <span class="num-unit">кг</span>
+    </div>
+    <div class="input-hint">От 20 до 500 кг</div>
+    <div class="err" id="e-weight"></div>
+    <div class="nav">
+      <button class="btn btn-back" onclick="prev()">←</button>
+      <button class="btn btn-primary" onclick="next()">Далее →</button>
+    </div>
+  </div>
+
+  <!-- 6. Body Fat (optional) -->
+  <div class="step" id="s6">
+    <div class="step-title">💧 % подкожного жира</div>
+    <div class="toggle-row" onclick="toggleBF()">
+      <span class="toggle-label">Знаю свой % жира (точнее)</span>
+      <div class="switch" id="bf-sw"><div class="knob"></div></div>
+    </div>
+    <div id="bf-wrap" style="display:none">
+      <div class="input-wrap">
+        <input class="num-input" id="i-bf" type="number" inputmode="decimal" placeholder="18" min="3" max="60" step="0.1">
+        <span class="num-unit">%</span>
+      </div>
+      <div class="input-hint">От 3 до 60%</div>
+      <div class="err" id="e-bf"></div>
+    </div>
+    <div class="input-hint" style="margin-top:10px">Если не знаешь — пропусти, используем формулу Миффлин-Сан Жеор</div>
+    <div class="nav">
+      <button class="btn btn-back" onclick="prev()">←</button>
+      <button class="btn btn-primary" onclick="next()">Далее →</button>
+    </div>
+  </div>
+
+  <!-- 7. Schedule -->
+  <div class="step" id="s7">
+    <div class="step-title">⏰ Рабочий график</div>
+    <div class="options">
+      <button class="opt" data-g="schedule" data-v="standard">
+        <span class="opt-icon">🕗</span>
+        <div class="opt-text">Стандартный<div class="opt-sub">~8 часов в день</div></div>
+        <span class="opt-check">✓</span>
+      </button>
+      <button class="opt" data-g="schedule" data-v="12h">
+        <span class="opt-icon">⚡</span>
+        <div class="opt-text">Интенсивный<div class="opt-sub">12 часов</div></div>
+        <span class="opt-check">✓</span>
+      </button>
+      <button class="opt" data-g="schedule" data-v="16h+">
+        <span class="opt-icon">🔴</span>
+        <div class="opt-text">Тяжёлый<div class="opt-sub">16+ часов</div></div>
+        <span class="opt-check">✓</span>
+      </button>
+      <button class="opt" data-g="schedule" data-v="shift">
+        <span class="opt-icon">🔄</span>
+        <div class="opt-text">Сменный<div class="opt-sub">2/2, 3/3 и т.д.</div></div>
+        <span class="opt-check">✓</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 8. Health (multi) -->
+  <div class="step" id="s8">
+    <div class="step-title">🏥 Состояние здоровья</div>
+    <div style="font-size:13px;color:var(--tg-theme-hint-color,#999);margin-bottom:12px">Выбери всё актуальное</div>
+    <div class="options">
+      <button class="opt" data-g="health" data-v="none"><span class="opt-icon">✅</span><div class="opt-text">Нет проблем</div><span class="opt-check">✓</span></button>
+      <button class="opt" data-g="health" data-v="back_problems"><span class="opt-icon">🦴</span><div class="opt-text">Проблемы со спиной / сколиоз</div><span class="opt-check">✓</span></button>
+      <button class="opt" data-g="health" data-v="knee_issues"><span class="opt-icon">🦵</span><div class="opt-text">Проблемы с коленями</div><span class="opt-check">✓</span></button>
+      <button class="opt" data-g="health" data-v="hypertension"><span class="opt-icon">❤️</span><div class="opt-text">Гипертония</div><span class="opt-check">✓</span></button>
+    </div>
+    <div class="nav">
+      <button class="btn btn-back" onclick="prev()">←</button>
+      <button class="btn btn-primary" onclick="next()">Далее →</button>
+    </div>
+  </div>
+
+  <!-- 9. Equipment (multi) -->
+  <div class="step" id="s9">
+    <div class="step-title">🏋️ Оборудование</div>
+    <div style="font-size:13px;color:var(--tg-theme-hint-color,#999);margin-bottom:12px">Выбери всё доступное</div>
+    <div class="options">
+      <button class="opt" data-g="equip" data-v="none"><span class="opt-icon">🏠</span><div class="opt-text">Без оборудования</div><span class="opt-check">✓</span></button>
+      <button class="opt" data-g="equip" data-v="dumbbells"><span class="opt-icon">🏋️</span><div class="opt-text">Гантели</div><span class="opt-check">✓</span></button>
+      <button class="opt" data-g="equip" data-v="barbell"><span class="opt-icon">💪</span><div class="opt-text">Штанга / гриф</div><span class="opt-check">✓</span></button>
+      <button class="opt" data-g="equip" data-v="gym"><span class="opt-icon">🏟️</span><div class="opt-text">Спортзал (всё оборудование)</div><span class="opt-check">✓</span></button>
+      <button class="opt" data-g="equip" data-v="pool"><span class="opt-icon">🏊</span><div class="opt-text">Бассейн</div><span class="opt-check">✓</span></button>
+    </div>
+    <div class="nav">
+      <button class="btn btn-back" onclick="prev()">←</button>
+      <button class="btn btn-primary" onclick="submit()">Получить план 🚀</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ LOADING ═══════════════════ -->
+<div class="container" id="loading" style="display:none">
+  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 0;gap:16px">
+    <div class="spinner"></div>
+    <div class="load-text">Составляю твой план...</div>
+    <div class="load-sub">Обычно занимает 5–10 секунд</div>
+  </div>
+</div>
+
+<!-- ═══════════════════ RESULT ═══════════════════ -->
+<div class="container" id="result" style="display:none">
+  <div class="result-title">🎉 Твой персональный план</div>
+
+  <div class="section-label">📊 КБЖУ на день</div>
+  <div class="macros-grid">
+    <div class="macro-card"><div class="macro-val" id="r-cal">—</div><div class="macro-name">🔥 Калории</div></div>
+    <div class="macro-card"><div class="macro-val" id="r-pro">—</div><div class="macro-name">🥩 Белки, г</div></div>
+    <div class="macro-card"><div class="macro-val" id="r-fat">—</div><div class="macro-name">🫒 Жиры, г</div></div>
+    <div class="macro-card"><div class="macro-val" id="r-carb">—</div><div class="macro-name">🍞 Углеводы, г</div></div>
+  </div>
+
+  <div class="section-label">🍽 План питания</div>
+  <div class="plan-box" id="r-plan"></div>
+
+  <div class="disclaimer">⚠️ Проконсультируйся с врачом перед началом программы</div>
+
+  <button class="btn btn-primary" style="margin-top:20px;width:100%" onclick="restart()">🔄 Пересчитать</button>
+</div>
+
+<script>
+const tg = window.Telegram.WebApp;
+tg.ready();
+tg.expand();
+
+let cur = 1;
+const TOTAL = 9;
+
+const fd = {
+  goal: null, gender: null,
+  age: null, height_cm: null, weight_kg: null, body_fat_pct: null,
+  schedule: null, health_issues: [], equipment: [],
+};
+
+let bfOn = false;
+
+// ── Progress ──
+function setProgress(n) {
+  cur = n;
+  const pct = Math.round(n / TOTAL * 100);
+  document.getElementById('prog').style.width = pct + '%';
+  document.getElementById('prog-label').textContent = 'Шаг ' + n + ' из ' + TOTAL;
+}
+
+// ── Show step ──
+function showStep(n) {
+  document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+  document.getElementById('s' + n).classList.add('active');
+  setProgress(n);
+  window.scrollTo(0, 0);
+}
+
+// ── Radio buttons (goal, gender, schedule) ──
+document.querySelectorAll('.opt[data-g="goal"],.opt[data-g="gender"],.opt[data-g="schedule"]').forEach(btn => {
+  btn.addEventListener('click', function() {
+    const g = this.dataset.g, v = this.dataset.v;
+    document.querySelectorAll('.opt[data-g="' + g + '"]').forEach(b => b.classList.remove('selected'));
+    this.classList.add('selected');
+    fd[g] = v;
+    setTimeout(() => next(), 180);
+  });
+});
+
+// ── Multi-select: health ──
+document.querySelectorAll('.opt[data-g="health"]').forEach(btn => {
+  btn.addEventListener('click', function() {
+    const v = this.dataset.v;
+    if (v === 'none') {
+      document.querySelectorAll('.opt[data-g="health"]').forEach(b => b.classList.remove('selected'));
+      if (!fd.health_issues.includes('none')) {
+        fd.health_issues = ['none'];
+        this.classList.add('selected');
+      } else {
+        fd.health_issues = [];
+      }
+    } else {
+      document.querySelector('.opt[data-g="health"][data-v="none"]').classList.remove('selected');
+      fd.health_issues = fd.health_issues.filter(x => x !== 'none');
+      if (fd.health_issues.includes(v)) {
+        fd.health_issues = fd.health_issues.filter(x => x !== v);
+        this.classList.remove('selected');
+      } else {
+        fd.health_issues.push(v);
+        this.classList.add('selected');
+      }
+    }
+  });
+});
+
+// ── Multi-select: equipment ──
+document.querySelectorAll('.opt[data-g="equip"]').forEach(btn => {
+  btn.addEventListener('click', function() {
+    const v = this.dataset.v;
+    if (v === 'none') {
+      document.querySelectorAll('.opt[data-g="equip"]').forEach(b => b.classList.remove('selected'));
+      if (!fd.equipment.includes('none')) {
+        fd.equipment = ['none'];
+        this.classList.add('selected');
+      } else {
+        fd.equipment = [];
+      }
+    } else {
+      document.querySelector('.opt[data-g="equip"][data-v="none"]').classList.remove('selected');
+      fd.equipment = fd.equipment.filter(x => x !== 'none');
+      if (fd.equipment.includes(v)) {
+        fd.equipment = fd.equipment.filter(x => x !== v);
+        this.classList.remove('selected');
+      } else {
+        fd.equipment.push(v);
+        this.classList.add('selected');
+      }
+    }
+  });
+});
+
+// ── Body fat toggle ──
+function toggleBF() {
+  bfOn = !bfOn;
+  document.getElementById('bf-sw').classList.toggle('on', bfOn);
+  document.getElementById('bf-wrap').style.display = bfOn ? 'block' : 'none';
+  if (!bfOn) { fd.body_fat_pct = null; }
+}
+
+// ── Validation ──
+function validate() {
+  if (cur === 3) {
+    const v = parseInt(document.getElementById('i-age').value);
+    if (!v || v < 10 || v > 100) { document.getElementById('e-age').textContent = '❌ Возраст от 10 до 100 лет'; return false; }
+    document.getElementById('e-age').textContent = '';
+    fd.age = v; return true;
+  }
+  if (cur === 4) {
+    const v = parseInt(document.getElementById('i-height').value);
+    if (!v || v < 100 || v > 250) { document.getElementById('e-height').textContent = '❌ Рост от 100 до 250 см'; return false; }
+    document.getElementById('e-height').textContent = '';
+    fd.height_cm = v; return true;
+  }
+  if (cur === 5) {
+    const v = parseFloat(String(document.getElementById('i-weight').value).replace(',', '.'));
+    if (!v || v < 20 || v > 500) { document.getElementById('e-weight').textContent = '❌ Вес от 20 до 500 кг'; return false; }
+    document.getElementById('e-weight').textContent = '';
+    fd.weight_kg = v; return true;
+  }
+  if (cur === 6 && bfOn) {
+    const v = parseFloat(String(document.getElementById('i-bf').value).replace(',', '.'));
+    if (!v || v < 3 || v > 60) { document.getElementById('e-bf').textContent = '❌ % жира от 3 до 60'; return false; }
+    document.getElementById('e-bf').textContent = '';
+    fd.body_fat_pct = v; return true;
+  }
+  if (cur === 8 && fd.health_issues.length === 0) {
+    fd.health_issues = ['none'];
+    document.querySelector('.opt[data-g="health"][data-v="none"]').classList.add('selected');
+  }
+  if (cur === 9 && fd.equipment.length === 0) {
+    fd.equipment = ['none'];
+    document.querySelector('.opt[data-g="equip"][data-v="none"]').classList.add('selected');
+  }
+  return true;
+}
+
+// ── Navigation ──
+function next() {
+  if (!validate()) return;
+  if (cur === 1 && !fd.goal)     { tg.showAlert('Выбери цель'); return; }
+  if (cur === 2 && !fd.gender)   { tg.showAlert('Выбери пол'); return; }
+  if (cur === 7 && !fd.schedule) { tg.showAlert('Выбери рабочий график'); return; }
+  if (cur < TOTAL) showStep(cur + 1);
+}
+
+function prev() {
+  if (cur > 1) showStep(cur - 1);
+}
+
+// ── Submit ──
+async function submit() {
+  if (!validate()) return;
+
+  document.getElementById('form-view').style.display = 'none';
+  document.getElementById('loading').style.display = 'block';
+
+  try {
+    const resp = await fetch('/profile', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(fd),
+    });
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({ detail: 'Ошибка сервера' }));
+      throw new Error(err.detail || 'Ошибка сервера');
+    }
+    const data = await resp.json();
+    showResult(data);
+  } catch (e) {
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('form-view').style.display = 'block';
+    tg.showAlert('Ошибка: ' + e.message);
+  }
+}
+
+// ── Show result ──
+function showResult(data) {
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('result').style.display = 'block';
+
+  const m = data.macros;
+  document.getElementById('r-cal').textContent  = m.calories;
+  document.getElementById('r-pro').textContent  = m.protein_g;
+  document.getElementById('r-fat').textContent  = m.fat_g;
+  document.getElementById('r-carb').textContent = m.carb_g;
+
+  let plan = data.plan || '';
+  plan = plan.replace(/\*([^*\n]+)\*/g, '$1').replace(/_([^_\n]+)_/g, '$1');
+  document.getElementById('r-plan').textContent = plan.trim();
+
+  window.scrollTo(0, 0);
+}
+
+// ── Restart ──
+function restart() {
+  fd.goal = null; fd.gender = null; fd.age = null; fd.height_cm = null;
+  fd.weight_kg = null; fd.body_fat_pct = null; fd.schedule = null;
+  fd.health_issues = []; fd.equipment = [];
+  bfOn = false;
+  document.getElementById('bf-sw').classList.remove('on');
+  document.getElementById('bf-wrap').style.display = 'none';
+  document.querySelectorAll('.opt').forEach(b => b.classList.remove('selected'));
+  document.querySelectorAll('.num-input').forEach(i => i.value = '');
+
+  document.getElementById('result').style.display = 'none';
+  document.getElementById('form-view').style.display = 'block';
+  showStep(1);
+}
+</script>
+</body>
+</html>
