@@ -29,12 +29,39 @@ dp.include_router(start.router)
 WEBHOOK_PATH = f"/webhook/{BOT_TOKEN}"
 
 
+async def _test_ai_on_startup():
+    from bot.config import ANTHROPIC_API_KEY
+    if not ANTHROPIC_API_KEY:
+        logging.critical("=" * 60)
+        logging.critical("❌  ANTHROPIC_API_KEY НЕ ЗАДАН!")
+        logging.critical("    AI не будет работать. Добавь переменную в Railway:")
+        logging.critical("    Settings → Variables → ANTHROPIC_API_KEY = sk-ant-...")
+        logging.critical("=" * 60)
+        return
+    try:
+        import anthropic
+        client = anthropic.AsyncAnthropic(api_key=ANTHROPIC_API_KEY, timeout=15.0)
+        msg = await client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=10,
+            messages=[{"role": "user", "content": "ping"}],
+        )
+        logging.info("✅  Claude AI: OK — %s", msg.content[0].text.strip())
+    except anthropic.AuthenticationError:
+        logging.critical("❌  ANTHROPIC_API_KEY НЕВЕРНЫЙ — AuthenticationError. Обнови ключ на console.anthropic.com")
+    except anthropic.RateLimitError:
+        logging.warning("⚠️  Claude: RateLimitError — нет кредитов или превышен лимит")
+    except Exception as e:
+        logging.error("❌  Claude test failed: %s — %s", type(e).__name__, e)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    await _test_ai_on_startup()
     if WEBAPP_URL:
         url = f"{WEBAPP_URL.rstrip('/')}{WEBHOOK_PATH}"
         await bot.set_webhook(url, drop_pending_updates=True)
-        logging.info("Webhook set")
+        logging.info("Webhook set: %s", url[:50] + "...")
     else:
         logging.warning("WEBAPP_URL не задан — webhook не установлен")
     await set_bot_commands(bot)
@@ -75,17 +102,29 @@ async def health():
 
 @app.get("/debug/ai")
 async def debug_ai():
+    import anthropic as _ant
     from bot.config import ANTHROPIC_API_KEY
+    info = {
+        "anthropic_sdk": _ant.__version__,
+        "key_set": bool(ANTHROPIC_API_KEY),
+        "key_prefix": ANTHROPIC_API_KEY[:12] + "..." if ANTHROPIC_API_KEY else "EMPTY",
+    }
     if not ANTHROPIC_API_KEY:
-        return {"status": "error", "reason": "ANTHROPIC_API_KEY not set"}
+        return {**info, "status": "error",
+                "fix": "Set ANTHROPIC_API_KEY in Railway → Variables"}
     try:
-        import anthropic
-        client = anthropic.AsyncAnthropic(api_key=ANTHROPIC_API_KEY)
+        client = _ant.AsyncAnthropic(api_key=ANTHROPIC_API_KEY, timeout=15.0)
         msg = await client.messages.create(
             model="claude-sonnet-4-6",
             max_tokens=20,
-            messages=[{"role": "user", "content": "ping"}],
+            messages=[{"role": "user", "content": "скажи 'ок'"}],
         )
-        return {"status": "ok", "model": "claude-sonnet-4-6", "reply": msg.content[0].text}
+        return {**info, "status": "ok", "reply": msg.content[0].text.strip()}
+    except _ant.AuthenticationError as e:
+        return {**info, "status": "error", "error": "AuthenticationError",
+                "detail": str(e), "fix": "API key invalid — get new one at console.anthropic.com"}
+    except _ant.RateLimitError as e:
+        return {**info, "status": "error", "error": "RateLimitError",
+                "detail": str(e), "fix": "Add credits at console.anthropic.com/billing"}
     except Exception as e:
-        return {"status": "error", "type": type(e).__name__, "detail": str(e)}
+        return {**info, "status": "error", "error": type(e).__name__, "detail": str(e)}
