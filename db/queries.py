@@ -145,6 +145,18 @@ def get_all_users() -> list:
         return []
 
 
+def set_user_status(tg_id: int, status: str) -> bool:
+    db = get_client()
+    if not db:
+        return False
+    try:
+        db.table("users").update({"status": status}).eq("tg_id", tg_id).execute()
+        return True
+    except Exception:
+        logging.exception("set_user_status error")
+        return False
+
+
 def get_user(tg_id: int) -> dict | None:
     db = get_client()
     if not db:
