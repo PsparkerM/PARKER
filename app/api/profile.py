@@ -8,8 +8,7 @@ from db.queries import upsert_user, save_plan
 
 router = APIRouter()
 
-REQUIRED_FIELDS = ["goal", "gender", "age", "height_cm", "weight_kg", "schedule",
-                   "health_issues", "equipment"]
+REQUIRED_FIELDS = ["gender", "age", "height_cm", "weight_kg"]
 
 
 @router.post("/api/profile")
@@ -22,6 +21,12 @@ async def create_profile(request: Request):
     for field in REQUIRED_FIELDS:
         if field not in data:
             raise HTTPException(status_code=400, detail=f"Отсутствует поле: {field}")
+
+    # Defaults for optional fields
+    data.setdefault("goal", "maintain")
+    data.setdefault("schedule", "standard")
+    data.setdefault("health_issues", [])
+    data.setdefault("equipment", ["gym"])
 
     try:
         macros = compute_macros_for_profile(data)
@@ -39,7 +44,7 @@ async def create_profile(request: Request):
             save_plan(uid, "workout", workout_plan, {})
 
     return JSONResponse({
-        "macros":        macros,
+        "macros":         macros,
         "nutrition_plan": nutrition_plan,
         "workout_plan":   workout_plan,
     })

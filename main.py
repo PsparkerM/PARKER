@@ -16,6 +16,7 @@ from app.api.chat import router as chat_router
 from app.api.food import router as food_router
 from app.api.admin import router as admin_router
 from app.api.adapt import router as adapt_router
+from app.api.user import router as user_router
 
 logging.basicConfig(
     level=logging.INFO,
@@ -78,6 +79,7 @@ app.include_router(chat_router)
 app.include_router(food_router)
 app.include_router(admin_router)
 app.include_router(adapt_router)
+app.include_router(user_router)
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 

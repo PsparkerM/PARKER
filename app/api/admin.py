@@ -1,7 +1,9 @@
+import hmac
+import html as _html
 from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from db.queries import get_all_users
-from bot.config import VIP_USER_IDS
+from bot.config import VIP_USER_IDS, ADMIN_SECRET
 
 router = APIRouter()
 
@@ -16,8 +18,22 @@ GOAL_MAP = {
 
 
 def _check_admin(request: Request) -> bool:
-    tg_id = request.query_params.get("tg_id")
-    return tg_id and int(tg_id) == ADMIN_ID
+    if ADMIN_SECRET:
+        secret = request.query_params.get("secret", "")
+        return hmac.compare_digest(secret, ADMIN_SECRET)
+    # fallback when ADMIN_SECRET not configured — less secure
+    tg_id = request.query_params.get("tg_id", "")
+    try:
+        return int(tg_id) == ADMIN_ID
+    except (ValueError, TypeError):
+        return False
+
+
+def _auth_param(request: Request) -> str:
+    if ADMIN_SECRET:
+        secret = request.query_params.get("secret", "")
+        return f"secret={_html.escape(secret)}"
+    return f"tg_id={ADMIN_ID}"
 
 
 @router.get("/admin/users", response_class=JSONResponse)
@@ -34,24 +50,33 @@ async def admin_panel(request: Request):
         return HTMLResponse("<h2>403 Forbidden</h2>", status_code=403)
 
     users = get_all_users()
-    tg_id_param = request.query_params.get("tg_id", "")
 
     rows = ""
     for u in users:
         vip = "👑" if u.get("tg_id") in VIP_USER_IDS else ""
-        goal = GOAL_MAP.get(u.get("goal", ""), u.get("goal", "—"))
+        goal_raw = u.get("goal", "")
+        goal = GOAL_MAP.get(goal_raw, _html.escape(str(goal_raw)) if goal_raw else "—")
+        name = _html.escape(str(u.get("name") or "—"))
+        gender = _html.escape(str(u.get("gender") or "—"))
+        schedule = _html.escape(str(u.get("schedule") or "—"))
+        health = _html.escape(", ".join(u.get("health_issues") or []) or "—")
+        tg_id_disp = _html.escape(str(u.get("tg_id", "—")))
+        age = _html.escape(str(u.get("age", "—")))
+        weight = _html.escape(str(u.get("weight_kg", "—")))
+        height = _html.escape(str(u.get("height_cm", "—")))
+        created = _html.escape(str(u.get("created_at", "—"))[:10])
         rows += f"""
         <tr>
-          <td>{vip} {u.get('tg_id','—')}</td>
-          <td>{u.get('name') or '—'}</td>
+          <td>{vip} {tg_id_disp}</td>
+          <td>{name}</td>
           <td>{goal}</td>
-          <td>{u.get('gender','—')}</td>
-          <td>{u.get('age','—')}</td>
-          <td>{u.get('weight_kg','—')} кг</td>
-          <td>{u.get('height_cm','—')} см</td>
-          <td>{u.get('schedule','—')}</td>
-          <td>{', '.join(u.get('health_issues') or []) or '—'}</td>
-          <td>{str(u.get('created_at','—'))[:10]}</td>
+          <td>{gender}</td>
+          <td>{age}</td>
+          <td>{weight} кг</td>
+          <td>{height} см</td>
+          <td>{schedule}</td>
+          <td>{health}</td>
+          <td>{created}</td>
         </tr>"""
 
     html = f"""<!DOCTYPE html>
@@ -87,7 +112,7 @@ tr:hover td{{background:rgba(255,255,255,.03)}}
   <div class="sc"><div class="sv">{len(users)}</div><div class="sl">Пользователей</div></div>
   <div class="sc"><div class="sv">{sum(1 for u in users if u.get('tg_id') in VIP_USER_IDS)}</div><div class="sl">VIP</div></div>
 </div>
-<a class="refresh" href="/admin?tg_id={tg_id_param}">⟳ Обновить</a>
+<a class="refresh" href="/admin?{_auth_param(request)}">⟳ Обновить</a>
 <div class="wrap">
 <table>
   <thead><tr>
