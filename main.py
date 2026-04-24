@@ -5,10 +5,11 @@ from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
-from aiogram import Bot, Dispatcher
+from aiogram import Dispatcher
 from aiogram.types import Update
 
 from bot.config import BOT_TOKEN, WEBAPP_URL
+from bot.bot_instance import bot
 from bot.handlers import start
 from bot.handlers.start import set_bot_commands
 from app.api.profile import router as profile_router
@@ -17,13 +18,13 @@ from app.api.food import router as food_router
 from app.api.admin import router as admin_router
 from app.api.adapt import router as adapt_router
 from app.api.user import router as user_router
+from app.api.notify import router as notify_router
 
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
 )
 
-bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 dp.include_router(start.router)
 
@@ -80,6 +81,7 @@ app.include_router(food_router)
 app.include_router(admin_router)
 app.include_router(adapt_router)
 app.include_router(user_router)
+app.include_router(notify_router)
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 
@@ -100,6 +102,21 @@ async def serve_miniapp():
 @app.get("/health")
 async def health():
     return {"status": "ok", "bot": "P.A.R.K.E.R."}
+
+
+@app.get("/debug/webhook")
+async def debug_webhook():
+    try:
+        info = await bot.get_webhook_info()
+        return {
+            "webhook_url": info.url,
+            "pending_updates": info.pending_update_count,
+            "last_error": info.last_error_message,
+            "last_error_date": str(info.last_error_date) if info.last_error_date else None,
+            "webapp_url_env": WEBAPP_URL[:40] + "..." if WEBAPP_URL else "NOT SET",
+        }
+    except Exception as e:
+        return {"error": str(e)}
 
 
 @app.get("/debug/ai")

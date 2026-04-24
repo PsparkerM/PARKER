@@ -258,6 +258,22 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 .sec-card-lbl{color:var(--text2)}.sec-card-val{font-weight:700}
 .btn-reset{width:100%;padding:14px;border-radius:var(--radius-sm);font-size:14px;font-weight:600;
   border:1.5px solid var(--border2);background:var(--surface);color:var(--text2)}
+.avatar-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:8px;margin-top:8px}
+.av-opt{font-size:26px;text-align:center;padding:8px 4px;border-radius:10px;cursor:pointer;
+  border:2px solid transparent;transition:all .15s;background:var(--surface)}
+.av-opt.sel{border-color:var(--gold);background:rgba(245,197,24,.12)}
+.av-opt:active{transform:scale(.88)}
+.notif-row{display:flex;align-items:center;justify-content:space-between;padding:13px 0;border-bottom:1px solid var(--border)}
+.notif-row:last-child{border:none}
+.notif-lbl{font-size:14px}
+.toggle{width:44px;height:24px;border-radius:12px;background:var(--surface2);position:relative;cursor:pointer;
+  border:none;transition:background .2s;flex-shrink:0}
+.toggle.on{background:var(--gold)}
+.toggle::after{content:'';position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;
+  background:#fff;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.toggle.on::after{transform:translateX(20px)}
+.btn-notif-test{width:100%;padding:12px;border-radius:var(--radius-sm);font-size:14px;font-weight:700;
+  border:1.5px solid rgba(245,197,24,.35);background:rgba(245,197,24,.07);color:var(--gold);margin-top:4px}
 
 /* SHARED */
 .empty-state{display:flex;flex-direction:column;align-items:center;gap:12px;padding:48px 20px;text-align:center}
@@ -440,6 +456,43 @@ function escHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
+const BANNED_WORDS = ['хуй','пизд','блядь','ебан','еблан','мудак','пидор','пидар','шлюх','урод','ублюдок','мразь','ёбан'];
+function hasBadWord(s) {
+  const n = s.toLowerCase().replace(/ё/g,'е').replace(/[^а-яa-z]/g,'');
+  return BANNED_WORDS.some(w => n.includes(w.replace(/ё/g,'е')));
+}
+
+const AVATARS = ['🐯','🦁','🐻','🐼','🐸','🦊','🐺','🐉','🦅','🦈','🐆','🐬','🦋','🐘','🦒','🐋'];
+
+let selectedAvatar = localStorage.getItem('pk_avatar') || '';
+let notifSettings  = JSON.parse(localStorage.getItem('pk_notif') || '{"food":false,"water":false,"log":false}');
+
+function saveAvatar(emoji) {
+  selectedAvatar = emoji;
+  localStorage.setItem('pk_avatar', emoji);
+  updateHeader();
+  renderProfile();
+}
+
+function toggleNotif(key) {
+  notifSettings[key] = !notifSettings[key];
+  localStorage.setItem('pk_notif', JSON.stringify(notifSettings));
+  renderProfile();
+}
+
+async function sendTestNotif() {
+  const tgId = getTgId();
+  if (!tgId) { toast('Открой через Telegram'); return; }
+  try {
+    const r = await fetch('/api/notify', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({tg_id: tgId, text: '⚡ P.A.R.K.E.R. напоминает: время выпить воды и записать результаты! 💧'})
+    });
+    const d = await r.json();
+    toast(d.ok ? 'Уведомление отправлено в бота ✓' : 'Ошибка: ' + d.error);
+  } catch { toast('Ошибка соединения'); }
+}
+
 function toast(msg, dur=2200) {
   const el = document.getElementById('toast');
   el.textContent = msg; el.classList.add('show');
@@ -497,7 +550,9 @@ function pickGender(v) {
 function onbNext(step) {
   if (step===1) {
     const v = document.getElementById('o-name').value.trim();
-    if (!v||v.length<2) { toast('Введи имя'); return; }
+    if (!v||v.length<2) { toast('Введи настоящее имя'); return; }
+    if (v.length>30) { toast('Имя слишком длинное'); return; }
+    if (hasBadWord(v)) { toast('Введи настоящее имя 😏'); return; }
     onbData.name = v.charAt(0).toUpperCase()+v.slice(1);
     showOnbStep(2);
   } else if (step===2) {
@@ -684,7 +739,8 @@ function goTab(name) {
 function updateHeader() {
   if (!profile) return;
   const av = document.getElementById('hdr-av');
-  av.textContent = (profile.name||'?')[0].toUpperCase(); av.style.display='flex';
+  av.textContent = selectedAvatar || (profile.name||'?')[0].toUpperCase();
+  av.style.display='flex';
   const s = calcStreak();
   if (s>0) { document.getElementById('streak-chip').style.display='flex'; document.getElementById('streak-val').textContent=s; }
 }
@@ -1143,18 +1199,37 @@ function renderProfile() {
     [`🔥 Стрик`, `${streak} ${streak===1?'день':streak<5?'дня':'дней'}`],
   ].filter(Boolean).map(([l,v])=>`<div class="sec-card-row"><div class="sec-card-lbl">${l}</div><div class="sec-card-val">${v}</div></div>`).join('');
 
+  const avGrid = AVATARS.map(a =>
+    `<div class="av-opt ${selectedAvatar===a?'sel':''}" onclick="saveAvatar('${a}')">${a}</div>`
+  ).join('');
+
   el.innerHTML=`
     <div class="prof-hero">
-      <div class="prof-av">${(profile.name||'?')[0].toUpperCase()}</div>
+      <div class="prof-av" style="font-size:${selectedAvatar?'30px':'26px'}">${selectedAvatar||(profile.name||'?')[0].toUpperCase()}</div>
       <div style="flex:1">
-        <div class="prof-name">${profile.name}</div>
-        <div class="prof-goal">${goal}</div>
+        <div class="prof-name">${escHtml(profile.name||'—')}</div>
+        <div class="prof-goal">${escHtml(goal)}</div>
         <div class="prof-meta">${profile.age} лет · ${profile.height_cm} см · ${curW} кг</div>
       </div>
     </div>
+
+    <div class="sec-card" style="padding:14px 16px">
+      <div style="font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.7px;margin-bottom:4px">Аватарка</div>
+      <div class="avatar-grid">${avGrid}</div>
+    </div>
+
     <div class="sec-card">${rows}</div>
+
+    <div class="sec-card" style="padding:14px 16px">
+      <div style="font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.7px;margin-bottom:10px">🔔 Напоминания</div>
+      <div class="notif-row"><span class="notif-lbl">🍽 Время покушать</span><button class="toggle ${notifSettings.food?'on':''}" onclick="toggleNotif('food')"></button></div>
+      <div class="notif-row"><span class="notif-lbl">💧 Выпить воды</span><button class="toggle ${notifSettings.water?'on':''}" onclick="toggleNotif('water')"></button></div>
+      <div class="notif-row"><span class="notif-lbl">📏 Записать замеры</span><button class="toggle ${notifSettings.log?'on':''}" onclick="toggleNotif('log')"></button></div>
+      <button class="btn-notif-test" onclick="sendTestNotif()">⚡ Тест — отправить напоминание в бота</button>
+    </div>
+
     <button class="btn-reset" onclick="confirmReset()" style="margin-top:4px">🔄 Начать заново</button>
-    <div class="disc">Данные хранятся на устройстве. При сбросе всё будет удалено.</div>`;
+    <div class="disc">Данные хранятся на устройстве и синхронизируются через бота. При сбросе всё будет удалено.</div>`;
 }
 
 function confirmReset() {
