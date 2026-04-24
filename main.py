@@ -1,8 +1,10 @@
+import hmac
 import logging
+import asyncio
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from aiogram import Dispatcher
@@ -59,18 +61,32 @@ async def _test_ai_on_startup():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    await _test_ai_on_startup()
+    # AI test запускаем в фоне — не блокирует старт бота
+    asyncio.create_task(_test_ai_on_startup())
+
     if WEBAPP_URL:
         url = f"{WEBAPP_URL.rstrip('/')}{WEBHOOK_PATH}"
-        await bot.set_webhook(url, drop_pending_updates=True)
-        logging.info("Webhook set: %s", url[:50] + "...")
+        try:
+            await bot.set_webhook(url, drop_pending_updates=False)
+            logging.info("✅ Webhook set: %s...", url[:60])
+        except Exception as e:
+            logging.error("❌ set_webhook FAILED: %s", e)
     else:
         logging.warning("WEBAPP_URL не задан — webhook не установлен")
-    await set_bot_commands(bot)
+
+    try:
+        await set_bot_commands(bot)
+    except Exception as e:
+        logging.warning("set_bot_commands failed: %s", e)
+
     yield
-    if WEBAPP_URL:
-        await bot.delete_webhook()
-    await bot.session.close()
+
+    # НЕ удаляем вебхук при остановке — Railway делает rolling deploy,
+    # старый инстанс не должен удалять вебхук пока новый его уже установил
+    try:
+        await bot.session.close()
+    except Exception:
+        pass
     logging.info("Bot остановлен")
 
 
@@ -117,6 +133,24 @@ async def debug_webhook():
         }
     except Exception as e:
         return {"error": str(e)}
+
+
+@app.get("/reset-webhook")
+async def reset_webhook(request: Request):
+    from bot.config import ADMIN_SECRET
+    secret = request.query_params.get("secret", "")
+    if ADMIN_SECRET:
+        if not hmac.compare_digest(secret, ADMIN_SECRET):
+            return JSONResponse({"error": "forbidden"}, status_code=403)
+    if not WEBAPP_URL:
+        return JSONResponse({"error": "WEBAPP_URL not set"}, status_code=500)
+    url = f"{WEBAPP_URL.rstrip('/')}{WEBHOOK_PATH}"
+    try:
+        await bot.set_webhook(url, drop_pending_updates=False)
+        info = await bot.get_webhook_info()
+        return {"ok": True, "webhook_url": info.url}
+    except Exception as e:
+        return JSONResponse({"ok": False, "error": str(e)}, status_code=500)
 
 
 @app.get("/debug/ai")
