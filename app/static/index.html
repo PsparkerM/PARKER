@@ -143,6 +143,19 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
   border:1.5px solid rgba(30,199,106,.3);background:rgba(30,199,106,.08);color:var(--green);transition:all .15s}
 .step-btn:active{background:rgba(30,199,106,.18)}
 .step-btn.reset{border-color:var(--border2);background:var(--surface);color:var(--text3);flex:0;padding:11px 14px}
+.step-card-hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px}
+.step-tabs{display:flex;gap:2px;background:var(--bg3);border-radius:10px;padding:3px;flex-shrink:0}
+.step-tab{padding:5px 13px;border-radius:8px;font-size:12px;font-weight:700;color:var(--text3);transition:all .15s;border:none;background:none}
+.step-tab.on{background:var(--surface2);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.3)}
+.step-big{font-size:40px;font-weight:800;letter-spacing:-1px;line-height:1;font-variant-numeric:tabular-nums}
+.step-big-sub{font-size:12px;color:var(--text3);margin-top:4px}
+.step-wchart{display:flex;align-items:flex-end;gap:5px;height:80px;margin-top:14px}
+.step-wbar{flex:1;border-radius:5px 5px 0 0;min-height:3px;transition:height .4s cubic-bezier(.34,1.56,.64,1)}
+.step-wlabels{display:flex;gap:5px;margin-top:6px;margin-bottom:10px}
+.step-wlabel{flex:1;font-size:10px;color:var(--text3);text-align:center;font-weight:600}
+.step-wlabel.td{color:var(--gold);font-weight:800}
+.step-wstats{display:flex;justify-content:space-between;font-size:12px;color:var(--text3);margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
+.step-wstat-val{font-weight:700;color:var(--text)}
 .step-auto-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
 .step-auto-btn{flex:1;padding:10px 12px;border-radius:var(--radius-sm);font-size:13px;font-weight:700;
   border:1.5px solid var(--border2);background:var(--surface2);color:var(--text2);transition:all .15s;text-align:center}
@@ -1112,6 +1125,7 @@ function updateHeader() {
 // ══ HOME ══
 function getSteps() { return parseInt(localStorage.getItem('pk_steps_'+todayKey())||'0'); }
 function setSteps(v) { localStorage.setItem('pk_steps_'+todayKey(), String(v)); }
+function getStepsForDate(k) { return parseInt(localStorage.getItem('pk_steps_'+k)||'0'); }
 function addSteps(n) {
   const v = Math.max(0, getSteps()+n);
   setSteps(v);
@@ -1119,21 +1133,113 @@ function addSteps(n) {
   if (n>0) toast(`+${n.toLocaleString()} 👟`);
 }
 
-// Step tracker state (survives renderHome re-renders)
+// Step tracker state (persists across renderHome)
+let _stepView          = 'day';
 let _stepTrackerActive = false;
 let _stepSessionCount  = 0;
 let _stepMotionHandler = null;
-let _stepLastMag       = 0;
 let _stepRising        = false;
 let _stepLastAt        = 0;
-const _STEP_THRESHOLD  = 11;   // m/s² — tune if needed
-const _STEP_MIN_GAP    = 300;  // ms between counted steps
+const _STEP_THRESHOLD  = 11;
+const _STEP_MIN_GAP    = 300;
+
+function getLast7Days() {
+  const ru = lang !== 'en';
+  const names = ru
+    ? ['Вс','Пн','Вт','Ср','Чт','Пт','Сб']
+    : ['Su','Mo','Tu','We','Th','Fr','Sa'];
+  const days = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const key = d.toISOString().slice(0,10);
+    days.push({ key, name: names[d.getDay()], steps: getStepsForDate(key), isToday: i===0 });
+  }
+  return days;
+}
+
+function _setStepView(v) { _stepView = v; _updateStepCard(); }
+
+function _buildStepCardHtml() {
+  const steps    = getSteps();
+  const stepGoal = 10000;
+  const sPct     = Math.min(100, Math.round(steps / stepGoal * 100));
+  const ru       = lang !== 'en';
+
+  const tabs = `<div class="step-tabs">
+    <button class="step-tab ${_stepView==='day'?'on':''}" onclick="_setStepView('day')">${ru?'День':'Day'}</button>
+    <button class="step-tab ${_stepView==='week'?'on':''}" onclick="_setStepView('week')">${ru?'Неделя':'Week'}</button>
+  </div>`;
+
+  let body;
+  if (_stepView === 'day') {
+    body = `
+      <div class="step-card-hdr">
+        <div>
+          <div class="step-big">${steps.toLocaleString()}</div>
+          <div class="step-big-sub">${ru?`из ${stepGoal.toLocaleString()} шагов · ${sPct}%`:`of ${stepGoal.toLocaleString()} steps · ${sPct}%`}</div>
+        </div>
+        ${tabs}
+      </div>
+      <div class="step-bar-wrap" style="margin-bottom:12px"><div class="step-bar" style="width:${sPct}%"></div></div>
+      <div class="step-btns">
+        <button class="step-btn" onclick="addSteps(1000)">+1 000</button>
+        <button class="step-btn" onclick="addSteps(3000)">+3 000</button>
+        <button class="step-btn" onclick="addSteps(5000)">+5 000</button>
+        <button class="step-btn reset" onclick="addSteps(-getSteps())">↺</button>
+      </div>
+      <div class="step-auto-row">
+        <button class="step-auto-btn ${_stepTrackerActive?'on':''}" id="step-auto-btn" onclick="toggleStepTracking()">
+          ${_stepTrackerActive?(ru?'⏹ Стоп':'⏹ Stop'):(ru?'📲 Авто-подсчёт':'📲 Auto-track')}
+        </button>
+        ${_stepTrackerActive?`<div class="step-live"><div class="step-live-dot"></div>+${_stepSessionCount} ${ru?'сейчас':'now'}</div>`:''}
+      </div>`;
+  } else {
+    const days    = getLast7Days();
+    const maxS    = Math.max(...days.map(d=>d.steps), 1);
+    const avg     = Math.round(days.reduce((s,d)=>s+d.steps,0)/7);
+    const todayS  = days[days.length-1].steps;
+    const maxDay  = Math.max(...days.map(d=>d.steps));
+    const bars    = days.map(d=>{
+      const h = Math.max(3, Math.round((d.steps/maxS)*72));
+      const bg = d.isToday ? '#f5c518' : d.steps>0 ? 'rgba(245,197,24,.28)' : 'rgba(255,255,255,.05)';
+      return `<div class="step-wbar" style="height:${h}px;background:${bg}"></div>`;
+    }).join('');
+    const labels = days.map(d=>
+      `<div class="step-wlabel ${d.isToday?'td':''}">${d.name}</div>`
+    ).join('');
+    body = `
+      <div class="step-card-hdr">
+        <div>
+          <div class="step-big">${avg.toLocaleString()}</div>
+          <div class="step-big-sub">${ru?'среднее за 7 дней':'7-day average'}</div>
+        </div>
+        ${tabs}
+      </div>
+      <div class="step-wchart">${bars}</div>
+      <div class="step-wlabels">${labels}</div>
+      <div class="step-wstats">
+        <span>${ru?'Сегодня':'Today'}: <b class="step-wstat-val">${todayS.toLocaleString()}</b></span>
+        <span>${ru?'Макс.':'Max'}: <b class="step-wstat-val">${maxDay.toLocaleString()}</b></span>
+        <span>${ru?'Цель':'Goal'}: <b class="step-wstat-val">${stepGoal.toLocaleString()}</b></span>
+      </div>`;
+  }
+  return `<div class="step-card" id="step-card-slot">${body}</div>`;
+}
+
+function _updateStepCard() {
+  const slot = document.getElementById('step-card-slot');
+  if (!slot) return;
+  const tmp = document.createElement('div');
+  tmp.innerHTML = _buildStepCardHtml();
+  slot.replaceWith(tmp.firstChild);
+}
 
 function _stepOnMotion(e) {
   const acc = e.accelerationIncludingGravity || e.acceleration;
   if (!acc || acc.x == null) return;
-  const mag = Math.sqrt((acc.x||0)**2 + (acc.y||0)**2 + (acc.z||0)**2);
-  const now  = Date.now();
+  const mag = Math.sqrt((acc.x||0)**2+(acc.y||0)**2+(acc.z||0)**2);
+  const now = Date.now();
   if (mag > _STEP_THRESHOLD) {
     _stepRising = true;
   } else if (_stepRising) {
@@ -1141,85 +1247,43 @@ function _stepOnMotion(e) {
     if (now - _stepLastAt > _STEP_MIN_GAP) {
       _stepLastAt = now;
       _stepSessionCount++;
-      setSteps(getSteps() + 1);
+      setSteps(getSteps()+1);
       _updateStepCard();
-    }
-  }
-}
-
-function _updateStepCard() {
-  const steps    = getSteps();
-  const stepGoal = 10000;
-  const sPct     = Math.min(100, Math.round(steps / stepGoal * 100));
-  const info  = document.getElementById('step-info');
-  const bar   = document.getElementById('step-bar');
-  const btn   = document.getElementById('step-auto-btn');
-  const row   = btn?.parentElement;
-  if (info) info.textContent = `${steps.toLocaleString()} / ${stepGoal.toLocaleString()}`;
-  if (bar)  bar.style.width  = sPct + '%';
-  if (btn) {
-    btn.textContent = _stepTrackerActive ? '⏹ Стоп' : '📲 Авто-подсчёт';
-    btn.classList.toggle('on', _stepTrackerActive);
-  }
-  if (row) {
-    let liveEl = row.querySelector('.step-live');
-    if (_stepTrackerActive) {
-      if (!liveEl) {
-        liveEl = document.createElement('div');
-        liveEl.className = 'step-live';
-        row.appendChild(liveEl);
-      }
-      liveEl.innerHTML = `<div class="step-live-dot"></div>+${_stepSessionCount} сейчас`;
-    } else {
-      liveEl?.remove();
     }
   }
 }
 
 async function toggleStepTracking() {
   if (_stepTrackerActive) {
-    // Stop
-    if (_stepMotionHandler) window.removeEventListener('devicemotion', _stepMotionHandler);
-    _stepTrackerActive  = false;
-    _stepMotionHandler  = null;
-    _updateStepCard();
-    toast(lang === 'en' ? `Tracked: +${_stepSessionCount} steps` : `Записано: +${_stepSessionCount} шагов`);
-    return;
-  }
-
-  // Start — check support
-  if (typeof DeviceMotionEvent === 'undefined') {
-    toast(lang === 'en' ? 'Accelerometer not supported on this device' : 'Акселерометр не поддерживается');
-    return;
-  }
-
-  // iOS 13+ requires explicit permission
-  if (typeof DeviceMotionEvent.requestPermission === 'function') {
-    let perm;
-    try { perm = await DeviceMotionEvent.requestPermission(); }
-    catch { perm = 'denied'; }
-    if (perm !== 'granted') {
-      toast(lang === 'en' ? 'Motion access denied — use manual buttons' : 'Доступ к датчику отклонён — используй ручной ввод');
-      return;
-    }
-  }
-
-  _stepSessionCount  = 0;
-  _stepRising        = false;
-  _stepLastAt        = 0;
-  _stepMotionHandler = _stepOnMotion;
-  window.addEventListener('devicemotion', _stepMotionHandler, { passive: true });
-  _stepTrackerActive = true;
-  _updateStepCard();
-  toast(lang === 'en' ? '📲 Tracking started' : '📲 Подсчёт запущен');
-}
-
-// Auto-stop tracker when app goes to background
-document.addEventListener('visibilitychange', () => {
-  if (document.hidden && _stepTrackerActive) {
     if (_stepMotionHandler) window.removeEventListener('devicemotion', _stepMotionHandler);
     _stepTrackerActive = false;
     _stepMotionHandler = null;
+    _updateStepCard();
+    toast(lang==='en'?`Tracked: +${_stepSessionCount} steps`:`Записано: +${_stepSessionCount} шагов`);
+    return;
+  }
+  if (typeof DeviceMotionEvent === 'undefined') {
+    toast(lang==='en'?'Accelerometer not supported':'Акселерометр не поддерживается'); return;
+  }
+  if (typeof DeviceMotionEvent.requestPermission === 'function') {
+    let perm;
+    try { perm = await DeviceMotionEvent.requestPermission(); } catch { perm='denied'; }
+    if (perm !== 'granted') {
+      toast(lang==='en'?'Motion access denied':'Доступ к датчику отклонён'); return;
+    }
+  }
+  _stepSessionCount=0; _stepRising=false; _stepLastAt=0;
+  _stepMotionHandler = _stepOnMotion;
+  window.addEventListener('devicemotion', _stepMotionHandler, {passive:true});
+  _stepTrackerActive = true;
+  _updateStepCard();
+  toast(lang==='en'?'📲 Tracking started':'📲 Подсчёт запущен');
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden && _stepTrackerActive) {
+    if (_stepMotionHandler) window.removeEventListener('devicemotion', _stepMotionHandler);
+    _stepTrackerActive=false; _stepMotionHandler=null;
     _updateStepCard();
   }
 });
@@ -1273,10 +1337,6 @@ function renderHome() {
   const water = getWater();
   const wPct = Math.min(100, Math.round(water/2500*100));
 
-  const steps = getSteps();
-  const stepGoal = 10000;
-  const sPct = Math.min(100, Math.round(steps/stepGoal*100));
-
   const dayNum = ((new Date().getDay()+6)%7)+1;
   const dayNames=['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
   const workoutHtml = planData.workout_plan ? (()=>{
@@ -1327,9 +1387,9 @@ function renderHome() {
         <div class="ring-center"><div class="ring-cal">${remaining}</div><div class="ring-lbl">${t('home_remaining')}</div></div>
       </div>
       <div class="ring-stats">
-        ${[[t('home_protein'),'#5c9fff',pct(consumed.p,target.p),`${consumed.p.toFixed(0)}/${target.p}г`],
-           [t('home_fat'),'#ff9500',pct(consumed.fat,target.fat),`${consumed.fat.toFixed(0)}/${target.fat}г`],
-           [t('home_carbs'),'#30d158',pct(consumed.c,target.c),`${consumed.c.toFixed(0)}/${target.c}г`],
+        ${[[t('home_protein'),'#22d3ee',pct(consumed.p,target.p),`${consumed.p.toFixed(0)}/${target.p}г`],
+           [t('home_fat'),'#f87171',pct(consumed.fat,target.fat),`${consumed.fat.toFixed(0)}/${target.fat}г`],
+           [t('home_carbs'),'#a78bfa',pct(consumed.c,target.c),`${consumed.c.toFixed(0)}/${target.c}г`],
           ].map(([n,c,p,v])=>`
           <div class="ring-row">
             <div class="ring-dot" style="background:${c}"></div>
@@ -1354,25 +1414,7 @@ function renderHome() {
       </div>
     </div>
 
-    <div class="step-card">
-      <div class="step-hd">
-        <div class="step-ttl">👟 Шаги</div>
-        <div class="step-info" id="step-info">${steps.toLocaleString()} / ${stepGoal.toLocaleString()}</div>
-      </div>
-      <div class="step-bar-wrap"><div class="step-bar" id="step-bar" style="width:${sPct}%"></div></div>
-      <div class="step-btns">
-        <button class="step-btn" onclick="addSteps(1000)">+1 000</button>
-        <button class="step-btn" onclick="addSteps(3000)">+3 000</button>
-        <button class="step-btn" onclick="addSteps(5000)">+5 000</button>
-        <button class="step-btn reset" onclick="addSteps(-getSteps())" title="Сбросить">↺</button>
-      </div>
-      <div class="step-auto-row">
-        <button class="step-auto-btn ${_stepTrackerActive?'on':''}" id="step-auto-btn" onclick="toggleStepTracking()">
-          ${_stepTrackerActive ? '⏹ Стоп' : '📲 Авто-подсчёт'}
-        </button>
-        ${_stepTrackerActive ? `<div class="step-live"><div class="step-live-dot"></div>+${_stepSessionCount} сейчас</div>` : ''}
-      </div>
-    </div>
+    ${_buildStepCardHtml()}
 
     ${workoutHtml}${nutrCard}${wrkCard}
   `;
