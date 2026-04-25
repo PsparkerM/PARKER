@@ -143,6 +143,15 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
   border:1.5px solid rgba(30,199,106,.3);background:rgba(30,199,106,.08);color:var(--green);transition:all .15s}
 .step-btn:active{background:rgba(30,199,106,.18)}
 .step-btn.reset{border-color:var(--border2);background:var(--surface);color:var(--text3);flex:0;padding:11px 14px}
+.step-auto-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
+.step-auto-btn{flex:1;padding:10px 12px;border-radius:var(--radius-sm);font-size:13px;font-weight:700;
+  border:1.5px solid var(--border2);background:var(--surface2);color:var(--text2);transition:all .15s;text-align:center}
+.step-auto-btn.on{border-color:rgba(30,199,106,.4);background:rgba(30,199,106,.1);color:var(--green)}
+.step-auto-btn:active{opacity:.7}
+.step-live{font-size:12px;font-weight:700;color:var(--green);display:flex;align-items:center;gap:5px;flex-shrink:0}
+.step-live-dot{width:7px;height:7px;border-radius:50%;background:var(--green);
+  animation:pulse-dot 1s ease-in-out infinite}
+@keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
 .plan-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;overflow:hidden}
 .plan-hd{display:flex;align-items:center;justify-content:space-between;padding:15px 16px;cursor:pointer;user-select:none}
 .plan-hd:active{opacity:.8}.plan-ttl{font-size:14px;font-weight:700}
@@ -1106,9 +1115,114 @@ function setSteps(v) { localStorage.setItem('pk_steps_'+todayKey(), String(v)); 
 function addSteps(n) {
   const v = Math.max(0, getSteps()+n);
   setSteps(v);
-  renderHome();
+  _updateStepCard();
   if (n>0) toast(`+${n.toLocaleString()} 👟`);
 }
+
+// Step tracker state (survives renderHome re-renders)
+let _stepTrackerActive = false;
+let _stepSessionCount  = 0;
+let _stepMotionHandler = null;
+let _stepLastMag       = 0;
+let _stepRising        = false;
+let _stepLastAt        = 0;
+const _STEP_THRESHOLD  = 11;   // m/s² — tune if needed
+const _STEP_MIN_GAP    = 300;  // ms between counted steps
+
+function _stepOnMotion(e) {
+  const acc = e.accelerationIncludingGravity || e.acceleration;
+  if (!acc || acc.x == null) return;
+  const mag = Math.sqrt((acc.x||0)**2 + (acc.y||0)**2 + (acc.z||0)**2);
+  const now  = Date.now();
+  if (mag > _STEP_THRESHOLD) {
+    _stepRising = true;
+  } else if (_stepRising) {
+    _stepRising = false;
+    if (now - _stepLastAt > _STEP_MIN_GAP) {
+      _stepLastAt = now;
+      _stepSessionCount++;
+      setSteps(getSteps() + 1);
+      _updateStepCard();
+    }
+  }
+}
+
+function _updateStepCard() {
+  const steps    = getSteps();
+  const stepGoal = 10000;
+  const sPct     = Math.min(100, Math.round(steps / stepGoal * 100));
+  const info  = document.getElementById('step-info');
+  const bar   = document.getElementById('step-bar');
+  const btn   = document.getElementById('step-auto-btn');
+  const row   = btn?.parentElement;
+  if (info) info.textContent = `${steps.toLocaleString()} / ${stepGoal.toLocaleString()}`;
+  if (bar)  bar.style.width  = sPct + '%';
+  if (btn) {
+    btn.textContent = _stepTrackerActive ? '⏹ Стоп' : '📲 Авто-подсчёт';
+    btn.classList.toggle('on', _stepTrackerActive);
+  }
+  if (row) {
+    let liveEl = row.querySelector('.step-live');
+    if (_stepTrackerActive) {
+      if (!liveEl) {
+        liveEl = document.createElement('div');
+        liveEl.className = 'step-live';
+        row.appendChild(liveEl);
+      }
+      liveEl.innerHTML = `<div class="step-live-dot"></div>+${_stepSessionCount} сейчас`;
+    } else {
+      liveEl?.remove();
+    }
+  }
+}
+
+async function toggleStepTracking() {
+  if (_stepTrackerActive) {
+    // Stop
+    if (_stepMotionHandler) window.removeEventListener('devicemotion', _stepMotionHandler);
+    _stepTrackerActive  = false;
+    _stepMotionHandler  = null;
+    _updateStepCard();
+    toast(lang === 'en' ? `Tracked: +${_stepSessionCount} steps` : `Записано: +${_stepSessionCount} шагов`);
+    return;
+  }
+
+  // Start — check support
+  if (typeof DeviceMotionEvent === 'undefined') {
+    toast(lang === 'en' ? 'Accelerometer not supported on this device' : 'Акселерометр не поддерживается');
+    return;
+  }
+
+  // iOS 13+ requires explicit permission
+  if (typeof DeviceMotionEvent.requestPermission === 'function') {
+    let perm;
+    try { perm = await DeviceMotionEvent.requestPermission(); }
+    catch { perm = 'denied'; }
+    if (perm !== 'granted') {
+      toast(lang === 'en' ? 'Motion access denied — use manual buttons' : 'Доступ к датчику отклонён — используй ручной ввод');
+      return;
+    }
+  }
+
+  _stepSessionCount  = 0;
+  _stepRising        = false;
+  _stepLastAt        = 0;
+  _stepMotionHandler = _stepOnMotion;
+  window.addEventListener('devicemotion', _stepMotionHandler, { passive: true });
+  _stepTrackerActive = true;
+  _updateStepCard();
+  toast(lang === 'en' ? '📲 Tracking started' : '📲 Подсчёт запущен');
+}
+
+// Auto-stop tracker when app goes to background
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden && _stepTrackerActive) {
+    if (_stepMotionHandler) window.removeEventListener('devicemotion', _stepMotionHandler);
+    _stepTrackerActive = false;
+    _stepMotionHandler = null;
+    _updateStepCard();
+  }
+});
 
 function parseWorkoutDay(plan, dayNum) {
   if (!plan) return '';
@@ -1243,7 +1357,7 @@ function renderHome() {
     <div class="step-card">
       <div class="step-hd">
         <div class="step-ttl">👟 Шаги</div>
-        <div class="step-info">${steps.toLocaleString()} / ${stepGoal.toLocaleString()}</div>
+        <div class="step-info" id="step-info">${steps.toLocaleString()} / ${stepGoal.toLocaleString()}</div>
       </div>
       <div class="step-bar-wrap"><div class="step-bar" id="step-bar" style="width:${sPct}%"></div></div>
       <div class="step-btns">
@@ -1251,6 +1365,12 @@ function renderHome() {
         <button class="step-btn" onclick="addSteps(3000)">+3 000</button>
         <button class="step-btn" onclick="addSteps(5000)">+5 000</button>
         <button class="step-btn reset" onclick="addSteps(-getSteps())" title="Сбросить">↺</button>
+      </div>
+      <div class="step-auto-row">
+        <button class="step-auto-btn ${_stepTrackerActive?'on':''}" id="step-auto-btn" onclick="toggleStepTracking()">
+          ${_stepTrackerActive ? '⏹ Стоп' : '📲 Авто-подсчёт'}
+        </button>
+        ${_stepTrackerActive ? `<div class="step-live"><div class="step-live-dot"></div>+${_stepSessionCount} сейчас</div>` : ''}
       </div>
     </div>
 
