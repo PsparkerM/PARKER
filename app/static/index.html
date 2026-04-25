@@ -133,6 +133,16 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
   border:1.5px solid rgba(61,127,255,.3);background:rgba(61,127,255,.08);color:var(--blue);transition:all .15s}
 .water-btn:active{background:rgba(61,127,255,.18)}
 .water-btn.reset{border-color:var(--border2);background:var(--surface);color:var(--text3);flex:0;padding:11px 14px}
+.step-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:16px}
+.step-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.step-ttl{font-size:14px;font-weight:700}.step-info{font-size:13px;font-weight:700;color:var(--green)}
+.step-bar-wrap{height:6px;background:var(--surface2);border-radius:3px;overflow:hidden;margin-bottom:12px}
+.step-bar{height:100%;background:var(--green);border-radius:3px;transition:width .4s ease}
+.step-btns{display:flex;gap:8px}
+.step-btn{flex:1;padding:11px 4px;border-radius:var(--radius-sm);font-size:13px;font-weight:700;
+  border:1.5px solid rgba(30,199,106,.3);background:rgba(30,199,106,.08);color:var(--green);transition:all .15s}
+.step-btn:active{background:rgba(30,199,106,.18)}
+.step-btn.reset{border-color:var(--border2);background:var(--surface);color:var(--text3);flex:0;padding:11px 14px}
 .plan-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;overflow:hidden}
 .plan-hd{display:flex;align-items:center;justify-content:space-between;padding:15px 16px;cursor:pointer;user-select:none}
 .plan-hd:active{opacity:.8}.plan-ttl{font-size:14px;font-weight:700}
@@ -140,13 +150,29 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 .plan-card.open .plan-chevron{transform:rotate(180deg)}
 .plan-body{display:none;padding:0 16px 14px;border-top:1px solid var(--border);padding-top:12px;
   font-size:13px;line-height:1.7;color:var(--text2);white-space:pre-wrap;word-break:break-word}
-.plan-card.open .plan-body{display:block}
-.day-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:16px}
+.plan-card.open .plan-body{display:block;max-height:320px;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+.day-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:16px;cursor:pointer;transition:opacity .15s}
+.day-card:active{opacity:.8}
 .day-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
 .day-ttl{font-size:14px;font-weight:700}
 .day-badge{font-size:11px;font-weight:700;padding:4px 10px;border-radius:10px;
   background:rgba(30,199,106,.12);border:1px solid rgba(30,199,106,.25);color:var(--green)}
 .day-badge.rest{background:rgba(61,127,255,.12);border-color:rgba(61,127,255,.25);color:var(--blue)}
+.day-open-hint{font-size:11px;color:var(--text3);margin-top:8px;text-align:right}
+/* WORKOUT BOTTOM SHEET */
+.wo-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:240;
+  opacity:0;pointer-events:none;transition:opacity .25s}
+.wo-overlay.on{opacity:1;pointer-events:all}
+.wo-sheet{position:fixed;bottom:0;left:0;right:0;z-index:241;background:var(--bg2);
+  border-radius:24px 24px 0 0;max-height:85vh;display:flex;flex-direction:column;
+  transform:translateY(100%);transition:transform .3s cubic-bezier(.32,1,.23,1);
+  max-width:480px;margin:0 auto}
+.wo-sheet.on{transform:translateY(0)}
+.wo-handle{width:36px;height:4px;border-radius:2px;background:var(--border2);margin:12px auto 0;flex-shrink:0}
+.wo-hdr{display:flex;align-items:center;justify-content:space-between;padding:12px 18px 8px;flex-shrink:0;border-bottom:1px solid var(--border)}
+.wo-ttl{font-size:17px;font-weight:800}
+.wo-close{font-size:20px;color:var(--text3);padding:4px 8px;line-height:1}
+.wo-body{flex:1;min-height:0;overflow-y:auto;padding:16px 18px 32px;-webkit-overflow-scrolling:touch;font-size:14px;line-height:1.8;color:var(--text2);white-space:pre-wrap;word-break:break-word}
 
 /* CHAT */
 .chat-wrap{flex:1;min-height:0;overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:8px;
@@ -422,7 +448,7 @@ input[type=time]{color-scheme:dark}
 .faq-back-btn{display:flex;align-items:center;gap:6px;font-size:14px;font-weight:700;
   color:var(--gold);background:none;border:none;padding:8px 0;min-width:70px}
 .faq-page-ttl{font-size:15px;font-weight:800;letter-spacing:.3px}
-.faq-page-scrl{flex:1;overflow-y:auto;padding:16px 16px 40px}
+.faq-page-scrl{flex:1;min-height:0;overflow-y:auto;padding:16px 16px 40px;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
 .faq-hero{background:linear-gradient(135deg,rgba(245,197,24,.12),rgba(245,197,24,.04));
   border:1px solid rgba(245,197,24,.2);border-radius:20px;padding:20px;margin-bottom:20px;text-align:center}
 .faq-hero-ico{font-size:42px;margin-bottom:10px}
@@ -641,6 +667,17 @@ input[type=time]{color-scheme:dark}
       <div style="min-width:70px"></div>
     </div>
     <div class="faq-page-scrl" id="faq-page-content"></div>
+  </div>
+
+  <!-- WORKOUT BOTTOM SHEET -->
+  <div class="wo-overlay" id="wo-overlay" onclick="closeWorkoutSheet()"></div>
+  <div class="wo-sheet" id="wo-sheet">
+    <div class="wo-handle"></div>
+    <div class="wo-hdr">
+      <div class="wo-ttl" id="wo-ttl">🏋️ Тренировка</div>
+      <button class="wo-close" onclick="closeWorkoutSheet()">✕</button>
+    </div>
+    <div class="wo-body" id="wo-body"></div>
   </div>
 
   <input type="file" id="photo-input" accept="image/*" capture="environment">
@@ -1064,6 +1101,45 @@ function updateHeader() {
 }
 
 // ══ HOME ══
+function getSteps() { return parseInt(localStorage.getItem('pk_steps_'+todayKey())||'0'); }
+function setSteps(v) { localStorage.setItem('pk_steps_'+todayKey(), String(v)); }
+function addSteps(n) {
+  const v = Math.max(0, getSteps()+n);
+  setSteps(v);
+  renderHome();
+  if (n>0) toast(`+${n.toLocaleString()} 👟`);
+}
+
+function parseWorkoutDay(plan, dayNum) {
+  if (!plan) return '';
+  const lines = plan.split('\n');
+  let capturing = false, result = [];
+  for (const line of lines) {
+    const low = line.toLowerCase();
+    const isDay = low.includes(`день ${dayNum}`) || low.includes(`day ${dayNum}`);
+    const isNextDay = (low.includes('день ') || low.includes('day ')) && !isDay;
+    if (isDay) { capturing = true; result.push(line); continue; }
+    if (capturing && isNextDay) break;
+    if (capturing) result.push(line);
+  }
+  return result.join('\n').trim();
+}
+
+function openWorkoutSheet(dayNum, dayName) {
+  const content = parseWorkoutDay(planData?.workout_plan||'', dayNum);
+  const body = document.getElementById('wo-body');
+  const ttl  = document.getElementById('wo-ttl');
+  if (!body || !ttl) return;
+  ttl.textContent = `🏋️ ${dayName}`;
+  body.textContent = content || 'Подробности плана недоступны';
+  document.getElementById('wo-overlay').classList.add('on');
+  document.getElementById('wo-sheet').classList.add('on');
+}
+function closeWorkoutSheet() {
+  document.getElementById('wo-overlay').classList.remove('on');
+  document.getElementById('wo-sheet').classList.remove('on');
+}
+
 function renderHome() {
   const el = document.getElementById('home-content');
   if (!profile||!planData) { el.innerHTML=''; return; }
@@ -1078,9 +1154,14 @@ function renderHome() {
   const remaining = Math.max(0, target.cal - Math.round(consumed.cal));
   const calPct = pct(consumed.cal, target.cal);
   const R=44, circ=2*Math.PI*R, dash=circ*(1-calPct/100);
+  const ringColor = calPct >= 100 ? 'var(--red)' : calPct >= 75 ? 'var(--orange)' : 'url(#calGrad)';
 
   const water = getWater();
   const wPct = Math.min(100, Math.round(water/2500*100));
+
+  const steps = getSteps();
+  const stepGoal = 10000;
+  const sPct = Math.min(100, Math.round(steps/stepGoal*100));
 
   const dayNum = ((new Date().getDay()+6)%7)+1;
   const dayNames=['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
@@ -1088,12 +1169,13 @@ function renderHome() {
     const lines = planData.workout_plan.split('\n').filter(Boolean);
     const dayLine = lines.find(l=>l.toLowerCase().includes(`день ${dayNum}`)||l.toLowerCase().includes(`day ${dayNum}`));
     const isRest = dayLine?.toLowerCase().includes('отдых')||dayLine?.toLowerCase().includes('rest');
-    return `<div class="day-card">
+    return `<div class="day-card" onclick="openWorkoutSheet(${dayNum},'Сегодня — ${dayNames[dayNum-1]}')">
       <div class="day-hd">
         <div class="day-ttl">🏋️ Сегодня — ${dayNames[dayNum-1]}</div>
         <div class="day-badge ${isRest?'rest':''}">${isRest?'Отдых':'Тренировка'}</div>
       </div>
       <div style="font-size:13px;color:var(--text2);line-height:1.6">${escHtml(dayLine||'Смотри план тренировок ниже')}</div>
+      <div class="day-open-hint">Нажми, чтобы открыть ›</div>
     </div>`;
   })() : '';
 
@@ -1117,17 +1199,23 @@ function renderHome() {
     <div class="ring-card">
       <div class="ring-wrap">
         <svg width="90" height="90" viewBox="0 0 96 96">
+          <defs>
+            <linearGradient id="calGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#f5c518"/>
+              <stop offset="100%" stop-color="#ff7a00"/>
+            </linearGradient>
+          </defs>
           <circle cx="48" cy="48" r="${R}" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="8"/>
-          <circle cx="48" cy="48" r="${R}" fill="none" stroke="var(--gold)" stroke-width="8"
+          <circle cx="48" cy="48" r="${R}" fill="none" stroke="${ringColor}" stroke-width="8"
             stroke-dasharray="${circ}" stroke-dashoffset="${dash}" stroke-linecap="round"
-            style="transition:stroke-dashoffset .6s ease"/>
+            style="transition:stroke-dashoffset .6s ease,stroke .3s ease"/>
         </svg>
         <div class="ring-center"><div class="ring-cal">${remaining}</div><div class="ring-lbl">${t('home_remaining')}</div></div>
       </div>
       <div class="ring-stats">
-        ${[[t('home_protein'),'var(--blue)',pct(consumed.p,target.p),`${consumed.p.toFixed(0)}/${target.p}г`],
-           [t('home_fat'),'var(--orange)',pct(consumed.fat,target.fat),`${consumed.fat.toFixed(0)}/${target.fat}г`],
-           [t('home_carbs'),'var(--green)',pct(consumed.c,target.c),`${consumed.c.toFixed(0)}/${target.c}г`],
+        ${[[t('home_protein'),'#5c9fff',pct(consumed.p,target.p),`${consumed.p.toFixed(0)}/${target.p}г`],
+           [t('home_fat'),'#ff9500',pct(consumed.fat,target.fat),`${consumed.fat.toFixed(0)}/${target.fat}г`],
+           [t('home_carbs'),'#30d158',pct(consumed.c,target.c),`${consumed.c.toFixed(0)}/${target.c}г`],
           ].map(([n,c,p,v])=>`
           <div class="ring-row">
             <div class="ring-dot" style="background:${c}"></div>
@@ -1149,6 +1237,20 @@ function renderHome() {
         <button class="water-btn" onclick="addWater(250)">+250 мл</button>
         <button class="water-btn" onclick="addWater(500)">+500 мл</button>
         <button class="water-btn reset" onclick="addWater(-getWater())" title="Сбросить">↺</button>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-hd">
+        <div class="step-ttl">👟 Шаги</div>
+        <div class="step-info">${steps.toLocaleString()} / ${stepGoal.toLocaleString()}</div>
+      </div>
+      <div class="step-bar-wrap"><div class="step-bar" id="step-bar" style="width:${sPct}%"></div></div>
+      <div class="step-btns">
+        <button class="step-btn" onclick="addSteps(1000)">+1 000</button>
+        <button class="step-btn" onclick="addSteps(3000)">+3 000</button>
+        <button class="step-btn" onclick="addSteps(5000)">+5 000</button>
+        <button class="step-btn reset" onclick="addSteps(-getSteps())" title="Сбросить">↺</button>
       </div>
     </div>
 
