@@ -165,14 +165,31 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 .step-live-dot{width:7px;height:7px;border-radius:50%;background:var(--green);
   animation:pulse-dot 1s ease-in-out infinite}
 @keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
-.plan-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;overflow:hidden}
+.plan-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;
+  overflow:hidden;position:relative;z-index:0}
 .plan-hd{display:flex;align-items:center;justify-content:space-between;padding:15px 16px;cursor:pointer;user-select:none}
 .plan-hd:active{opacity:.8}.plan-ttl{font-size:14px;font-weight:700}
 .plan-chevron{font-size:12px;color:var(--text3);transition:transform .2s}
 .plan-card.open .plan-chevron{transform:rotate(180deg)}
-.plan-body{display:none;padding:0 16px 14px;border-top:1px solid var(--border);padding-top:12px;
-  font-size:13px;line-height:1.7;color:var(--text2);white-space:pre-wrap;word-break:break-word}
-.plan-card.open .plan-body{display:block;max-height:320px;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+.plan-body{display:none;border-top:1px solid var(--border)}
+.plan-body-scrl{overflow-y:auto;max-height:68vh;-webkit-overflow-scrolling:touch;
+  overscroll-behavior:contain;touch-action:pan-y;transform:translateZ(0);
+  padding:12px 16px 16px;font-size:13px;line-height:1.8;color:var(--text2);
+  white-space:pre-wrap;word-break:break-word}
+.plan-card.open .plan-body{display:block}
+/* MEAL SCHEDULE CARD */
+.meal-sched-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;overflow:hidden}
+.meal-sched-hdr{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border-bottom:1px solid var(--border)}
+.meal-sched-ttl{font-size:14px;font-weight:700}
+.meal-sched-edit{font-size:12px;font-weight:700;color:var(--gold);padding:4px 0;background:none;border:none}
+.meal-sched-row{display:flex;align-items:center;gap:10px;padding:11px 16px;border-bottom:1px solid var(--border)}
+.meal-sched-row:last-child{border-bottom:none}
+.meal-sched-ico{font-size:18px;width:24px;text-align:center;flex-shrink:0}
+.meal-sched-lbl{flex:1;font-size:14px;color:var(--text2);font-weight:500}
+.meal-sched-time{font-size:16px;font-weight:800;font-variant-numeric:tabular-nums}
+.meal-sched-add{display:flex;align-items:center;justify-content:center;padding:12px 16px;
+  font-size:13px;font-weight:700;color:var(--text3);border-top:1px solid var(--border);gap:6px;cursor:pointer}
+.meal-sched-empty{padding:20px 16px;font-size:13px;color:var(--text3);text-align:center}
 /* WORKOUT BANNER */
 .wo-banner{border-radius:20px;padding:16px 18px;cursor:pointer;transition:transform .15s,opacity .15s;
   background:linear-gradient(135deg,rgba(30,199,106,.13) 0%,rgba(30,199,106,.04) 100%);
@@ -1157,6 +1174,17 @@ function updateHeader() {
 }
 
 // ══ HOME ══
+function _mealIcon(label) {
+  const l = (label||'').toLowerCase();
+  if (/завтрак|breakfast/.test(l)) return '🍳';
+  if (/обед|lunch/.test(l)) return '🍽';
+  if (/ужин|dinner/.test(l)) return '🌙';
+  if (/второй завтрак|second/.test(l)) return '☕';
+  if (/перекус|snack/.test(l)) return '🥜';
+  if (/полдник/.test(l)) return '🍎';
+  return '🍴';
+}
+
 function getSteps() { return parseInt(localStorage.getItem('pk_steps_'+todayKey())||'0'); }
 function setSteps(v) { localStorage.setItem('pk_steps_'+todayKey(), String(v)); }
 function getStepsForDate(k) { return parseInt(localStorage.getItem('pk_steps_'+k)||'0'); }
@@ -1477,12 +1505,35 @@ function renderHome() {
     </div>`;
   })() : '';
 
+  const ns = notifSettings.food;
+  const mealSchedHtml = ns?.times?.length ? `
+    <div class="meal-sched-card">
+      <div class="meal-sched-hdr">
+        <span class="meal-sched-ttl">${ru?'📅 Тайминг питания':'📅 Meal schedule'}</span>
+        <button class="meal-sched-edit" onclick="openNotifModal('meal')">${ru?'Изменить ›':'Edit ›'}</button>
+      </div>
+      ${ns.times.map((time,i)=>`
+        <div class="meal-sched-row">
+          <span class="meal-sched-ico">${_mealIcon(ns.labels?.[i]||'')}</span>
+          <span class="meal-sched-lbl">${escHtml(ns.labels?.[i]||'Приём пищи')}</span>
+          <span class="meal-sched-time">${time}</span>
+        </div>`).join('')}
+      <div class="meal-sched-add" onclick="openNotifModal('meal')">+ ${ru?'Добавить приём пищи':'Add meal'}</div>
+    </div>` :
+    `<div class="meal-sched-card">
+      <div class="meal-sched-hdr">
+        <span class="meal-sched-ttl">${ru?'📅 Тайминг питания':'📅 Meal schedule'}</span>
+        <button class="meal-sched-edit" onclick="openNotifModal('meal')">${ru?'Настроить ›':'Setup ›'}</button>
+      </div>
+      <div class="meal-sched-empty">${ru?'Выставь время приёмов пищи под свой график':'Set your meal times to match your schedule'}</div>
+    </div>`;
+
   const nutrCard = planData.nutrition_plan ? `
     <div class="plan-card" id="home-nutr-card">
       <div class="plan-hd" onclick="togglePlan('home-nutr-card')">
         <div class="plan-ttl">🍽 Рацион на 7 дней</div><div class="plan-chevron">▼</div>
       </div>
-      <pre class="plan-body">${escHtml(planData.nutrition_plan)}</pre>
+      <div class="plan-body"><div class="plan-body-scrl">${escHtml(planData.nutrition_plan)}</div></div>
     </div>` : '';
 
   const wrkCard = planData.workout_plan ? `
@@ -1490,7 +1541,7 @@ function renderHome() {
       <div class="plan-hd" onclick="togglePlan('home-wrk-card')">
         <div class="plan-ttl">💪 Тренировки на 7 дней</div><div class="plan-chevron">▼</div>
       </div>
-      <pre class="plan-body">${escHtml(planData.workout_plan)}</pre>
+      <div class="plan-body"><div class="plan-body-scrl">${escHtml(planData.workout_plan)}</div></div>
     </div>` : '';
 
   el.innerHTML = `
@@ -1540,7 +1591,7 @@ function renderHome() {
 
     ${_buildStepCardHtml()}
 
-    ${workoutHtml}${nutrCard}${wrkCard}
+    ${workoutHtml}${mealSchedHtml}${nutrCard}${wrkCard}
   `;
 }
 
