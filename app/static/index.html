@@ -664,8 +664,13 @@ input[type=time]{color-scheme:dark}
 const tg = window.Telegram?.WebApp;
 if (tg) { tg.ready(); tg.expand(); tg.disableVerticalSwipes?.(); }
 function getTgId() {
-  try { return JSON.parse(new URLSearchParams(tg?.initData||'').get('user')||'{}').id||null; }
-  catch { return null; }
+  try {
+    const fromInit = JSON.parse(new URLSearchParams(tg?.initData||'').get('user')||'{}').id||null;
+    if (fromInit) return fromInit;
+    // fallback: profile.tg_id is saved to localStorage on onboarding
+    const saved = JSON.parse(localStorage.getItem('pk_profile')||'{}').tg_id||null;
+    return saved;
+  } catch { return null; }
 }
 function getTgName() {
   try { return JSON.parse(new URLSearchParams(tg?.initData||'').get('user')||'{}').first_name||null; }
@@ -773,7 +778,8 @@ function notifSubText(key) {
 }
 
 async function saveReminderToBackend(type) {
-  const tgId = getTgId(); if (!tgId) return;
+  const tgId = getTgId();
+  if (!tgId) { toast(lang==='en' ? 'Open via Telegram to save reminders' : 'Открой через Telegram чтобы сохранить напоминание'); return; }
   const keyMap = {meal:'food', water:'water', log:'log'};
   const ns = notifSettings[keyMap[type]];
   const base = {tg_id: tgId, type, active: ns.active, utc_offset: ns.utc_offset ?? getUtcOffset()};

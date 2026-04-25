@@ -161,6 +161,18 @@ async def reset_webhook(request: Request):
         return JSONResponse({"ok": False, "error": str(e)}, status_code=500)
 
 
+@app.get("/debug/reminders")
+async def debug_reminders():
+    from bot.scheduler import scheduler
+    from db.queries import get_all_active_reminders
+    jobs = [{"id": j.id, "next": str(j.next_run_time)} for j in scheduler.get_jobs()]
+    try:
+        db_rows = get_all_active_reminders()
+    except Exception as e:
+        db_rows = [{"error": str(e)}]
+    return {"scheduled_jobs": jobs, "db_reminders": db_rows}
+
+
 @app.get("/debug/ai")
 async def debug_ai():
     import anthropic as _ant
