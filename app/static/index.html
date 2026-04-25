@@ -177,6 +177,24 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
   padding:12px 16px 16px;font-size:13px;line-height:1.8;color:var(--text2);
   white-space:pre-wrap;word-break:break-word}
 .plan-card.open .plan-body{display:block}
+/* WEEKLY WORKOUT ROWS */
+.wk-row{display:flex;align-items:center;gap:10px;padding:12px 16px;
+  border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s;-webkit-tap-highlight-color:transparent}
+.wk-row:last-child{border-bottom:none}
+.wk-row:active{background:var(--surface2)}
+.wk-row.today{background:rgba(245,197,24,.05)}
+.wk-dayinfo{display:flex;flex-direction:column;gap:1px;width:46px;flex-shrink:0}
+.wk-daynum{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.4px}
+.wk-dayname{font-size:12px;font-weight:700;color:var(--text2)}
+.wk-row.today .wk-dayname{color:var(--gold)}
+.wk-title{flex:1;font-size:14px;font-weight:600;line-height:1.3}
+.wk-row.today .wk-title{color:var(--text)}
+.wk-row.rest .wk-title{color:var(--text3)}
+.wk-emoji{font-size:20px;flex-shrink:0}
+.wk-badge-today{font-size:10px;font-weight:800;padding:3px 7px;border-radius:8px;
+  background:rgba(245,197,24,.15);border:1px solid rgba(245,197,24,.3);color:var(--gold);
+  flex-shrink:0;white-space:nowrap}
+.wk-list{overflow:hidden}
 /* MEAL SCHEDULE CARD */
 .meal-sched-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;overflow:hidden}
 .meal-sched-hdr{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border-bottom:1px solid var(--border)}
@@ -1415,6 +1433,25 @@ function _parseExercises(content) {
   return exs;
 }
 
+function _parseWeeklyWorkout(plan) {
+  if (!plan) return [];
+  const result = [];
+  let cur = null;
+  for (const line of plan.split('\n')) {
+    const t = line.trim();
+    const m = t.match(/^(?:день|day)\s*(\d+)/i);
+    if (m) {
+      if (cur) result.push(cur);
+      const num = parseInt(m[1]);
+      const wName = _extractWorkoutName(t) || '';
+      const isRest = !wName || /отдых|rest/i.test(t);
+      cur = { num, wName: isRest ? '' : wName, isRest };
+    }
+  }
+  if (cur) result.push(cur);
+  return result;
+}
+
 function openWorkoutSheet(dayNum, dayName) {
   const content = parseWorkoutDay(planData?.workout_plan||'', dayNum);
   const body = document.getElementById('wo-body');
@@ -1536,13 +1573,34 @@ function renderHome() {
       <div class="plan-body"><div class="plan-body-scrl">${escHtml(planData.nutrition_plan)}</div></div>
     </div>` : '';
 
-  const wrkCard = planData.workout_plan ? `
-    <div class="plan-card" id="home-wrk-card">
+  const wrkCard = planData.workout_plan ? (()=>{
+    const days = _parseWeeklyWorkout(planData.workout_plan);
+    const enNames = ['Mo','Tu','We','Th','Fr','Sa','Su'];
+    const ruNames = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+    const dayLabels = ru ? ruNames : enNames;
+    const rowsHtml = days.length ? days.map(d=>{
+      const isToday = d.num === dayNum;
+      const label = d.isRest ? (ru?'День отдыха':'Rest day') : escHtml(d.wName || (ru?'Тренировка':'Workout'));
+      const emoji = d.isRest ? '🛌' : _woEmoji(d.wName);
+      const dayNameLabel = dayLabels[(d.num-1)%7];
+      return `<div class="wk-row${isToday?' today':''}${d.isRest?' rest':''}"
+          onclick="openWorkoutSheet(${d.num},'${dayNameLabel}')">
+        <div class="wk-dayinfo">
+          <div class="wk-daynum">${ru?'ДЕНЬ':'DAY'} ${d.num}</div>
+          <div class="wk-dayname">${dayNameLabel}</div>
+        </div>
+        <div class="wk-title">${label}</div>
+        <div class="wk-emoji">${emoji}</div>
+        ${isToday?`<div class="wk-badge-today">${ru?'Сегодня':'Today'}</div>`:''}
+      </div>`;
+    }).join('') : `<div class="plan-body-scrl">${escHtml(planData.workout_plan)}</div>`;
+    return `<div class="plan-card open" id="home-wrk-card">
       <div class="plan-hd" onclick="togglePlan('home-wrk-card')">
-        <div class="plan-ttl">💪 Тренировки на 7 дней</div><div class="plan-chevron">▼</div>
+        <div class="plan-ttl">💪 ${ru?'Тренировки на 7 дней':'7-Day Workout Plan'}</div><div class="plan-chevron">▼</div>
       </div>
-      <div class="plan-body"><div class="plan-body-scrl">${escHtml(planData.workout_plan)}</div></div>
-    </div>` : '';
+      <div class="plan-body"><div class="wk-list">${rowsHtml}</div></div>
+    </div>`;
+  })() : '';
 
   el.innerHTML = `
     <div class="ring-card">
