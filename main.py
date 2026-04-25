@@ -21,6 +21,7 @@ from app.api.admin import router as admin_router
 from app.api.adapt import router as adapt_router
 from app.api.user import router as user_router
 from app.api.notify import router as notify_router
+from app.api.reminders import router as reminders_router
 
 logging.basicConfig(
     level=logging.INFO,
@@ -61,8 +62,11 @@ async def _test_ai_on_startup():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # AI test запускаем в фоне — не блокирует старт бота
+    # AI test + reminders scheduler запускаем в фоне
     asyncio.create_task(_test_ai_on_startup())
+    from bot.scheduler import scheduler, load_all_reminders
+    scheduler.start()
+    asyncio.create_task(load_all_reminders())
 
     if WEBAPP_URL:
         url = f"{WEBAPP_URL.rstrip('/')}{WEBHOOK_PATH}"
@@ -83,6 +87,9 @@ async def lifespan(app: FastAPI):
 
     # НЕ удаляем вебхук при остановке — Railway делает rolling deploy,
     # старый инстанс не должен удалять вебхук пока новый его уже установил
+    from bot.scheduler import scheduler
+    if scheduler.running:
+        scheduler.shutdown(wait=False)
     try:
         await bot.session.close()
     except Exception:
@@ -98,6 +105,7 @@ app.include_router(admin_router)
 app.include_router(adapt_router)
 app.include_router(user_router)
 app.include_router(notify_router)
+app.include_router(reminders_router)
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 

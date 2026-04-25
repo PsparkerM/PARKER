@@ -262,16 +262,17 @@ def _extract_json(raw: str) -> dict:
 # ──────────────────────────────────────────────
 #  Chat
 # ──────────────────────────────────────────────
-async def generate_chat_response(message: str, history: list, profile: dict) -> str:
+async def generate_chat_response(message: str, history: list, profile: dict, lang: str = "ru") -> str:
     if not ANTHROPIC_API_KEY:
-        return "Арни временно недоступен — API ключ не задан."
+        return "Arnie is temporarily unavailable — API key not set." if lang == "en" else "Арни временно недоступен — API ключ не задан."
     try:
         client = _get_client()
+        lang_instruction = "\n\nIMPORTANT: The user's interface language is English. You MUST respond ONLY in English. All advice, plans, and answers should be in English." if lang == "en" else ""
         system = (
             ARNI_SYSTEM
             .replace("%%PROFILE%%", _build_profile_block(profile))
             .replace("%%HEALTH%%", _build_health_rules(profile))
-        )
+        ) + lang_instruction
         safe_hist = _sanitize_history(history)
         # Must end on assistant (or be empty) before we append user
         if safe_hist and safe_hist[-1]["role"] == "user":
@@ -286,16 +287,16 @@ async def generate_chat_response(message: str, history: list, profile: dict) -> 
         return _strip_markdown(msg.content[0].text)
     except anthropic.AuthenticationError:
         logger.error("Anthropic auth error — check ANTHROPIC_API_KEY")
-        return "Арни недоступен — проблема с API ключом. Обратись к администратору."
+        return "Arnie unavailable — API key issue. Contact admin." if lang == "en" else "Арни недоступен — проблема с API ключом. Обратись к администратору."
     except anthropic.RateLimitError:
         logger.warning("Anthropic rate limit hit")
-        return "Слишком много запросов — подожди минуту и попробуй ещё раз."
+        return "Too many requests — wait a minute and try again." if lang == "en" else "Слишком много запросов — подожди минуту и попробуй ещё раз."
     except anthropic.APITimeoutError:
         logger.warning("Anthropic timeout")
-        return "Арни думает дольше обычного — попробуй ещё раз."
+        return "Arnie is taking longer than usual — try again." if lang == "en" else "Арни думает дольше обычного — попробуй ещё раз."
     except Exception as e:
         logger.exception("generate_chat_response failed: %s", e)
-        return "Арни временно недоступен. Попробуй ещё раз через минуту."
+        return "Arnie is temporarily unavailable. Try again in a minute." if lang == "en" else "Арни временно недоступен. Попробуй ещё раз через минуту."
 
 
 # ──────────────────────────────────────────────

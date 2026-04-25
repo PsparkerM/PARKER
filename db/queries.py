@@ -145,6 +145,72 @@ def get_all_users() -> list:
         return []
 
 
+def upsert_reminder(user_id: str, tg_id: int, data: dict) -> dict | None:
+    db = get_client()
+    if not db:
+        return None
+    try:
+        payload = {
+            "user_id": user_id,
+            "tg_id": tg_id,
+            "type": data["type"],
+            "label": data.get("label", ""),
+            "time": data.get("time"),
+            "times": data.get("times"),
+            "labels": data.get("labels"),
+            "interval_min": data.get("interval_min"),
+            "night_mode": data.get("night_mode", True),
+            "utc_offset": data.get("utc_offset", 3),
+            "active": data.get("active", True),
+        }
+        # Upsert by (user_id, type) — never create duplicate reminders
+        existing = db.table("reminders").select("id") \
+            .eq("user_id", user_id).eq("type", data["type"]).execute()
+        if existing.data:
+            rid = existing.data[0]["id"]
+            result = db.table("reminders").update(payload).eq("id", rid).execute()
+        else:
+            result = db.table("reminders").insert(payload).execute()
+        return result.data[0] if result.data else None
+    except Exception:
+        logging.exception("upsert_reminder error")
+        return None
+
+
+def get_reminders_for_user(user_id: str) -> list:
+    db = get_client()
+    if not db:
+        return []
+    try:
+        result = db.table("reminders").select("*").eq("user_id", user_id).execute()
+        return result.data or []
+    except Exception:
+        return []
+
+
+def get_all_active_reminders() -> list:
+    db = get_client()
+    if not db:
+        return []
+    try:
+        result = db.table("reminders").select("*").eq("active", True).execute()
+        return result.data or []
+    except Exception:
+        logging.exception("get_all_active_reminders error")
+        return []
+
+
+def delete_reminder(reminder_id: str) -> bool:
+    db = get_client()
+    if not db:
+        return False
+    try:
+        db.table("reminders").delete().eq("id", reminder_id).execute()
+        return True
+    except Exception:
+        return False
+
+
 def set_user_status(tg_id: int, status: str) -> bool:
     db = get_client()
     if not db:
