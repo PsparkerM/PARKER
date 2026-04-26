@@ -17,7 +17,7 @@
   --radius:16px;--radius-sm:10px;--nav-h:68px;--hdr-h:56px;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-font-smoothing:antialiased}
-html,body{min-height:100%;width:100%;overflow-y:auto;overscroll-behavior:auto;scroll-behavior:smooth}
+html,body{height:100%;width:100%;overflow:hidden;overscroll-behavior:none;scroll-behavior:smooth}
 body{font-family:'Space Grotesk',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);font-size:15px;line-height:1.4;font-feature-settings:'ss01','cv01';-webkit-font-feature-settings:'ss01','cv01'}
 .ring-cal,.ring-val,.ftot-val,.wlog-val,.step-num{font-variant-numeric:tabular-nums}
 input,textarea,button{font-family:inherit;font-size:inherit}
@@ -27,7 +27,7 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
 body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
   background:radial-gradient(ellipse 50% 35% at 80% 0%,rgba(245,197,24,.07) 0%,transparent 60%),
     radial-gradient(ellipse 40% 40% at 0% 90%,rgba(61,127,255,.06) 0%,transparent 60%);}
-#app{position:relative;z-index:1;width:100%;min-height:100%;display:flex;flex-direction:column;max-width:480px;margin:0 auto}
+#app{position:relative;z-index:1;width:100%;height:100%;display:flex;flex-direction:column;max-width:480px;margin:0 auto}
 
 /* HEADER */
 .hdr{height:var(--hdr-h);flex-shrink:0;display:flex;align-items:center;
@@ -931,139 +931,191 @@ function calcStreak() {
 // goal labels moved to STRINGS (t('goal_lose') etc.)
 
 // ══ ONBOARDING ══
-const ONB_TOTAL = 3;
-let onbData = { gender: 'male' };
+// ══ ONBOARDING INTERVIEW ══
+const ONB_STAGES = ['name','goal','gender','body','health','equipment','schedule'];
+let onbData = {};
+let _onbHealthSel = new Set();
 
-function buildOnbProgress(step) {
-  document.getElementById('onb-prog').innerHTML =
-    Array.from({length:ONB_TOTAL},(_,i)=>{
-      const cls = i+1<step?'done':i+1===step?'active':'';
-      return `<div class="onb-dot ${cls}"></div>`;
-    }).join('');
+function _onbProg(idx) {
+  const el = document.getElementById('onb-iv-prog');
+  if (!el) return;
+  el.innerHTML = ONB_STAGES.map((_,i) =>
+    `<div class="onb-iv-dot${i<idx?' done':i===idx?' cur':''}"></div>`
+  ).join('');
 }
 
-function showOnbStep(n) {
-  document.querySelectorAll('.onb-step').forEach(s=>s.classList.remove('on'));
-  document.getElementById(`os-${n}`)?.classList.add('on');
-  buildOnbProgress(n);
-  document.getElementById('onb-wrap').scrollTop = 0;
-  if (n===2) initDatePicker();
+function _onbAddMsg(who, text) {
+  const el = document.getElementById('onb-iv-msgs');
+  if (!el) return;
+  const d = document.createElement('div');
+  d.className = `onb-msg ${who}`;
+  if (who==='p') { const s=document.createElement('div'); s.className='onb-sender'; s.textContent='Арни'; d.appendChild(s); }
+  const b = document.createElement('div'); b.className='onb-bub'; b.textContent=text; d.appendChild(b);
+  el.appendChild(d);
+  el.scrollTop = el.scrollHeight;
 }
 
-function pickGender(v) {
-  onbData.gender = v;
-  document.getElementById('g-male').classList.toggle('on', v==='male');
-  document.getElementById('g-female').classList.toggle('on', v==='female');
+async function _onbTyping(text) {
+  const el = document.getElementById('onb-iv-msgs');
+  const typ = document.createElement('div');
+  typ.className = 'onb-msg p';
+  typ.innerHTML = '<div class="onb-sender">Арни</div><div class="onb-bub"><div class="onb-typing"><span></span><span></span><span></span></div></div>';
+  el.appendChild(typ); el.scrollTop = el.scrollHeight;
+  await new Promise(r => setTimeout(r, 650 + Math.random()*350));
+  typ.remove();
+  _onbAddMsg('p', text);
 }
 
-function onbNext(step) {
-  if (step===1) {
-    const v = document.getElementById('o-name').value.trim();
-    if (!isValidName(v)) { toast(t('onb_err_name')); return; }
-    onbData.name = v.charAt(0).toUpperCase()+v.slice(1);
-    showOnbStep(2);
-  } else if (step===2) {
-    const bd = getSelectedDate();
-    if (!bd) return;
-    onbData.birthday = bd.iso;
-    onbData.age = bd.age;
-    showOnbStep(3);
+function _onbBottom(html) {
+  const el = document.getElementById('onb-iv-bottom');
+  if (el) el.innerHTML = html;
+}
+
+async function _onbStage(idx) {
+  _onbProg(idx);
+  const stage = ONB_STAGES[idx];
+
+  if (stage === 'name') {
+    await _onbTyping('Привет! 👋 Я Арни — твой персональный тренер в P.A.R.K.E.R.\n\nКак тебя зовут?');
+    _onbBottom(`<div class="onb-inp-row">
+      <input class="onb-inp" id="onb-name-inp" type="text" placeholder="Твоё имя" autocomplete="off" autocorrect="off" autocapitalize="words">
+      <div class="onb-send" onclick="onbNameSubmit()">➤</div>
+    </div>`);
+    const inp = document.getElementById('onb-name-inp');
+    if (inp) { inp.focus(); inp.onkeydown = e => { if (e.key==='Enter') { e.preventDefault(); onbNameSubmit(); } }; }
+
+  } else if (stage === 'goal') {
+    await _onbTyping(`Отлично, ${onbData.name}! 💪\n\nКакая твоя главная цель?`);
+    _onbBottom(`<div class="onb-chips">
+      <div class="onb-chip" onclick="onbGoal('lose_weight',this)">🔥 Сбросить вес</div>
+      <div class="onb-chip" onclick="onbGoal('gain_muscle',this)">💪 Набрать массу</div>
+      <div class="onb-chip" onclick="onbGoal('maintain',this)">⚖️ Поддержать форму</div>
+      <div class="onb-chip" onclick="onbGoal('recomposition',this)">🔄 Рекомпозиция</div>
+    </div>`);
+
+  } else if (stage === 'gender') {
+    await _onbTyping('Ты...');
+    _onbBottom(`<div class="onb-chips">
+      <div class="onb-chip" onclick="onbGender('male',this)">👨 Парень</div>
+      <div class="onb-chip" onclick="onbGender('female',this)">👩 Девушка</div>
+    </div>`);
+
+  } else if (stage === 'body') {
+    await _onbTyping('Возраст, рост и вес — без этого не смогу точно рассчитать КБЖУ:');
+    _onbBottom(`<div class="onb-body-grid">
+      <div class="onb-body-field"><div class="onb-body-lbl">Возраст</div>
+        <input class="onb-body-inp" id="onb-age" type="number" inputmode="numeric" placeholder="25" min="14" max="80"></div>
+      <div class="onb-body-field"><div class="onb-body-lbl">Рост, см</div>
+        <input class="onb-body-inp" id="onb-ht" type="number" inputmode="numeric" placeholder="175"></div>
+      <div class="onb-body-field"><div class="onb-body-lbl">Вес, кг</div>
+        <input class="onb-body-inp" id="onb-wt" type="number" inputmode="decimal" placeholder="75" step="0.1"></div>
+    </div>
+    <button class="onb-next" onclick="onbBodySubmit()">Далее →</button>`);
+
+  } else if (stage === 'health') {
+    _onbHealthSel = new Set();
+    await _onbTyping('Есть ли проблемы со здоровьем или травмы?\n\nЭто важно — исключу опасные упражнения. Можно выбрать несколько.');
+    _onbBottom(`<div class="onb-chips" id="onb-health-chips">
+      <div class="onb-chip" onclick="onbHealthToggle('back_problems',this)">🦴 Проблемы со спиной</div>
+      <div class="onb-chip" onclick="onbHealthToggle('knee_issues',this)">🦵 Проблемы с коленями</div>
+      <div class="onb-chip" onclick="onbHealthToggle('hypertension',this)">❤️ Повышенное давление</div>
+    </div>
+    <button class="onb-next" id="onb-health-btn" onclick="onbHealthSubmit()">✅ Всё в порядке →</button>`);
+
+  } else if (stage === 'equipment') {
+    await _onbTyping('Где будешь тренироваться?');
+    _onbBottom(`<div class="onb-chips">
+      <div class="onb-chip" onclick="onbEquip(['gym'],this)">🏋️ Тренажёрный зал</div>
+      <div class="onb-chip" onclick="onbEquip(['home'],this)">🏠 Дома с инвентарём</div>
+      <div class="onb-chip" onclick="onbEquip(['no_equipment'],this)">💪 Только своё тело</div>
+    </div>`);
+
+  } else if (stage === 'schedule') {
+    await _onbTyping('Последний вопрос — какой у тебя режим дня?\n\nОт этого зависит интенсивность тренировок и план питания.');
+    _onbBottom(`<div class="onb-chips">
+      <div class="onb-chip" onclick="onbSchedule('standard',this)">☀️ Стандартный ~8 ч</div>
+      <div class="onb-chip" onclick="onbSchedule('12h',this)">⚡ Насыщенный 12 ч</div>
+      <div class="onb-chip" onclick="onbSchedule('16h+',this)">🔥 Тяжёлый 16+ ч</div>
+      <div class="onb-chip" onclick="onbSchedule('shift',this)">🔄 Сменный график</div>
+    </div>`);
   }
 }
 
-// ══ DATE PICKER ══
-const MONTHS_RU  = ['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'];
-const MONTHS_GEN = ['Января','Февраля','Марта','Апреля','Мая','Июня','Июля','Августа','Сентября','Октября','Ноября','Декабря'];
-let dpDone = false;
-
-function initDatePicker() {
-  if (dpDone) return; dpDone = true;
-  const now = new Date();
-  const minY = now.getFullYear()-70, maxY = now.getFullYear()-14;
-
-  const dayCol = document.getElementById('dp-day');
-  dayCol.innerHTML = '<div class="dp-pad"></div>' +
-    Array.from({length:31},(_,i)=>`<div class="dp-item" data-v="${i+1}">${String(i+1).padStart(2,'0')}</div>`).join('') +
-    '<div class="dp-pad"></div>';
-
-  const monCol = document.getElementById('dp-month');
-  monCol.innerHTML = '<div class="dp-pad"></div>' +
-    MONTHS_RU.map((m,i)=>`<div class="dp-item" data-v="${i}">${m}</div>`).join('') +
-    '<div class="dp-pad"></div>';
-
-  const yrCol = document.getElementById('dp-year');
-  yrCol.innerHTML = '<div class="dp-pad"></div>' +
-    Array.from({length:maxY-minY+1},(_,i)=>`<div class="dp-item" data-v="${minY+i}">${minY+i}</div>`).join('') +
-    '<div class="dp-pad"></div>';
-
-  // Default: 25 years ago, current month, day 1
-  const defYear = now.getFullYear()-25, defMon = now.getMonth(), defDay = 0;
-  scrollDpTo('dp-day',   defDay);
-  scrollDpTo('dp-month', defMon);
-  scrollDpTo('dp-year',  defYear - minY);
-
-  ['dp-day','dp-month','dp-year'].forEach(id => {
-    document.getElementById(id).addEventListener('scroll', updateDpDisplay, {passive:true});
-  });
-  updateDpDisplay();
+function onbNameSubmit() {
+  const v = (document.getElementById('onb-name-inp')?.value||'').trim();
+  if (!isValidName(v)) { toast(t('onb_err_name')); return; }
+  onbData.name = v.charAt(0).toUpperCase()+v.slice(1);
+  _onbAddMsg('u', onbData.name);
+  _onbBottom('');
+  _onbStage(ONB_STAGES.indexOf('goal'));
 }
 
-function scrollDpTo(id, idx) {
-  const el = document.getElementById(id);
-  el.scrollTop = idx * 40;
+function onbGoal(val, el) {
+  onbData.goal = val;
+  _onbAddMsg('u', el.textContent.trim());
+  _onbBottom('');
+  _onbStage(ONB_STAGES.indexOf('gender'));
 }
 
-function getDpIdx(id) { return Math.round(document.getElementById(id).scrollTop / 40); }
-
-function getSelectedDate() {
-  const now = new Date();
-  const minY = now.getFullYear()-70;
-  const day  = getDpIdx('dp-day') + 1;
-  const mon  = getDpIdx('dp-month');   // 0-based
-  const year = minY + getDpIdx('dp-year');
-  const d = new Date(year, mon, day);
-  const age = Math.floor((now - d) / (365.25*24*3600*1000));
-  if (age<14||age>70) { toast('Введи реальную дату рождения'); return null; }
-  return {
-    iso: `${year}-${String(mon+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`,
-    age
-  };
+function onbGender(val, el) {
+  onbData.gender = val;
+  _onbAddMsg('u', el.textContent.trim());
+  _onbBottom('');
+  _onbStage(ONB_STAGES.indexOf('body'));
 }
 
-function updateDpDisplay() {
-  const now = new Date(), minY = now.getFullYear()-70;
-  const day  = getDpIdx('dp-day')+1;
-  const mon  = getDpIdx('dp-month');
-  const year = minY + getDpIdx('dp-year');
-  const el = document.getElementById('dp-display');
-  if (el) el.textContent = `${day} ${MONTHS_GEN[mon]} ${year}`;
-  ['dp-day','dp-month','dp-year'].forEach(id => {
-    const col = document.getElementById(id);
-    const idx = getDpIdx(id);
-    col.querySelectorAll('.dp-item').forEach((it,i) => it.classList.toggle('sel', i===idx));
-  });
-}
-
-// ══ SUBMIT ══
-async function submitOnboarding() {
-  const ht = parseInt(document.getElementById('o-ht').value);
-  const wt = parseFloat(document.getElementById('o-wt').value);
+function onbBodySubmit() {
+  const age = parseInt(document.getElementById('onb-age')?.value||'');
+  const ht  = parseInt(document.getElementById('onb-ht')?.value||'');
+  const wt  = parseFloat(document.getElementById('onb-wt')?.value||'');
+  if (!age||age<14||age>80) { toast('Введи возраст (14–80 лет)'); return; }
   if (!ht||ht<100||ht>250) { toast('Введи рост (100–250 см)'); return; }
-  if (!wt||wt<20 ||wt>300) { toast('Введи вес (20–300 кг)'); return; }
-  onbData.height_cm = ht; onbData.weight_kg = wt;
-  onbData.goal = 'maintain';
+  if (!wt||wt<20||wt>300)  { toast('Введи вес (20–300 кг)'); return; }
+  onbData.age = age; onbData.height_cm = ht; onbData.weight_kg = wt;
+  _onbAddMsg('u', `${age} лет, ${ht} см, ${wt} кг`);
+  _onbBottom('');
+  _onbStage(ONB_STAGES.indexOf('health'));
+}
+
+function onbHealthToggle(val, el) {
+  el.classList.toggle('on');
+  if (_onbHealthSel.has(val)) _onbHealthSel.delete(val); else _onbHealthSel.add(val);
+  const btn = document.getElementById('onb-health-btn');
+  if (btn) btn.textContent = _onbHealthSel.size ? 'Далее →' : '✅ Всё в порядке →';
+}
+
+function onbHealthSubmit() {
+  onbData.health_issues = _onbHealthSel.size ? [..._onbHealthSel] : ['none'];
+  const label = _onbHealthSel.size
+    ? [..._onbHealthSel].map(h=>({'back_problems':'🦴 Спина','knee_issues':'🦵 Колени','hypertension':'❤️ Давление'}[h]||h)).join(', ')
+    : '✅ Всё в порядке';
+  _onbAddMsg('u', label);
+  _onbBottom('');
+  _onbStage(ONB_STAGES.indexOf('equipment'));
+}
+
+function onbEquip(val, el) {
+  onbData.equipment = val;
+  _onbAddMsg('u', el.textContent.trim());
+  _onbBottom('');
+  _onbStage(ONB_STAGES.indexOf('schedule'));
+}
+
+function onbSchedule(val, el) {
+  onbData.schedule = val;
+  _onbAddMsg('u', el.textContent.trim());
+  _onbBottom('');
+  submitOnboarding();
+}
+
+async function submitOnboarding() {
   const tgId = getTgId();
   if (tgId) onbData.tg_id = tgId;
-
-  document.getElementById('os-3').innerHTML = `
-    <div style="display:flex;flex-direction:column;align-items:center;gap:16px;padding:60px 0">
-      <div class="spin"></div>
-      <div style="font-size:18px;font-weight:800">Арни составляет план...</div>
-      <div style="font-size:13px;color:var(--text2);text-align:center;line-height:1.5">
-        Питание на 7 дней<br>+ программа тренировок
-      </div>
-    </div>`;
-
+  await _onbTyping('Понял всё! ⚡\n\nСоставляю персональный план питания на 7 дней и программу тренировок специально под тебя.\n\nЗаймёт пару секунд...');
+  _onbBottom(`<div style="display:flex;flex-direction:column;align-items:center;gap:12px;padding:16px 0">
+    <div class="spin"></div>
+    <div style="font-size:13px;color:var(--text2);text-align:center">Питание на 7 дней + программа тренировок</div>
+  </div>`);
   try {
     const r = await fetch('/api/profile', {
       method:'POST', headers:{'Content-Type':'application/json'},
@@ -1080,13 +1132,12 @@ async function submitOnboarding() {
     persist();
     launchApp(true);
   } catch(e) {
-    document.getElementById('os-3').innerHTML = `
-      <div style="color:var(--red);text-align:center;padding:20px;font-size:14px;line-height:1.5">${escHtml(e.message||'Ошибка')}</div>
-      <div class="onb-nav" style="margin-top:16px">
-        <button class="btn-primary" onclick="location.reload()">Попробовать снова</button>
-      </div>`;
+    _onbBottom(`<div style="color:var(--red);text-align:center;font-size:14px;line-height:1.5;padding:8px 0">${escHtml(e.message||'Ошибка')}</div>
+      <button class="onb-next" onclick="location.reload()">Попробовать снова</button>`);
   }
 }
+
+function initOnboarding() { _onbStage(0); }
 
 function launchApp(isNew) {
   document.getElementById('sc-onboard').classList.remove('on');
@@ -2780,7 +2831,7 @@ function toggleFaqEntry(si, ii) {
 }
 
 // ══ BOOT ══
-showOnbStep(1);
+initOnboarding();
 
 (async function boot() {
   if (profile && planData) {
