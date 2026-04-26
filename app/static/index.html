@@ -31,7 +31,8 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 
 /* HEADER */
 .hdr{height:var(--hdr-h);flex-shrink:0;display:flex;align-items:center;
-  padding:8px 16px;background:rgba(8,8,15,.9);backdrop-filter:blur(16px);border-bottom:1px solid var(--border)}
+  padding:8px 16px;background:rgba(8,8,15,.9);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);
+  position:sticky;top:0;z-index:100}
 .hdr-left{flex:1}
 .logo{font-family:'Orbitron',-apple-system,sans-serif;font-size:15px;font-weight:900;letter-spacing:3px;
   color:var(--gold);text-shadow:0 0 28px rgba(245,197,24,.6),0 0 50px rgba(245,197,24,.2);
