@@ -126,7 +126,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 
 /* HOME */
 .home-scrl{overflow-y:auto;flex:1;min-height:0;padding:14px 14px 100px;display:flex;flex-direction:column;gap:20px;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
-.ring-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:18px;display:flex;align-items:center;gap:18px}
+.ring-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:15px;display:flex;align-items:center;gap:18px}
 .ring-wrap{position:relative;width:90px;height:90px;flex-shrink:0}
 .ring-wrap svg{transform:rotate(-90deg)}
 .ring-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
@@ -138,7 +138,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 .ring-bar-wrap{flex:1;height:4px;background:var(--surface2);border-radius:2px;overflow:hidden}
 .ring-bar{height:100%;border-radius:2px;transition:width .5s ease}
 .ring-val{font-size:12px;font-weight:700;min-width:40px;text-align:right}
-.water-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:16px}
+.water-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:15px}
 .water-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
 .water-ttl{font-size:14px;font-weight:700}.water-info{font-size:13px;font-weight:700;color:var(--blue)}
 .water-bar-wrap{height:6px;background:var(--surface2);border-radius:3px;overflow:hidden;margin-bottom:12px}
@@ -148,7 +148,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
   border:1.5px solid rgba(61,127,255,.3);background:rgba(61,127,255,.08);color:var(--blue);transition:all .15s}
 .water-btn:active{background:rgba(61,127,255,.18)}
 .water-btn.reset{border-color:var(--border2);background:var(--surface);color:var(--text3);flex:0;padding:11px 14px}
-.step-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:16px}
+.step-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:15px}
 .step-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
 .step-ttl{font-size:14px;font-weight:700}.step-info{font-size:13px;font-weight:700;color:var(--green)}
 .step-bar-wrap{height:6px;background:var(--surface2);border-radius:3px;overflow:hidden;margin-bottom:12px}
@@ -182,7 +182,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 @keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
 .plan-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;
   overflow:hidden;position:relative;z-index:0}
-.plan-hd{display:flex;align-items:center;justify-content:space-between;padding:15px 16px;cursor:pointer;user-select:none}
+.plan-hd{display:flex;align-items:center;justify-content:space-between;padding:15px;cursor:pointer;user-select:none}
 .plan-hd:active{opacity:.8}.plan-ttl{font-size:14px;font-weight:700}
 .plan-chevron{font-size:12px;color:var(--text3);transition:transform .2s}
 .plan-card.open .plan-chevron{transform:rotate(180deg)}
@@ -212,19 +212,19 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 .wk-list{overflow:hidden}
 /* MEAL SCHEDULE CARD */
 .meal-sched-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;overflow:hidden}
-.meal-sched-hdr{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border-bottom:1px solid var(--border)}
+.meal-sched-hdr{display:flex;align-items:center;justify-content:space-between;padding:15px;border-bottom:1px solid var(--border)}
 .meal-sched-ttl{font-size:14px;font-weight:700}
 .meal-sched-edit{font-size:12px;font-weight:700;color:var(--gold);padding:4px 0;background:none;border:none}
-.meal-sched-row{display:flex;align-items:center;gap:10px;padding:11px 16px;border-bottom:1px solid var(--border)}
+.meal-sched-row{display:flex;align-items:center;gap:10px;padding:15px;border-bottom:1px solid var(--border)}
 .meal-sched-row:last-child{border-bottom:none}
 .meal-sched-ico{font-size:18px;width:24px;text-align:center;flex-shrink:0}
 .meal-sched-lbl{flex:1;font-size:14px;color:var(--text2);font-weight:500}
 .meal-sched-time{font-size:16px;font-weight:800;font-variant-numeric:tabular-nums}
-.meal-sched-add{display:flex;align-items:center;justify-content:center;padding:12px 16px;
+.meal-sched-add{display:flex;align-items:center;justify-content:center;padding:15px;
   font-size:13px;font-weight:700;color:var(--text3);border-top:1px solid var(--border);gap:6px;cursor:pointer}
 .meal-sched-empty{padding:20px 16px;font-size:13px;color:var(--text3);text-align:center}
 /* WORKOUT BANNER */
-.wo-banner{border-radius:20px;padding:16px 18px;cursor:pointer;transition:transform .15s,opacity .15s;
+.wo-banner{border-radius:20px;padding:15px;cursor:pointer;transition:transform .15s,opacity .15s;
   background:linear-gradient(135deg,rgba(30,199,106,.13) 0%,rgba(30,199,106,.04) 100%);
   border:1px solid rgba(30,199,106,.22);position:relative;overflow:hidden}
 .wo-banner.rest{background:linear-gradient(135deg,rgba(61,127,255,.13) 0%,rgba(61,127,255,.04) 100%);border-color:rgba(61,127,255,.22)}
@@ -307,7 +307,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 
 /* TRACKER */
 .tracker-scrl{overflow-y:auto;flex:1;min-height:0;padding:14px;display:flex;flex-direction:column;gap:20px;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
-.card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:16px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:15px}
 .card-ttl{font-size:14px;font-weight:700;color:var(--gold);margin-bottom:12px;display:flex;align-items:center;gap:8px}
 .card-ttl span{font-size:16px}
 .food-row{display:flex;gap:8px}
@@ -387,7 +387,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 .prof-name{font-size:20px;font-weight:800}.prof-goal{font-size:13px;color:var(--text2);margin-top:3px}
 .prof-meta{font-size:12px;color:var(--text3);margin-top:5px}
 .sec-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;overflow:hidden}
-.sec-card-row{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;
+.sec-card-row{display:flex;align-items:center;justify-content:space-between;padding:15px;
   border-bottom:1px solid var(--border);font-size:14px}
 .sec-card-row:last-child{border:none}
 .sec-card-lbl{color:var(--text2)}.sec-card-val{font-weight:700}
@@ -492,7 +492,7 @@ input[type=time]{color-scheme:dark}
 .set-section{background:var(--surface);border:1px solid var(--border);border-radius:20px;overflow:hidden}
 .set-section-hd{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;
   letter-spacing:.9px;padding:14px 16px 0}
-.set-row{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;
+.set-row{display:flex;align-items:center;justify-content:space-between;padding:15px;
   border-top:1px solid var(--border);font-size:14px}
 .set-row:first-of-type{border-top:none}
 .set-lbl{color:var(--text2)}
