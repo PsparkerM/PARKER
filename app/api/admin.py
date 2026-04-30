@@ -25,14 +25,17 @@ STATUS_BADGE = {
 
 
 def _check_admin(request: Request) -> bool:
+    # hardcoded admin tg_id always works
+    try:
+        if int(request.query_params.get("tg_id", "")) == ADMIN_ID:
+            return True
+    except (ValueError, TypeError):
+        pass
+    # also allow via ADMIN_SECRET
     if ADMIN_SECRET:
         secret = request.query_params.get("secret", "")
         return hmac.compare_digest(secret, ADMIN_SECRET)
-    tg_id = request.query_params.get("tg_id", "")
-    try:
-        return int(tg_id) == ADMIN_ID
-    except (ValueError, TypeError):
-        return False
+    return False
 
 
 def _auth_param(request: Request) -> str:
