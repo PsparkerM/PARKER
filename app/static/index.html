@@ -320,6 +320,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
   background:linear-gradient(135deg,var(--cyan),var(--cyan2));color:#000;font-size:18px;
   display:flex;align-items:center;justify-content:center;box-shadow:0 0 16px rgba(0,229,255,.3);transition:transform .1s}
 .send-btn:active{transform:scale(.88)}.send-btn:disabled{opacity:.4;transform:none}
+#sc-chat{padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom,0px))}
 
 /* TRACKER */
 .tracker-scrl{overflow-y:auto;flex:1;min-height:0;padding:16px 16px 120px;display:flex;flex-direction:column;gap:16px;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y}
@@ -523,17 +524,16 @@ input[type=time]{color-scheme:dark}
   -webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y}
 .set-section{background:var(--bg2);border:1px solid var(--border);border-radius:18px;overflow:hidden}
 .set-section-hd{font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;
-  letter-spacing:.9px;padding:14px 16px 8px}
-.set-row{display:flex;align-items:center;justify-content:space-between;padding:16px;
-  border-top:1px solid var(--border);font-size:15px;min-height:58px;touch-action:manipulation}
+  letter-spacing:.9px;padding:16px 16px 10px}
+.set-row{display:flex;align-items:center;justify-content:space-between;padding:18px 16px;
+  border-top:1px solid var(--border);font-size:15px;min-height:66px;touch-action:manipulation}
 .set-row:first-of-type{border-top:none}
 .set-lbl{color:var(--text2);font-weight:500}
 .lang-toggle{display:flex;border-radius:var(--radius-sm);overflow:hidden;border:1px solid var(--border2);background:var(--bg)}
-.lang-btn{padding:10px 20px;font-size:14px;font-weight:700;color:var(--text3);background:transparent;transition:all .15s;touch-action:manipulation}
+.lang-btn{padding:13px 26px;font-size:15px;font-weight:700;color:var(--text3);background:transparent;transition:all .15s;touch-action:manipulation}
 .lang-btn.on{background:var(--gold);color:#000}
 .lang-btn:active{opacity:.7}
-.avatar-grid-set{display:grid;grid-template-columns:repeat(8,1fr);gap:8px;padding:12px 16px 8px}
-.av-photo-wrap{padding:0 16px 16px;display:flex;gap:10px;align-items:center}
+.av-photo-wrap{padding:14px 16px 20px;display:flex;gap:10px;align-items:center}
 .av-photo-prev{width:48px;height:48px;border-radius:50%;flex-shrink:0;border:2px solid var(--border);
   background:var(--surface2);background-size:cover;background-position:center;
   display:flex;align-items:center;justify-content:center;font-size:22px;overflow:hidden}
@@ -546,16 +546,16 @@ input[type=time]{color-scheme:dark}
   border:2px solid transparent;transition:all .15s;background:var(--surface2);touch-action:manipulation}
 .av-opt.sel{border-color:var(--gold);background:rgba(0,229,255,.15)}
 .av-opt:active{transform:scale(.85)}
-.set-name-wrap{padding:12px 16px 16px;display:flex;flex-direction:column;gap:12px}
+.set-name-wrap{padding:14px 16px 22px;display:flex;flex-direction:column;gap:14px}
 .set-name-in{background:var(--bg);border:1.5px solid var(--border2);border-radius:var(--radius-sm);
-  padding:14px 16px;color:var(--text);font-size:16px;font-weight:600;outline:none;-webkit-appearance:none;width:100%}
+  padding:16px;color:var(--text);font-size:17px;font-weight:600;outline:none;-webkit-appearance:none;width:100%}
 .set-name-in:focus{border-color:var(--gold)}
-.set-name-save{padding:14px;border-radius:var(--radius-sm);font-size:16px;font-weight:800;
-  background:linear-gradient(135deg,var(--cyan),var(--cyan2));color:#000;width:100%;touch-action:manipulation;min-height:50px}
+.set-name-save{padding:16px;border-radius:var(--radius-sm);font-size:16px;font-weight:800;
+  background:linear-gradient(135deg,var(--cyan),var(--cyan2));color:#000;width:100%;touch-action:manipulation;min-height:56px}
 .set-name-save:active{opacity:.8}
 .faq-item{border-top:1px solid var(--border)}.faq-item:first-child{border-top:none}
-.faq-q{padding:16px;font-size:15px;font-weight:600;cursor:pointer;display:flex;
-  justify-content:space-between;align-items:center;gap:12px;user-select:none;min-height:56px}
+.faq-q{padding:18px 16px;font-size:15px;font-weight:600;cursor:pointer;display:flex;
+  justify-content:space-between;align-items:center;gap:12px;user-select:none;min-height:60px}
 .faq-arrow{font-size:12px;color:var(--text3);transition:transform .2s;flex-shrink:0}
 .faq-item.open .faq-arrow{transform:rotate(90deg)}
 .faq-a{display:none;padding:0 16px 14px;font-size:13px;line-height:1.7;color:var(--text2)}
@@ -612,6 +612,33 @@ input[type=time]{color-scheme:dark}
 .faq-tip{display:flex;gap:10px;background:rgba(0,229,255,.07);border:1px solid rgba(0,229,255,.18);
   border-radius:12px;padding:12px 14px;margin:10px 0 4px;font-size:13px;line-height:1.6;color:var(--text)}
 .faq-tip-ico{font-size:16px;flex-shrink:0;margin-top:1px}
+
+/* AVATAR PICKER MODAL */
+.ava-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:310;
+  opacity:0;pointer-events:none;transition:opacity .25s}
+.ava-overlay.on{opacity:1;pointer-events:all}
+.ava-sheet{position:fixed;bottom:0;left:0;right:0;z-index:311;background:var(--bg2);
+  border-radius:24px 24px 0 0;max-height:92vh;display:flex;flex-direction:column;
+  transform:translateY(100%);transition:transform .3s cubic-bezier(.32,1,.23,1);
+  max-width:480px;margin:0 auto}
+.ava-sheet.on{transform:translateY(0)}
+.ava-handle{width:36px;height:4px;border-radius:2px;background:var(--border2);margin:12px auto 0;flex-shrink:0}
+.ava-hdr{display:flex;align-items:center;justify-content:space-between;padding:12px 18px 10px;
+  flex-shrink:0;border-bottom:1px solid var(--border)}
+.ava-ttl{font-size:17px;font-weight:800}
+.ava-close{font-size:20px;color:var(--text3);padding:4px 8px;line-height:1}
+.ava-body{flex:1;overflow-y:auto;padding:16px 16px 48px;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+.ava-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:20px}
+.ava-opt{font-size:34px;text-align:center;padding:10px 4px;border-radius:14px;cursor:pointer;
+  border:2px solid transparent;transition:all .15s;background:var(--surface2);min-height:62px;
+  display:flex;align-items:center;justify-content:center;touch-action:manipulation}
+.ava-opt.sel{border-color:var(--gold);background:rgba(0,229,255,.15);box-shadow:0 0 14px rgba(0,229,255,.3)}
+.ava-opt:active{transform:scale(.85);opacity:.7}
+.ava-photo-row{display:flex;gap:10px;padding-top:14px;border-top:1px solid var(--border)}
+.ava-photo-btn-full{flex:1;padding:15px;border-radius:var(--radius-sm);font-size:15px;font-weight:700;
+  border:1.5px solid var(--border2);background:var(--surface2);color:var(--text);text-align:center;
+  touch-action:manipulation}
+.ava-photo-btn-full:active{opacity:.7}
 
 .qe-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:200;opacity:0;pointer-events:none;transition:opacity .2s}
 .qe-overlay.on{opacity:1;pointer-events:all}
@@ -704,10 +731,9 @@ input[type=time]{color-scheme:dark}
       <!-- Avatar -->
       <div class="set-section">
         <div class="set-section-hd">Аватарка</div>
-        <div class="avatar-grid-set" id="settings-avatar-grid"></div>
         <div class="av-photo-wrap">
-          <div class="av-photo-prev" id="av-photo-prev"></div>
-          <button class="av-photo-btn" onclick="document.getElementById('avatar-photo-input').click()">📷 Фото из галереи</button>
+          <div class="av-photo-prev" id="av-photo-prev" style="font-size:28px;display:flex;align-items:center;justify-content:center"></div>
+          <button class="av-photo-btn" id="av-modal-btn" onclick="openAvatarModal()">🎨 Выбрать аватарку →</button>
           <button class="av-photo-del" id="av-photo-del" onclick="removeAvatarPhoto()" style="display:none">✕</button>
         </div>
       </div>
@@ -788,6 +814,22 @@ input[type=time]{color-scheme:dark}
       <button class="qe-btn-save" onclick="saveQE()">Сохранить</button>
     </div>
   </div>
+  <!-- AVATAR PICKER MODAL -->
+  <div class="ava-overlay" id="ava-overlay" onclick="closeAvatarModal()"></div>
+  <div class="ava-sheet" id="ava-sheet">
+    <div class="ava-handle"></div>
+    <div class="ava-hdr">
+      <div class="ava-ttl" id="ava-ttl">Аватарка</div>
+      <button class="ava-close" onclick="closeAvatarModal()">✕</button>
+    </div>
+    <div class="ava-body">
+      <div class="ava-grid" id="ava-picker-grid"></div>
+      <div class="ava-photo-row">
+        <button class="ava-photo-btn-full" onclick="document.getElementById('avatar-photo-input').click()">📷 Фото из галереи</button>
+      </div>
+    </div>
+  </div>
+
   <div class="toast" id="toast"></div>
 </div>
 
@@ -871,7 +913,7 @@ function saveAvatar(emoji) {
   localStorage.setItem('pk_avatar', emoji);
   localStorage.removeItem('pk_avatar_img');
   updateHeader();
-  renderSettingsAvatarGrid();
+  _updateAvatarPreview();
   if (document.getElementById('sc-profile').classList.contains('on')) renderProfile();
   toast(t('t_avatar'));
 }
@@ -880,7 +922,7 @@ function removeAvatarPhoto() {
   avatarPhoto = '';
   localStorage.removeItem('pk_avatar_img');
   updateHeader();
-  renderSettingsAvatarGrid();
+  _updateAvatarPreview();
   if (document.getElementById('sc-profile').classList.contains('on')) renderProfile();
 }
 
@@ -1601,10 +1643,10 @@ function renderHome() {
         <div class="wo-banner-title">${escHtml(wName)}</div>
         <div class="wo-banner-emoji">${emoji}</div>
       </div>
-      ${!isRest?`<div class="wo-banner-meta">
-        <span class="wo-banner-by">📋 ${ru?'По плану Арни':'Arnie\'s plan'}</span>
-        <span class="wo-banner-open">Открыть план ›</span>
-      </div>`:''}
+      <div class="wo-banner-meta">
+        <span class="wo-banner-by">${isRest?`🛌 ${ru?'День восстановления · лёгкая растяжка':'Recovery day · light stretching'}`:`📋 ${ru?'По плану Арни':"Arnie's plan"}`}</span>
+        <span class="wo-banner-open">${ru?'Детали ›':'Details ›'}</span>
+      </div>
     </div>`;
   })() : '';
 
@@ -1958,7 +2000,8 @@ document.getElementById('avatar-photo-input').addEventListener('change', functio
       localStorage.setItem('pk_avatar_img', dataUrl);
       localStorage.removeItem('pk_avatar');
       updateHeader();
-      renderSettingsAvatarGrid();
+      _updateAvatarPreview();
+      closeAvatarModal();
       if (document.getElementById('sc-profile').classList.contains('on')) renderProfile();
       toast(t('t_avatar'));
     };
@@ -2593,28 +2636,57 @@ function closeSettings() {
 }
 
 function renderSettingsAvatarGrid() {
-  const grid = document.getElementById('settings-avatar-grid'); if (!grid) return;
-  grid.innerHTML = AVATARS.map(a =>
-    `<div class="av-opt ${(!avatarPhoto&&selectedAvatar===a)?'sel':''}" onclick="saveAvatar('${a}')">${a}</div>`
-  ).join('');
+  _updateAvatarPreview();
+}
+
+function _updateAvatarPreview() {
   const prev = document.getElementById('av-photo-prev');
   const del  = document.getElementById('av-photo-del');
+  const btn  = document.getElementById('av-modal-btn');
   if (prev) {
     if (avatarPhoto) {
-      prev.style.backgroundImage = `url(${avatarPhoto})`;
       prev.style.background = `url(${avatarPhoto}) center/cover`;
       prev.textContent = '';
       if (del) del.style.display = '';
     } else {
-      prev.style.backgroundImage = '';
       prev.style.background = '';
-      prev.textContent = '📷';
+      prev.textContent = selectedAvatar || '😶';
       if (del) del.style.display = 'none';
     }
   }
+  if (btn) {
+    if (avatarPhoto) btn.textContent = '📷 Сменить фото →';
+    else if (selectedAvatar) btn.textContent = `${selectedAvatar} Сменить аватарку →`;
+    else btn.textContent = '🎨 Выбрать аватарку →';
+  }
 }
 
-function saveSettingsName() {
+function openAvatarModal() {
+  const grid = document.getElementById('ava-picker-grid');
+  const ttl  = document.getElementById('ava-ttl');
+  if (ttl) ttl.textContent = lang !== 'en' ? '🎨 Аватарка' : '🎨 Avatar';
+  if (grid) {
+    grid.innerHTML = AVATARS.map(a =>
+      `<div class="ava-opt ${(!avatarPhoto&&selectedAvatar===a)?'sel':''}" onclick="selectAvatarInModal('${a}')">${a}</div>`
+    ).join('');
+  }
+  document.getElementById('ava-overlay').classList.add('on');
+  document.getElementById('ava-sheet').classList.add('on');
+}
+
+function closeAvatarModal() {
+  document.getElementById('ava-overlay').classList.remove('on');
+  document.getElementById('ava-sheet').classList.remove('on');
+}
+
+function selectAvatarInModal(emoji) {
+  document.querySelectorAll('#ava-picker-grid .ava-opt').forEach(el => {
+    el.classList.toggle('sel', el.textContent.trim() === emoji);
+  });
+  setTimeout(() => { saveAvatar(emoji); closeAvatarModal(); }, 220);
+}
+
+async function saveSettingsName() {
   const v = document.getElementById('settings-name-in').value.trim();
   if (!isValidName(v)) {
     toast(t('onb_err_name'));
@@ -2624,6 +2696,13 @@ function saveSettingsName() {
   if (profile) {
     profile.name = formatted;
     persist();
+    const tgId = getTgId();
+    if (tgId) {
+      fetch('/api/user/update', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({tg_id: tgId, name: formatted})
+      }).catch(() => {});
+    }
     updateHeader();
     if (document.getElementById('sc-profile').classList.contains('on')) renderProfile();
     toast(t('t_name_upd', formatted));

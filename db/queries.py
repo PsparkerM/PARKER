@@ -211,6 +211,19 @@ def delete_reminder(reminder_id: str) -> bool:
         return False
 
 
+def update_user_fields(tg_id: int, fields: dict) -> bool:
+    """Update specific user fields without touching other columns."""
+    db = get_client()
+    if not db or not fields:
+        return False
+    try:
+        db.table("users").update(fields).eq("tg_id", tg_id).execute()
+        return True
+    except Exception:
+        logging.exception("update_user_fields error")
+        return False
+
+
 def set_user_status(tg_id: int, status: str) -> bool:
     db = get_client()
     if not db:
