@@ -211,6 +211,48 @@ def delete_reminder(reminder_id: str) -> bool:
         return False
 
 
+def save_user_logs(user_id: str, logs_data: dict) -> None:
+    import json
+    db = get_client()
+    if not db:
+        return
+    try:
+        content = json.dumps(logs_data, ensure_ascii=False)
+        existing = (
+            db.table("plans")
+            .select("id")
+            .eq("user_id", user_id)
+            .eq("type", "user_logs")
+            .execute()
+        )
+        if existing.data:
+            db.table("plans").update({"content": content}).eq("id", existing.data[0]["id"]).execute()
+        else:
+            db.table("plans").insert({"user_id": user_id, "type": "user_logs", "content": content, "macros": {}}).execute()
+    except Exception:
+        logging.exception("save_user_logs error")
+
+
+def get_user_logs(user_id: str) -> dict:
+    import json
+    db = get_client()
+    if not db:
+        return {}
+    try:
+        result = (
+            db.table("plans")
+            .select("content")
+            .eq("user_id", user_id)
+            .eq("type", "user_logs")
+            .execute()
+        )
+        if result.data:
+            return json.loads(result.data[0]["content"])
+        return {}
+    except Exception:
+        return {}
+
+
 def update_user_fields(tg_id: int, fields: dict) -> bool:
     """Update specific user fields without touching other columns."""
     db = get_client()

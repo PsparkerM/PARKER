@@ -640,6 +640,69 @@ input[type=time]{color-scheme:dark}
   touch-action:manipulation}
 .ava-photo-btn-full:active{opacity:.7}
 
+/* SUB-PANELS — full-screen slide-up pages */
+.sub-panel{position:fixed;inset:0;z-index:305;background:var(--bg);
+  transform:translateY(100%);transition:transform .35s cubic-bezier(.32,1,.23,1);
+  display:flex;flex-direction:column;pointer-events:none;overflow:hidden}
+.sub-panel.on{transform:translateY(0);pointer-events:auto}
+.sub-panel-hdr{height:56px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;
+  padding:0 16px;background:rgba(0,0,0,0.97);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border)}
+.sub-back-btn{display:flex;align-items:center;gap:4px;font-size:15px;font-weight:700;
+  color:var(--gold);background:none;border:none;padding:8px 0;min-width:70px;touch-action:manipulation}
+.sub-panel-ttl{font-size:16px;font-weight:800;letter-spacing:.2px;text-align:center;flex:1}
+.sub-panel-scrl{flex:1;min-height:0;overflow-y:auto;padding:16px 16px 60px;
+  -webkit-overflow-scrolling:touch;overscroll-behavior:contain;display:flex;flex-direction:column;gap:12px}
+
+/* Settings nav big buttons */
+.set-nav-btn{width:100%;display:flex;align-items:center;gap:14px;padding:20px 16px;
+  background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);
+  color:var(--text);text-align:left;touch-action:manipulation;transition:background .15s;min-height:74px}
+.set-nav-btn:active{background:var(--surface2)}
+.set-nav-ico{font-size:24px;flex-shrink:0;width:32px;text-align:center}
+.set-nav-info{flex:1;display:flex;flex-direction:column;gap:4px;min-width:0}
+.set-nav-lbl{font-size:16px;font-weight:700}
+.set-nav-sub{font-size:13px;color:var(--text2)}
+.set-nav-arr{font-size:22px;color:var(--text3);flex-shrink:0}
+
+/* Language choice panel */
+.lang-choice-btn{width:100%;display:flex;align-items:center;gap:16px;padding:22px 18px;
+  background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);
+  color:var(--text);text-align:left;touch-action:manipulation;transition:all .15s;min-height:80px}
+.lang-choice-btn.on{border-color:var(--border2);background:rgba(0,229,255,.07)}
+.lang-choice-btn:active{opacity:.7}
+.lang-choice-flag{font-size:34px;flex-shrink:0}
+.lang-choice-info{flex:1;display:flex;flex-direction:column;gap:5px}
+.lang-choice-name{font-size:18px;font-weight:700}
+.lang-choice-sub{font-size:13px;color:var(--text2)}
+.lang-choice-check{font-size:22px;font-weight:800;color:var(--gold);flex-shrink:0;width:28px;text-align:center}
+
+/* Profile nav big buttons */
+.pf-nav-btn{width:100%;display:flex;align-items:center;gap:14px;padding:22px 16px;
+  background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);
+  color:var(--text);text-align:left;touch-action:manipulation;transition:background .15s;min-height:82px}
+.pf-nav-btn:active{background:var(--surface2)}
+.pf-nav-ico{font-size:26px;flex-shrink:0;width:34px;text-align:center}
+.pf-nav-info{flex:1;display:flex;flex-direction:column;gap:5px;min-width:0}
+.pf-nav-lbl{font-size:17px;font-weight:700}
+.pf-nav-sub{font-size:13px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pf-nav-arr{font-size:22px;color:var(--text3);flex-shrink:0}
+
+/* Daily card (home screen) */
+.daily-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+  padding:20px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;
+  transition:transform .15s,opacity .15s;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  touch-action:manipulation}
+.daily-card:active{transform:scale(.985);opacity:.88}
+.daily-card-left{display:flex;flex-direction:column;gap:4px}
+.daily-day-name{font-size:22px;font-weight:800;line-height:1.2}
+.daily-date-str{font-size:14px;color:var(--text2);font-variant-numeric:tabular-nums}
+.daily-tap-hint{font-size:11px;color:var(--text3);margin-top:6px}
+.daily-card-right{display:flex;flex-direction:column;align-items:center;gap:8px;flex-shrink:0}
+.daily-card-ico{font-size:40px;line-height:1}
+.daily-card-badge{font-size:11px;font-weight:700;padding:4px 10px;border-radius:10px;
+  background:rgba(0,229,255,.15);border:1px solid rgba(0,229,255,.3);color:var(--gold);white-space:nowrap}
+
 .qe-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:200;opacity:0;pointer-events:none;transition:opacity .2s}
 .qe-overlay.on{opacity:1;pointer-events:all}
 .qe-sheet{position:fixed;bottom:0;left:0;right:0;z-index:201;background:var(--bg2);
@@ -716,18 +779,6 @@ input[type=time]{color-scheme:dark}
     </div>
     <div class="settings-scrl">
 
-      <!-- Language -->
-      <div class="set-section">
-        <div class="set-section-hd">Язык / Language</div>
-        <div class="set-row">
-          <span class="set-lbl">Интерфейс</span>
-          <div class="lang-toggle">
-            <button class="lang-btn on" id="lang-ru" onclick="setLang('ru')">РУС</button>
-            <button class="lang-btn" id="lang-en" onclick="setLang('en')">ENG</button>
-          </div>
-        </div>
-      </div>
-
       <!-- Avatar -->
       <div class="set-section">
         <div class="set-section-hd">Аватарка</div>
@@ -738,28 +789,122 @@ input[type=time]{color-scheme:dark}
         </div>
       </div>
 
-      <!-- Name change -->
-      <div class="set-section">
-        <div class="set-section-hd">Изменить имя</div>
-        <div class="set-name-wrap">
-          <input class="set-name-in" id="settings-name-in" type="text"
-            placeholder="Введи настоящее имя" maxlength="40"
-            autocomplete="off" autocorrect="off">
-          <button class="set-name-save" onclick="saveSettingsName()">Сохранить</button>
+      <!-- Nav buttons -->
+      <button class="set-nav-btn" onclick="openLangPanel()">
+        <span class="set-nav-ico">🌐</span>
+        <div class="set-nav-info">
+          <div class="set-nav-lbl">Язык / Language</div>
+          <div class="set-nav-sub" id="lang-sub-label">Русский</div>
         </div>
-      </div>
+        <span class="set-nav-arr">›</span>
+      </button>
 
-      <!-- FAQ -->
-      <div class="set-section">
-        <div class="set-section-hd">Инструкция / FAQ</div>
-        <div id="faq-list"></div>
-        <div class="set-row" style="cursor:pointer;margin-top:2px" onclick="openFaqPage()">
-          <span style="font-weight:700">📖 Полная инструкция</span>
-          <span style="color:var(--gold);font-size:13px">Открыть ›</span>
+      <button class="set-nav-btn" onclick="openNamePanel()">
+        <span class="set-nav-ico">✏️</span>
+        <div class="set-nav-info">
+          <div class="set-nav-lbl">Изменить имя</div>
+          <div class="set-nav-sub" id="name-sub-label"></div>
         </div>
+        <span class="set-nav-arr">›</span>
+      </button>
+
+      <button class="set-nav-btn" onclick="openFaqPage()">
+        <span class="set-nav-ico">📖</span>
+        <div class="set-nav-info">
+          <div class="set-nav-lbl">Инструкция / FAQ</div>
+          <div class="set-nav-sub">Полное руководство</div>
+        </div>
+        <span class="set-nav-arr">›</span>
+      </button>
+
+      <!-- hidden lang toggles kept for setLang() compatibility -->
+      <div style="display:none">
+        <button id="lang-ru" onclick="setLang('ru')"></button>
+        <button id="lang-en" onclick="setLang('en')"></button>
       </div>
 
     </div>
+  </div>
+
+  <!-- LANGUAGE SUB-PANEL -->
+  <div class="sub-panel" id="lang-panel">
+    <div class="sub-panel-hdr">
+      <button class="sub-back-btn" onclick="closeLangPanel()">‹ Назад</button>
+      <div class="sub-panel-ttl" id="lang-panel-ttl">Язык</div>
+      <div style="min-width:70px"></div>
+    </div>
+    <div class="sub-panel-scrl">
+      <button class="lang-choice-btn" id="lang-choice-ru" onclick="setLangChoice('ru')">
+        <span class="lang-choice-flag">🇷🇺</span>
+        <div class="lang-choice-info">
+          <div class="lang-choice-name">Русский</div>
+          <div class="lang-choice-sub">Russian</div>
+        </div>
+        <span class="lang-choice-check" id="lang-check-ru">✓</span>
+      </button>
+      <button class="lang-choice-btn" id="lang-choice-en" onclick="setLangChoice('en')">
+        <span class="lang-choice-flag">🇺🇸</span>
+        <div class="lang-choice-info">
+          <div class="lang-choice-name">English</div>
+          <div class="lang-choice-sub">Английский</div>
+        </div>
+        <span class="lang-choice-check" id="lang-check-en">✓</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- NAME SUB-PANEL -->
+  <div class="sub-panel" id="name-panel">
+    <div class="sub-panel-hdr">
+      <button class="sub-back-btn" onclick="closeNamePanel()">‹ Назад</button>
+      <div class="sub-panel-ttl" id="name-panel-ttl">Имя</div>
+      <div style="min-width:70px"></div>
+    </div>
+    <div class="sub-panel-scrl">
+      <div class="set-section-hd" id="name-field-lbl">Твоё имя</div>
+      <input class="set-name-in" id="settings-name-in" type="text" maxlength="40" autocomplete="name" autocorrect="off" placeholder="Имя">
+      <button class="set-name-save" onclick="saveSettingsName()" id="name-save-btn">Сохранить ✓</button>
+    </div>
+  </div>
+
+  <!-- PROFILE DATA SUB-PANEL -->
+  <div class="sub-panel" id="pf-data-panel">
+    <div class="sub-panel-hdr">
+      <button class="sub-back-btn" onclick="closeProfilePanel('data')">‹ Назад</button>
+      <div class="sub-panel-ttl" id="pf-data-ttl">Данные</div>
+      <div style="min-width:70px"></div>
+    </div>
+    <div class="sub-panel-scrl" id="pf-data-content"></div>
+  </div>
+
+  <!-- PROFILE NOTIFICATIONS SUB-PANEL -->
+  <div class="sub-panel" id="pf-notif-panel">
+    <div class="sub-panel-hdr">
+      <button class="sub-back-btn" onclick="closeProfilePanel('notif')">‹ Назад</button>
+      <div class="sub-panel-ttl" id="pf-notif-ttl">Напоминания</div>
+      <div style="min-width:70px"></div>
+    </div>
+    <div class="sub-panel-scrl" id="pf-notif-content"></div>
+  </div>
+
+  <!-- PROFILE ACCOUNT SUB-PANEL -->
+  <div class="sub-panel" id="pf-account-panel">
+    <div class="sub-panel-hdr">
+      <button class="sub-back-btn" onclick="closeProfilePanel('account')">‹ Назад</button>
+      <div class="sub-panel-ttl" id="pf-account-ttl">Аккаунт</div>
+      <div style="min-width:70px"></div>
+    </div>
+    <div class="sub-panel-scrl" id="pf-account-content"></div>
+  </div>
+
+  <!-- DAILY PLAN FULL-SCREEN PANEL -->
+  <div class="sub-panel" id="daily-panel">
+    <div class="sub-panel-hdr">
+      <button class="sub-back-btn" onclick="closeSubPanel('daily-panel')">‹ Назад</button>
+      <div class="sub-panel-ttl" id="daily-panel-ttl">План на сегодня</div>
+      <div style="min-width:70px"></div>
+    </div>
+    <div class="sub-panel-scrl" id="daily-panel-content"></div>
   </div>
 
   <!-- REMINDER MODAL -->
@@ -930,6 +1075,8 @@ function toggleNotif(key) {
   notifSettings[key].active = !notifSettings[key].active;
   localStorage.setItem('pk_notif', JSON.stringify(notifSettings));
   renderProfile();
+  const notifEl = document.getElementById('pf-notif-content');
+  if (notifEl && document.getElementById('pf-notif-panel')?.classList.contains('on')) renderPfNotifContent(notifEl);
   const typeMap = {food:'meal', water:'water', log:'log'};
   saveReminderToBackend(typeMap[key]);
 }
@@ -1225,6 +1372,7 @@ function launchApp(isNew) {
   onb.style.display = 'none';
   document.getElementById('nav').style.display = 'flex';
   updateHeader(); goTab('home'); initChat(isNew);
+  loadLogsFromServer();
 }
 
 // ══ SERVER SYNC ══
@@ -1255,6 +1403,47 @@ async function saveChatToServer() {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({tg_id:tgId, history:chatHist.slice(-100)})
     });
+  } catch {}
+}
+
+let _syncTimer = null;
+function scheduleSyncLogs() {
+  clearTimeout(_syncTimer);
+  _syncTimer = setTimeout(syncLogsToServer, 3000);
+}
+
+async function syncLogsToServer() {
+  const tgId = getTgId(); if (!tgId) return;
+  try {
+    fetch('/api/logs', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        tg_id: tgId,
+        food: foodLogs.slice(-500),
+        weight_logs: logs.slice(-365),
+        meas_logs: measLogs.slice(-365),
+      })
+    });
+  } catch {}
+}
+
+async function loadLogsFromServer() {
+  const tgId = getTgId(); if (!tgId) return;
+  try {
+    const r = await fetch(`/api/logs?tg_id=${tgId}`);
+    if (!r.ok) return;
+    const data = await r.json();
+    if (!data.found) return;
+    if (Array.isArray(data.food) && data.food.length > foodLogs.length)
+      foodLogs = data.food;
+    if (Array.isArray(data.weight_logs) && data.weight_logs.length > logs.length)
+      logs = data.weight_logs;
+    if (Array.isArray(data.meas_logs) && data.meas_logs.length > measLogs.length)
+      measLogs = data.meas_logs;
+    persist();
+    if (curTab === 'home') renderHome();
+    if (curTab === 'tracker') renderTracker();
+    if (curTab === 'progress') renderProgress();
   } catch {}
 }
 
@@ -1627,28 +1816,22 @@ function renderHome() {
   const dayNum = ((new Date().getDay()+6)%7)+1;
   const dayNames=['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
   const ru = lang !== 'en';
-  const workoutHtml = planData.workout_plan ? (()=>{
-    const lines = planData.workout_plan.split('\n').filter(Boolean);
-    const dayLine = lines.find(l=>l.toLowerCase().includes(`день ${dayNum}`)||l.toLowerCase().includes(`day ${dayNum}`));
-    const isRest  = !dayLine || /отдых|rest/i.test(dayLine);
-    const wName   = _extractWorkoutName(dayLine||'') || (isRest?(ru?'День отдыха':'Rest day'):(ru?'Тренировка':'Workout'));
-    const emoji   = _woEmoji(wName);
-    return `<div class="wo-banner${isRest?' rest':''}" onclick="openWorkoutSheet(${dayNum},'${dayNames[dayNum-1]}')">
-      <div class="wo-banner-glow"></div>
-      <div class="wo-banner-top">
-        <span class="wo-banner-date">${ru?'СЕГОДНЯ':'TODAY'} — ${dayNames[dayNum-1].toUpperCase()}</span>
-        <span class="wo-banner-badge${isRest?' rest':''}">${isRest?(ru?'Отдых':'Rest'):(ru?'Тренировка':'Workout')}</span>
-      </div>
-      <div class="wo-banner-main">
-        <div class="wo-banner-title">${escHtml(wName)}</div>
-        <div class="wo-banner-emoji">${emoji}</div>
-      </div>
-      <div class="wo-banner-meta">
-        <span class="wo-banner-by">${isRest?`🛌 ${ru?'День восстановления · лёгкая растяжка':'Recovery day · light stretching'}`:`📋 ${ru?'По плану Арни':"Arnie's plan"}`}</span>
-        <span class="wo-banner-open">${ru?'Детали ›':'Details ›'}</span>
-      </div>
-    </div>`;
-  })() : '';
+  const _now = new Date();
+  const _dayFullNamesRu = ['Воскресенье','Понедельник','Вторник','Среда','Четверг','Пятница','Суббота'];
+  const _dayFullNamesEn = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const _dayFullName = ru ? _dayFullNamesRu[_now.getDay()] : _dayFullNamesEn[_now.getDay()];
+  const _dateStr = `${String(_now.getDate()).padStart(2,'0')}.${String(_now.getMonth()+1).padStart(2,'0')}.${_now.getFullYear()}`;
+  const workoutHtml = `<div class="daily-card" onclick="openDailyPanel()">
+    <div class="daily-card-left">
+      <div class="daily-day-name">${_dayFullName}</div>
+      <div class="daily-date-str">${_dateStr}</div>
+      <div class="daily-tap-hint">${ru?'Нажми — план на сегодня':'Tap for today\'s plan'}</div>
+    </div>
+    <div class="daily-card-right">
+      <div class="daily-card-ico">📅</div>
+      <div class="daily-card-badge">${ru?'Сегодня':'Today'}</div>
+    </div>
+  </div>`;
 
   const ns = notifSettings.food;
   const mealSchedHtml = ns?.times?.length ? `
@@ -1958,6 +2141,7 @@ function saveFoodEntry() {
   foodLogs.push(pendingFood); persist(); pendingFood=null;
   document.getElementById('food-ta').value=''; document.getElementById('food-result').style.display='none';
   renderTracker(); if(curTab==='home')renderHome(); toast(t('t_food'));
+  scheduleSyncLogs();
 }
 
 function saveMetrics() {
@@ -1979,6 +2163,7 @@ function saveMetrics() {
     if(mi>=0)Object.assign(measLogs[mi],me); else measLogs.push(me);
   }
   persist(); renderTracker(); if(curTab==='home')renderHome(); toast(t('t_saved'));
+  scheduleSyncLogs();
 }
 
 document.getElementById('avatar-photo-input').addEventListener('change', function() {
@@ -2133,93 +2318,52 @@ function renderProgress() {
 // ══ PROFILE ══
 function renderProfile() {
   const el=document.getElementById('profile-content'); if(!profile) return;
-  const m=planData?.macros||{};
   const GOAL_MAP = {lose_weight:t('goal_lose'),gain_muscle:t('goal_gain'),maintain:t('goal_maintain'),recomposition:t('goal_recomp')};
   const goal = GOAL_MAP[profile.goal] || profile.goal || '—';
-  const bmi=profile.height_cm&&profile.weight_kg?(profile.weight_kg/Math.pow(profile.height_cm/100,2)).toFixed(1):'—';
-  const bmiLbl=()=>{const b=parseFloat(bmi);if(isNaN(b))return'';if(b<18.5)return'(Дефицит)';if(b<25)return'(Норма)';if(b<30)return'(Избыток)';return'(Ожирение)';};
   const curW=(logs.slice().reverse().find(l=>l.weight)?.weight)||profile.weight_kg||'—';
-  const streak=calcStreak();
-
-  const editRow = (lbl, val, fn) => `
-    <button class="pf-edit-row" onclick="${fn}" style="touch-action:manipulation">
-      <div class="pf-edit-lbl">${lbl}</div>
-      <div class="pf-edit-right">
-        <div class="pf-edit-val">${val}</div>
-        <div class="pf-edit-arrow">›</div>
-      </div>
-    </button>`;
-
+  const ru = lang !== 'en';
   const avStyle = avatarPhoto
     ? `background:url(${avatarPhoto}) center/cover;`
     : `font-size:${selectedAvatar?'30px':'26px'}`;
   const avContent = avatarPhoto ? '' : (selectedAvatar || (profile.name||'?')[0].toUpperCase());
 
-  const ns = notifSettings || {};
-
   el.innerHTML=`
     <div class="prof-hero">
-      <div class="prof-av" style="${avStyle}" onclick="openSettings()" style="cursor:pointer">${escHtml(avContent)}</div>
+      <div class="prof-av" style="${avStyle}" onclick="openSettings()">${escHtml(avContent)}</div>
       <div style="flex:1">
         <div class="prof-name">${escHtml(profile.name||'—')}</div>
         <div class="prof-goal">${escHtml(goal)}</div>
-        <div class="prof-meta">${profile.age||'—'} лет · ${profile.height_cm||'—'} см · ${curW} кг</div>
+        <div class="prof-meta">${profile.age||'—'} ${ru?'лет':'yo'} · ${profile.height_cm||'—'} ${ru?'см':'cm'} · ${curW} ${ru?'кг':'kg'}</div>
       </div>
       <button class="pf-settings-btn" onclick="openSettings()" style="touch-action:manipulation">⚙️</button>
     </div>
 
-    <div class="pf-section-hd">📋 Данные</div>
-    <div class="pf-card">
-      ${editRow(t('pf_wt'), `${curW} кг`, `openQE('${t('pf_wt')} (кг)', ${curW==='—'?0:curW}, v=>{if(v<20||v>300){toast('Проверь значение');return;}profile.weight_kg=v;persist();renderProfile();toast('Вес обновлён ✓')})`)}
-      ${profile.height_cm?editRow(t('pf_height'), `${profile.height_cm} см`, `openQE('${t('pf_height')} (см)', ${profile.height_cm}, v=>{if(v<100||v>250){toast('Проверь значение');return;}profile.height_cm=v;persist();renderProfile();toast('Рост обновлён ✓')})`):''}
-      ${profile.age?editRow(t('pf_age'), `${profile.age} лет`, `openQE('${t('pf_age')}', ${profile.age}, v=>{if(v<10||v>100){toast('Проверь значение');return;}profile.age=v;persist();renderProfile();toast('Возраст обновлён ✓')})`):''}
-      <div class="pf-info-row"><div class="pf-info-lbl">${t('pf_gender')}</div><div class="pf-info-val">${profile.gender==='male'?t('pf_male'):(profile.gender==='female'?t('pf_female'):'—')}</div></div>
-      ${bmi!=='—'?`<div class="pf-info-row"><div class="pf-info-lbl">${t('pf_bmi')}</div><div class="pf-info-val">${bmi} ${bmiLbl()}</div></div>`:''}
-      <div class="pf-info-row"><div class="pf-info-lbl">${t('pf_goal')}</div><div class="pf-info-val">${escHtml(goal)}</div></div>
-      ${m.calories?`<div class="pf-info-row"><div class="pf-info-lbl">${t('pf_cal')}</div><div class="pf-info-val">${m.calories} ккал</div></div>`:''}
-      ${m.protein_g?`<div class="pf-info-row"><div class="pf-info-lbl">Б/Ж/У</div><div class="pf-info-val">${m.protein_g}г / ${m.fat_g}г / ${m.carb_g}г</div></div>`:''}
-      <div class="pf-info-row"><div class="pf-info-lbl">${t('pf_streak')}</div><div class="pf-info-val">${streak} ${lang==='en'?'day'+(streak!==1?'s':''):(streak===1?'день':streak<5?'дня':'дней')}</div></div>
-    </div>
+    <button class="pf-nav-btn" onclick="openProfilePanel('data')" style="touch-action:manipulation">
+      <span class="set-nav-ico">📋</span>
+      <div class="set-nav-info">
+        <div class="set-nav-lbl">${ru?'Данные':'My Data'}</div>
+        <div class="set-nav-sub">${ru?'Вес, рост, параметры':'Weight, height, measurements'}</div>
+      </div>
+      <span class="set-nav-arr">›</span>
+    </button>
 
-    <div class="pf-section-hd">🔔 Напоминания</div>
-    <div class="pf-card pf-notif-card">
-      <div class="notif-row">
-        <div class="notif-row-tap" onclick="openNotifModal('meal')" style="touch-action:manipulation">
-          <div class="notif-lbl">${t('pf_notif_meal')}</div>
-          <div class="notif-sub">${notifSubText('food')}</div>
-        </div>
-        <button class="toggle ${ns.food?.active?'on':''}" onclick="toggleNotif('food')" style="touch-action:manipulation"></button>
+    <button class="pf-nav-btn" onclick="openProfilePanel('notif')" style="touch-action:manipulation">
+      <span class="set-nav-ico">🔔</span>
+      <div class="set-nav-info">
+        <div class="set-nav-lbl">${ru?'Напоминания':'Reminders'}</div>
+        <div class="set-nav-sub">${ru?'Еда, вода, дневной лог':'Food, water, daily log'}</div>
       </div>
-      <div class="notif-row">
-        <div class="notif-row-tap" onclick="openNotifModal('water')" style="touch-action:manipulation">
-          <div class="notif-lbl">${t('pf_notif_water')}</div>
-          <div class="notif-sub">${notifSubText('water')}</div>
-        </div>
-        <button class="toggle ${ns.water?.active?'on':''}" onclick="toggleNotif('water')" style="touch-action:manipulation"></button>
-      </div>
-      <div class="notif-row">
-        <div class="notif-row-tap" onclick="openNotifModal('log')" style="touch-action:manipulation">
-          <div class="notif-lbl">${t('pf_notif_log')}</div>
-          <div class="notif-sub">${notifSubText('log')}</div>
-        </div>
-        <button class="toggle ${ns.log?.active?'on':''}" onclick="toggleNotif('log')" style="touch-action:manipulation"></button>
-      </div>
-      <div style="padding:12px 16px">
-        <button class="btn-notif-test" onclick="sendTestNotif()" style="touch-action:manipulation">${t('pf_notif_test')}</button>
-      </div>
-    </div>
+      <span class="set-nav-arr">›</span>
+    </button>
 
-    <div class="pf-section-hd">⚙️ Аккаунт</div>
-    <div class="pf-card">
-      <button class="pf-edit-row" onclick="openSettings()" style="touch-action:manipulation">
-        <div class="pf-edit-lbl">Аватар и имя</div>
-        <div class="pf-edit-right"><div class="pf-edit-val">${escHtml(profile.name||'')}</div><div class="pf-edit-arrow">›</div></div>
-      </button>
-      <button class="pf-edit-row" onclick="confirmReset()" style="touch-action:manipulation;color:var(--red)">
-        <div class="pf-edit-lbl" style="color:var(--red)">${t('pf_reset')}</div>
-        <div class="pf-edit-right"><div class="pf-edit-arrow" style="color:var(--red)">›</div></div>
-      </button>
-    </div>
+    <button class="pf-nav-btn" onclick="openProfilePanel('account')" style="touch-action:manipulation">
+      <span class="set-nav-ico">⚙️</span>
+      <div class="set-nav-info">
+        <div class="set-nav-lbl">${ru?'Аккаунт':'Account'}</div>
+        <div class="set-nav-sub">${ru?'Аватар, сброс данных':'Avatar, reset data'}</div>
+      </div>
+      <span class="set-nav-arr">›</span>
+    </button>
 
     <div class="disc">${t('pf_disc')}</div>`;
 }
@@ -2623,14 +2767,18 @@ function openSettings() {
   document.getElementById('settings-panel').classList.add('on');
   document.getElementById('gear-btn').style.color = 'var(--cyan)';
   renderSettingsAvatarGrid();
-  const nameIn = document.getElementById('settings-name-in');
-  if (nameIn && profile?.name) nameIn.value = profile.name;
+  const langSub = document.getElementById('lang-sub-label');
+  if (langSub) langSub.textContent = lang === 'en' ? 'English' : 'Русский';
+  const nameSub = document.getElementById('name-sub-label');
+  if (nameSub) nameSub.textContent = profile?.name || '';
   document.getElementById('lang-ru').classList.toggle('on', lang==='ru');
   document.getElementById('lang-en').classList.toggle('on', lang==='en');
   renderFaq();
 }
 
 function closeSettings() {
+  closeLangPanel();
+  closeNamePanel();
   document.getElementById('settings-panel').classList.remove('on');
   document.getElementById('gear-btn').style.color = '';
 }
@@ -2705,9 +2853,218 @@ async function saveSettingsName() {
     }
     updateHeader();
     if (document.getElementById('sc-profile').classList.contains('on')) renderProfile();
+    const nameSub = document.getElementById('name-sub-label');
+    if (nameSub) nameSub.textContent = formatted;
     toast(t('t_name_upd', formatted));
-    closeSettings();
+    closeNamePanel();
   }
+}
+
+// ══ LANG PANEL ══
+function openLangPanel() {
+  updateLangPanel();
+  document.getElementById('lang-panel').classList.add('on');
+}
+function closeLangPanel() {
+  document.getElementById('lang-panel')?.classList.remove('on');
+}
+function updateLangPanel() {
+  const ru = lang !== 'en';
+  const ttl = document.getElementById('lang-panel-ttl');
+  if (ttl) ttl.textContent = ru ? 'Язык' : 'Language';
+  const checkRu = document.getElementById('lang-check-ru');
+  const checkEn = document.getElementById('lang-check-en');
+  if (checkRu) checkRu.style.display = lang === 'ru' ? '' : 'none';
+  if (checkEn) checkEn.style.display = lang === 'en' ? '' : 'none';
+  document.getElementById('lang-choice-ru')?.classList.toggle('on', lang === 'ru');
+  document.getElementById('lang-choice-en')?.classList.toggle('on', lang === 'en');
+}
+function setLangChoice(l) {
+  setLang(l);
+  updateLangPanel();
+  const sub = document.getElementById('lang-sub-label');
+  if (sub) sub.textContent = l === 'en' ? 'English' : 'Русский';
+}
+
+// ══ NAME PANEL ══
+function openNamePanel() {
+  const el  = document.getElementById('settings-name-in');
+  const lbl = document.getElementById('name-field-lbl');
+  const btn = document.getElementById('name-save-btn');
+  const ttl = document.getElementById('name-panel-ttl');
+  const ru  = lang !== 'en';
+  if (ttl) ttl.textContent = ru ? 'Имя' : 'Name';
+  if (lbl) lbl.textContent = ru ? 'Твоё имя' : 'Your name';
+  if (btn) btn.textContent = ru ? 'Сохранить ✓' : 'Save ✓';
+  if (el && profile?.name) el.value = profile.name;
+  document.getElementById('name-panel').classList.add('on');
+  setTimeout(() => el?.focus(), 320);
+}
+function closeNamePanel() {
+  document.getElementById('name-panel')?.classList.remove('on');
+}
+
+// ══ PROFILE SUB-PANELS ══
+function openProfilePanel(type) {
+  const panel   = document.getElementById(`pf-${type}-panel`);
+  const content = document.getElementById(`pf-${type}-content`);
+  const ttl     = document.getElementById(`pf-${type}-ttl`);
+  const ru      = lang !== 'en';
+  if (!panel) return;
+  if (type === 'data') {
+    if (ttl) ttl.textContent = ru ? 'Данные' : 'My Data';
+    if (content) renderPfDataContent(content);
+  } else if (type === 'notif') {
+    if (ttl) ttl.textContent = ru ? 'Напоминания' : 'Reminders';
+    if (content) renderPfNotifContent(content);
+  } else if (type === 'account') {
+    if (ttl) ttl.textContent = ru ? 'Аккаунт' : 'Account';
+    if (content) renderPfAccountContent(content);
+  }
+  panel.classList.add('on');
+}
+function closeProfilePanel(type) {
+  document.getElementById(`pf-${type}-panel`)?.classList.remove('on');
+}
+
+function renderPfDataContent(el) {
+  if (!profile || !el) return;
+  const m = planData?.macros || {};
+  const GOAL_MAP = {lose_weight:t('goal_lose'),gain_muscle:t('goal_gain'),maintain:t('goal_maintain'),recomposition:t('goal_recomp')};
+  const goal = GOAL_MAP[profile.goal] || profile.goal || '—';
+  const bmi = profile.height_cm && profile.weight_kg
+    ? (profile.weight_kg / Math.pow(profile.height_cm / 100, 2)).toFixed(1) : '—';
+  const bmiLbl = () => {
+    const b = parseFloat(bmi);
+    if (isNaN(b)) return '';
+    if (b < 18.5) return '(Дефицит)'; if (b < 25) return '(Норма)';
+    if (b < 30) return '(Избыток)'; return '(Ожирение)';
+  };
+  const curW = (logs.slice().reverse().find(l => l.weight)?.weight) || profile.weight_kg || '—';
+  const streak = calcStreak();
+  const editRow = (lbl, val, fn) => `<button class="pf-edit-row" onclick="${fn}" style="touch-action:manipulation">
+    <div class="pf-edit-lbl">${lbl}</div>
+    <div class="pf-edit-right"><div class="pf-edit-val">${val}</div><div class="pf-edit-arrow">›</div></div>
+  </button>`;
+  el.innerHTML = `<div class="pf-card">
+    ${editRow(t('pf_wt'), `${curW} кг`, `openQE('${t('pf_wt')} (кг)',${curW==='—'?0:curW},v=>{if(v<20||v>300){toast('Проверь значение');return;}profile.weight_kg=v;persist();renderPfDataContent(document.getElementById('pf-data-content'));renderProfile();toast('Вес обновлён ✓')})`)}
+    ${profile.height_cm?editRow(t('pf_height'),`${profile.height_cm} см`,`openQE('${t('pf_height')} (см)',${profile.height_cm},v=>{if(v<100||v>250){toast('Проверь значение');return;}profile.height_cm=v;persist();renderPfDataContent(document.getElementById('pf-data-content'));renderProfile();toast('Рост обновлён ✓')})`):''}
+    ${profile.age?editRow(t('pf_age'),`${profile.age} лет`,`openQE('${t('pf_age')}',${profile.age},v=>{if(v<10||v>100){toast('Проверь значение');return;}profile.age=v;persist();renderPfDataContent(document.getElementById('pf-data-content'));renderProfile();toast('Возраст обновлён ✓')})`):''}
+    <div class="pf-info-row"><div class="pf-info-lbl">${t('pf_gender')}</div><div class="pf-info-val">${profile.gender==='male'?t('pf_male'):(profile.gender==='female'?t('pf_female'):'—')}</div></div>
+    ${bmi!=='—'?`<div class="pf-info-row"><div class="pf-info-lbl">${t('pf_bmi')}</div><div class="pf-info-val">${bmi} ${bmiLbl()}</div></div>`:''}
+    <div class="pf-info-row"><div class="pf-info-lbl">${t('pf_goal')}</div><div class="pf-info-val">${escHtml(goal)}</div></div>
+    ${m.calories?`<div class="pf-info-row"><div class="pf-info-lbl">${t('pf_cal')}</div><div class="pf-info-val">${m.calories} ккал</div></div>`:''}
+    ${m.protein_g?`<div class="pf-info-row"><div class="pf-info-lbl">Б/Ж/У</div><div class="pf-info-val">${m.protein_g}г / ${m.fat_g}г / ${m.carb_g}г</div></div>`:''}
+    <div class="pf-info-row"><div class="pf-info-lbl">${t('pf_streak')}</div><div class="pf-info-val">${streak} ${lang==='en'?'day'+(streak!==1?'s':''):(streak===1?'день':streak<5?'дня':'дней')}</div></div>
+  </div>`;
+}
+
+function renderPfNotifContent(el) {
+  if (!el) return;
+  const ns = notifSettings || {};
+  el.innerHTML = `<div class="pf-card pf-notif-card">
+    <div class="notif-row">
+      <div class="notif-row-tap" onclick="openNotifModal('meal')" style="touch-action:manipulation">
+        <div class="notif-lbl">${t('pf_notif_meal')}</div>
+        <div class="notif-sub">${notifSubText('food')}</div>
+      </div>
+      <button class="toggle ${ns.food?.active?'on':''}" onclick="toggleNotif('food')" style="touch-action:manipulation"></button>
+    </div>
+    <div class="notif-row">
+      <div class="notif-row-tap" onclick="openNotifModal('water')" style="touch-action:manipulation">
+        <div class="notif-lbl">${t('pf_notif_water')}</div>
+        <div class="notif-sub">${notifSubText('water')}</div>
+      </div>
+      <button class="toggle ${ns.water?.active?'on':''}" onclick="toggleNotif('water')" style="touch-action:manipulation"></button>
+    </div>
+    <div class="notif-row">
+      <div class="notif-row-tap" onclick="openNotifModal('log')" style="touch-action:manipulation">
+        <div class="notif-lbl">${t('pf_notif_log')}</div>
+        <div class="notif-sub">${notifSubText('log')}</div>
+      </div>
+      <button class="toggle ${ns.log?.active?'on':''}" onclick="toggleNotif('log')" style="touch-action:manipulation"></button>
+    </div>
+    <div style="padding:12px 16px">
+      <button class="btn-notif-test" onclick="sendTestNotif()" style="touch-action:manipulation">${t('pf_notif_test')}</button>
+    </div>
+  </div>`;
+}
+
+function renderPfAccountContent(el) {
+  if (!el) return;
+  const ru = lang !== 'en';
+  el.innerHTML = `<div class="pf-card">
+    <button class="pf-edit-row" onclick="openSettings()" style="touch-action:manipulation">
+      <div class="pf-edit-lbl">${ru?'Аватар и имя':'Avatar & name'}</div>
+      <div class="pf-edit-right"><div class="pf-edit-val">${escHtml(profile?.name||'')}</div><div class="pf-edit-arrow">›</div></div>
+    </button>
+    <button class="pf-edit-row" onclick="confirmReset()" style="touch-action:manipulation">
+      <div class="pf-edit-lbl" style="color:var(--red)">${t('pf_reset')}</div>
+      <div class="pf-edit-right"><div class="pf-edit-arrow" style="color:var(--red)">›</div></div>
+    </button>
+  </div>`;
+}
+
+// ══ DAILY PANEL ══
+function openDailyPanel() {
+  renderDailyPanel();
+  document.getElementById('daily-panel').classList.add('on');
+}
+function closeSubPanel(id) {
+  document.getElementById(id)?.classList.remove('on');
+}
+function renderDailyPanel() {
+  const el  = document.getElementById('daily-panel-content');
+  const ttl = document.getElementById('daily-panel-ttl');
+  if (!el) return;
+  const ru  = lang !== 'en';
+  const now = new Date();
+  const dayFullNamesRu = ['Воскресенье','Понедельник','Вторник','Среда','Четверг','Пятница','Суббота'];
+  const dayFullNamesEn = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  if (ttl) ttl.textContent = ru ? dayFullNamesRu[now.getDay()] : dayFullNamesEn[now.getDay()];
+
+  const dayNum = ((now.getDay()+6)%7)+1;
+  let workoutSection = '';
+  if (planData?.workout_plan) {
+    const lines = planData.workout_plan.split('\n').filter(Boolean);
+    const dayIdx = lines.findIndex(l => l.toLowerCase().includes(`день ${dayNum}`) || l.toLowerCase().includes(`day ${dayNum}`));
+    const dayLine = dayIdx >= 0 ? lines[dayIdx] : null;
+    const isRest  = !dayLine || /отдых|rest/i.test(dayLine);
+    const wName   = _extractWorkoutName(dayLine||'') || (isRest?(ru?'День отдыха':'Rest day'):(ru?'Тренировка':'Workout'));
+    const exLines = dayIdx >= 0 ? (() => {
+      const out = [];
+      for (let i = dayIdx+1; i < lines.length; i++) {
+        if (/^день\s*\d|^day\s*\d/i.test(lines[i])) break;
+        out.push(lines[i]);
+      }
+      return out;
+    })() : [];
+    const exText = exLines.join('\n').trim();
+    workoutSection = `
+      <div class="pf-section-hd">🏋️ ${ru?'Тренировка':'Workout'}</div>
+      <div class="pf-card">
+        <div class="pf-info-row"><div class="pf-info-lbl">${ru?'Название':'Name'}</div><div class="pf-info-val">${escHtml(wName)}</div></div>
+        ${isRest?`<div class="pf-info-row"><div class="pf-info-lbl">${ru?'Тип':'Type'}</div><div class="pf-info-val">🛌 ${ru?'Отдых':'Rest day'}</div></div>`:''}
+        ${exText?`<div style="padding:10px 16px;font-size:13px;line-height:1.7;color:var(--text2);white-space:pre-wrap;border-top:1px solid var(--border)">${escHtml(exText)}</div>`:''}
+      </div>`;
+  }
+
+  const today = todayKey();
+  const consumed = foodLogs.filter(f=>f.date===today).reduce((a,f)=>({
+    cal:a.cal+(f.total?.calories||0), p:a.p+(f.total?.protein_g||0),
+    fat:a.fat+(f.total?.fat_g||0), c:a.c+(f.total?.carb_g||0)
+  }),{cal:0,p:0,fat:0,c:0});
+  const m = planData?.macros||{};
+  const nutritionSection = `
+    <div class="pf-section-hd">🍽 ${ru?'Питание сегодня':"Today's nutrition"}</div>
+    <div class="pf-card">
+      <div class="pf-info-row"><div class="pf-info-lbl">${ru?'Калории':'Calories'}</div><div class="pf-info-val">${Math.round(consumed.cal)}${m.calories?` / ${m.calories} ккал`:' ккал'}</div></div>
+      <div class="pf-info-row"><div class="pf-info-lbl">${ru?'Белок':'Protein'}</div><div class="pf-info-val">${Math.round(consumed.p)}${m.protein_g?` / ${m.protein_g}г`:'г'}</div></div>
+      <div class="pf-info-row"><div class="pf-info-lbl">${ru?'Жиры':'Fat'}</div><div class="pf-info-val">${Math.round(consumed.fat)}${m.fat_g?` / ${m.fat_g}г`:'г'}</div></div>
+      <div class="pf-info-row"><div class="pf-info-lbl">${ru?'Углеводы':'Carbs'}</div><div class="pf-info-val">${Math.round(consumed.c)}${m.carb_g?` / ${m.carb_g}г`:'г'}</div></div>
+    </div>`;
+
+  el.innerHTML = nutritionSection + workoutSection;
 }
 
 function renderFaq() {
@@ -2918,6 +3275,9 @@ function saveNotifModal() {
   localStorage.setItem('pk_notif', JSON.stringify(notifSettings));
   closeNotifModal();
   renderProfile();
+  const notifEl = document.getElementById('pf-notif-content');
+  if (notifEl && document.getElementById('pf-notif-panel')?.classList.contains('on')) renderPfNotifContent(notifEl);
+  if (curTab === 'home') renderHome();
   saveReminderToBackend(_remType);
   toast(ru ? 'Напоминание сохранено ✓' : 'Reminder saved ✓');
 }

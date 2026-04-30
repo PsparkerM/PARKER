@@ -22,6 +22,7 @@ from app.api.adapt import router as adapt_router
 from app.api.user import router as user_router
 from app.api.notify import router as notify_router
 from app.api.reminders import router as reminders_router
+from app.api.logs import router as logs_router
 
 logging.basicConfig(
     level=logging.INFO,
@@ -106,6 +107,7 @@ app.include_router(adapt_router)
 app.include_router(user_router)
 app.include_router(notify_router)
 app.include_router(reminders_router)
+app.include_router(logs_router)
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 
