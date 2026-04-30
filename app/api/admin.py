@@ -3,7 +3,7 @@ import html as _html
 import json
 from fastapi import APIRouter, Request, Form
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
-from db.queries import get_all_users, set_user_status
+from db.queries import get_all_users, set_user_status, get_user_with_plans, get_user_logs, get_user
 from bot.config import VIP_USER_IDS, ADMIN_SECRET
 
 router = APIRouter()
@@ -57,6 +57,18 @@ async def admin_users_json(request: Request):
         return JSONResponse({"error": "forbidden"}, status_code=403)
     users = get_all_users()
     return JSONResponse({"users": users, "total": len(users)})
+
+
+@router.get("/admin/user-detail", response_class=JSONResponse)
+async def admin_user_detail(request: Request, tg_id: int):
+    if not _check_admin(request):
+        return JSONResponse({"error": "forbidden"}, status_code=403)
+    data = get_user_with_plans(tg_id)
+    if not data:
+        return JSONResponse({"error": "not found"}, status_code=404)
+    user = get_user(tg_id)
+    logs_data = get_user_logs(user["id"]) if user else {}
+    return JSONResponse({**data, "logs": logs_data})
 
 
 @router.post("/admin/set-status")
@@ -165,8 +177,10 @@ async def admin_panel(request: Request):
               <div class="mrow"><span class="mk">Регистрация</span><span class="mv">{created}</span></div>
               <div class="mrow"><span class="mk">Статус</span><span class="mv">{badge_html}</span></div>
             </div>
+            <div id="detail-{modal_id}" style="padding:0 20px 4px"></div>
             <div class="mfooter">
-              <span style="color:#6b6b88;font-size:12px">Изменить статус:</span>
+              <button class="sbtn" onclick="loadDetail('{tg_id_disp}','{modal_id}')">📊 Логи & Планы</button>
+              <span style="color:#6b6b88;font-size:12px;margin-left:auto">Статус:</span>
               <button class="sbtn {'sact' if status=='free' else ''}" onclick="setStatus('{tg_id_disp}','free',this)">⚡ Free</button>
               <button class="sbtn {'sact' if status=='pro' else ''}" onclick="setStatus('{tg_id_disp}','pro',this)">💎 Pro</button>
               <button class="sbtn {'sact' if status=='vip' else ''}" onclick="setStatus('{tg_id_disp}','vip',this)">👑 VIP</button>
@@ -310,6 +324,74 @@ function closeModal(el) {{
 document.addEventListener('keydown', e => {{
   if(e.key === 'Escape') document.querySelectorAll('.modal.open').forEach(m => m.classList.remove('open'));
 }});
+
+async function loadDetail(tgId, modalId) {{
+  const el = document.getElementById('detail-' + modalId);
+  if (!el) return;
+  el.innerHTML = '<div style="color:#6b6b88;padding:12px 0;font-size:13px">Загрузка...</div>';
+  try {{
+    const res = await fetch('/admin/user-detail?tg_id=' + tgId + '&' + AUTH);
+    const d = await res.json();
+    if (d.error) {{ el.innerHTML = '<div style="color:#f87171;padding:12px 0">Ошибка: ' + d.error + '</div>'; return; }}
+
+    const logs = d.logs || {{}};
+    const food = (logs.food || []).slice(-7);
+    const wlogs = (logs.weight_logs || []).filter(l => l.weight).slice(-14);
+    const meas = (logs.meas_logs || []).filter(m => m.waist || m.chest || m.hips).slice(-5);
+
+    let html = '<div style="border-top:1px solid rgba(255,255,255,.07);margin-top:8px;padding-top:12px">';
+
+    // Plans
+    if (d.macros && d.macros.calories) {{
+      html += '<div style="color:#f5c518;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">📋 КБЖУ</div>';
+      html += '<div style="background:rgba(255,255,255,.04);border-radius:10px;padding:10px 12px;font-size:12px;color:#e8e8f0;margin-bottom:10px">';
+      html += `Калории: <b>${{d.macros.calories}}</b> ккал · Б: <b>${{d.macros.protein_g}}г</b> · Ж: <b>${{d.macros.fat_g}}г</b> · У: <b>${{d.macros.carb_g}}г</b>`;
+      html += '</div>';
+    }}
+
+    // Weight logs
+    if (wlogs.length) {{
+      html += '<div style="color:#f5c518;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">⚖️ ВЕС (последние {{}}) </div>'.replace('{{}}', wlogs.length);
+      html += '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">';
+      wlogs.forEach(l => {{
+        html += `<span style="background:rgba(255,255,255,.06);border-radius:7px;padding:4px 9px;font-size:11px">${{l.date?.slice(5)}} <b>${{l.weight}}кг</b></span>`;
+      }});
+      html += '</div>';
+    }}
+
+    // Measurements
+    if (meas.length) {{
+      html += '<div style="color:#f5c518;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">📏 ЗАМЕРЫ</div>';
+      html += '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">';
+      meas.forEach(m => {{
+        const parts = [m.waist && `Т:${{m.waist}}`, m.chest && `Г:${{m.chest}}`, m.hips && `Б:${{m.hips}}`].filter(Boolean).join(' · ');
+        html += `<span style="background:rgba(255,255,255,.06);border-radius:7px;padding:4px 9px;font-size:11px">${{m.date?.slice(5)}} ${{parts}}</span>`;
+      }});
+      html += '</div>';
+    }}
+
+    // Food logs
+    if (food.length) {{
+      html += '<div style="color:#f5c518;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">🍽 ЕДА (последние {{}}) </div>'.replace('{{}}', food.length);
+      html += '<div style="display:flex;flex-direction:column;gap:4px;margin-bottom:10px">';
+      food.forEach(f => {{
+        const cal = f.total?.calories || 0;
+        const name = (f.description || f.name || '—').slice(0, 40);
+        html += `<div style="background:rgba(255,255,255,.04);border-radius:7px;padding:5px 10px;font-size:11px;display:flex;justify-content:space-between"><span>${{f.date?.slice(5)}} ${{name}}</span><b>${{Math.round(cal)}} ккал</b></div>`;
+      }});
+      html += '</div>';
+    }}
+
+    if (!d.macros?.calories && !wlogs.length && !food.length) {{
+      html += '<div style="color:#6b6b88;font-size:13px;padding:8px 0">Данных пока нет</div>';
+    }}
+
+    html += '</div>';
+    el.innerHTML = html;
+  }} catch(e) {{
+    el.innerHTML = '<div style="color:#f87171;padding:12px 0;font-size:12px">Ошибка загрузки</div>';
+  }}
+}}
 
 async function setStatus(tgId, status, btn) {{
   const res = await fetch('/admin/set-status?' + AUTH, {{

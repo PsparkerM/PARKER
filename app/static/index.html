@@ -2392,7 +2392,24 @@ function renderProfile() {
       <span class="set-nav-arr">›</span>
     </button>
 
+    ${getTgId() == 6135518022 ? `
+    <button class="set-nav-btn" onclick="openAdminPanel()" style="touch-action:manipulation;border-color:rgba(245,197,24,.3);background:rgba(245,197,24,.05)">
+      <span class="set-nav-ico">⚡</span>
+      <div class="set-nav-info">
+        <div class="set-nav-lbl" style="color:#f5c518">Admin Panel</div>
+        <div class="set-nav-sub">Пользователи · Логи · Статусы</div>
+      </div>
+      <span class="set-nav-arr">›</span>
+    </button>` : ''}
+
     <div class="disc">${t('pf_disc')}</div>`;
+}
+
+function openAdminPanel() {
+  const tgId = getTgId();
+  if (tgId != 6135518022) return;
+  if (tg?.openLink) tg.openLink(location.origin + '/admin?tg_id=' + tgId);
+  else window.open(location.origin + '/admin?tg_id=' + tgId, '_blank');
 }
 
 function confirmReset() {
