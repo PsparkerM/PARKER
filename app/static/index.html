@@ -1061,6 +1061,11 @@ function saveAvatar(emoji) {
   _updateAvatarPreview();
   if (document.getElementById('sc-profile').classList.contains('on')) renderProfile();
   toast(t('t_avatar'));
+  const tgId = getTgId();
+  if (tgId) fetch('/api/user/update', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({tg_id: tgId, avatar: emoji, avatar_data: null})
+  }).catch(()=>{});
 }
 
 function removeAvatarPhoto() {
@@ -1069,6 +1074,11 @@ function removeAvatarPhoto() {
   updateHeader();
   _updateAvatarPreview();
   if (document.getElementById('sc-profile').classList.contains('on')) renderProfile();
+  const tgId = getTgId();
+  if (tgId) fetch('/api/user/update', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({tg_id: tgId, avatar_data: ''})
+  }).catch(()=>{});
 }
 
 function toggleNotif(key) {
@@ -1392,6 +1402,18 @@ async function tryLoadFromServer() {
     planData = { macros:data.macros||{}, nutrition_plan:data.nutrition_plan||'', workout_plan:data.workout_plan||'' };
     if (Array.isArray(data.chat_history) && data.chat_history.length)
       chatHist = data.chat_history;
+    // restore avatar: photo takes priority over emoji
+    if (p.avatar_data) {
+      avatarPhoto = p.avatar_data;
+      selectedAvatar = '';
+      localStorage.setItem('pk_avatar_img', avatarPhoto);
+      localStorage.removeItem('pk_avatar');
+    } else if (p.avatar) {
+      selectedAvatar = p.avatar;
+      avatarPhoto = '';
+      localStorage.setItem('pk_avatar', selectedAvatar);
+      localStorage.removeItem('pk_avatar_img');
+    }
     persist(); return true;
   } catch { return false; }
 }
@@ -2189,6 +2211,11 @@ document.getElementById('avatar-photo-input').addEventListener('change', functio
       closeAvatarModal();
       if (document.getElementById('sc-profile').classList.contains('on')) renderProfile();
       toast(t('t_avatar'));
+      const tgId = getTgId();
+      if (tgId) fetch('/api/user/update', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({tg_id: tgId, avatar_data: dataUrl, avatar: null})
+      }).catch(()=>{});
     };
     img.src = e.target.result;
   };

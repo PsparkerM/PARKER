@@ -27,7 +27,7 @@ async def update_user_data(payload: dict):
         tg_id = payload.get("tg_id")
         if not tg_id:
             return JSONResponse({"ok": False, "error": "no tg_id"})
-        allowed = {"name", "avatar"}
+        allowed = {"name", "avatar", "avatar_data"}
         fields = {k: v for k, v in payload.items() if k in allowed and v is not None}
         if not fields:
             return JSONResponse({"ok": False, "error": "no valid fields"})
