@@ -5,7 +5,7 @@ from aiogram.types import (
 )
 from aiogram.filters import Command, CommandStart
 
-from bot.config import WEBAPP_URL
+from bot.config import WEBAPP_URL, ADMIN_TG_IDS
 from db.queries import get_user
 
 router = Router()
@@ -121,6 +121,27 @@ async def handle_free_text(message: Message) -> None:
         "Там есть чат, трекер питания и твой план. 💪",
         reply_markup=APP_BTN()
     )
+
+
+@router.message(Command("dm"))
+async def cmd_dm(message: Message) -> None:
+    if message.from_user.id not in ADMIN_TG_IDS:
+        return
+    parts = (message.text or "").split(maxsplit=2)
+    if len(parts) < 3:
+        await message.answer("Формат: /dm <tg_id> <текст сообщения>")
+        return
+    try:
+        target_id = int(parts[1])
+    except ValueError:
+        await message.answer("❌ Неверный tg_id — должно быть числом")
+        return
+    text = parts[2]
+    try:
+        await message.bot.send_message(target_id, text)
+        await message.answer(f"✅ Отправлено → {target_id}")
+    except Exception as e:
+        await message.answer(f"❌ Не удалось отправить: {e}")
 
 
 async def set_bot_commands(bot) -> None:
