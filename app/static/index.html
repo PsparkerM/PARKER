@@ -723,6 +723,11 @@ input[type=time]{color-scheme:dark}
   border:1.5px solid var(--border2);background:var(--surface);color:var(--text2)}
 .qe-btn-save{flex:2;padding:13px;border-radius:var(--radius-sm);font-size:15px;font-weight:700;
   background:linear-gradient(135deg,var(--cyan),var(--cyan2));color:#000;min-height:50px}
+.fab{position:fixed;right:18px;bottom:86px;width:56px;height:56px;border-radius:50%;
+  background:linear-gradient(135deg,var(--cyan),var(--cyan2));color:#000;font-size:26px;font-weight:700;
+  border:none;box-shadow:0 4px 20px rgba(0,229,255,.4);z-index:50;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;transition:transform .15s,opacity .15s}
+.fab:active{transform:scale(.92);opacity:.85}
 </style>
 </head>
 <body>
@@ -776,6 +781,9 @@ input[type=time]{color-scheme:dark}
     <button class="ntab" data-sc="profile"  onclick="goTab('profile')"><div class="ni">👤</div>Профиль</button>
   </div>
 
+  <!-- FAB: quick log button, visible on home/tracker tabs -->
+  <button class="fab" id="fab-btn" style="display:none" onclick="fabAction()" aria-label="Записать">+</button>
+
   <!-- SETTINGS FULL-SCREEN PAGE -->
   <div class="settings-panel" id="settings-panel">
     <div class="settings-hdr">
@@ -809,6 +817,15 @@ input[type=time]{color-scheme:dark}
         <div class="set-nav-info">
           <div class="set-nav-lbl">Изменить имя</div>
           <div class="set-nav-sub" id="name-sub-label"></div>
+        </div>
+        <span class="set-nav-arr">›</span>
+      </button>
+
+      <button class="set-nav-btn" onclick="openTargetsPanel()">
+        <span class="set-nav-ico">🎯</span>
+        <div class="set-nav-info">
+          <div class="set-nav-lbl">Цели питания</div>
+          <div class="set-nav-sub" id="targets-sub-label">Загрузка...</div>
         </div>
         <span class="set-nav-arr">›</span>
       </button>
@@ -869,6 +886,28 @@ input[type=time]{color-scheme:dark}
       <div class="set-section-hd" id="name-field-lbl">Твоё имя</div>
       <input class="set-name-in" id="settings-name-in" type="text" maxlength="40" autocomplete="name" autocorrect="off" placeholder="Имя">
       <button class="set-name-save" onclick="saveSettingsName()" id="name-save-btn">Сохранить ✓</button>
+    </div>
+  </div>
+
+  <!-- TARGETS SUB-PANEL -->
+  <div class="sub-panel" id="targets-panel">
+    <div class="sub-panel-hdr">
+      <button class="sub-back-btn" onclick="closeTargetsPanel()">‹ Назад</button>
+      <div class="sub-panel-ttl">Цели питания</div>
+      <div style="min-width:70px"></div>
+    </div>
+    <div class="sub-panel-scrl">
+      <div style="color:var(--text2);font-size:13px;margin-bottom:20px;line-height:1.5">Установи дневные цели вручную или напиши Арни в чате — он изменит их сам.</div>
+      <div class="set-section-hd">Калории (ккал)</div>
+      <input class="set-name-in" id="tgt-cal" type="number" inputmode="numeric" placeholder="2000" min="800" max="6000">
+      <div class="set-section-hd" style="margin-top:14px">Белки (г)</div>
+      <input class="set-name-in" id="tgt-prot" type="number" inputmode="numeric" placeholder="150">
+      <div class="set-section-hd" style="margin-top:14px">Жиры (г)</div>
+      <input class="set-name-in" id="tgt-fat" type="number" inputmode="numeric" placeholder="70">
+      <div class="set-section-hd" style="margin-top:14px">Углеводы (г)</div>
+      <input class="set-name-in" id="tgt-carb" type="number" inputmode="numeric" placeholder="200">
+      <button class="set-name-save" style="margin-top:18px" onclick="saveTargets()">Сохранить ✓</button>
+      <button onclick="resetTargets()" style="background:none;border:none;color:var(--text3);font-size:13px;margin-top:10px;padding:10px;cursor:pointer;width:100%;text-align:center">Сбросить к расчётному плану</button>
     </div>
   </div>
 
@@ -1014,12 +1053,13 @@ function getTgName() {
 }
 
 // ══ STATE ══
-let profile   = JSON.parse(localStorage.getItem('pk_profile') || 'null');
-let planData  = JSON.parse(localStorage.getItem('pk_plan')    || 'null');
-let chatHist  = JSON.parse(localStorage.getItem('pk_chat')    || '[]');
-let logs      = JSON.parse(localStorage.getItem('pk_logs')    || '[]');
-let foodLogs  = JSON.parse(localStorage.getItem('pk_food')    || '[]');
-let measLogs  = JSON.parse(localStorage.getItem('pk_meas')    || '[]');
+let profile       = JSON.parse(localStorage.getItem('pk_profile')         || 'null');
+let planData      = JSON.parse(localStorage.getItem('pk_plan')            || 'null');
+let chatHist      = JSON.parse(localStorage.getItem('pk_chat')            || '[]');
+let logs          = JSON.parse(localStorage.getItem('pk_logs')            || '[]');
+let foodLogs      = JSON.parse(localStorage.getItem('pk_food')            || '[]');
+let measLogs      = JSON.parse(localStorage.getItem('pk_meas')            || '[]');
+let macrosOverride= JSON.parse(localStorage.getItem('pk_macros_override') || 'null');
 
 function todayKey() { return new Date().toLocaleDateString('ru-RU'); }
 function getWater() { return parseInt(localStorage.getItem('pk_water_'+todayKey())||'0'); }
@@ -1033,6 +1073,8 @@ function persist() {
     localStorage.setItem('pk_logs',    JSON.stringify(logs));
     localStorage.setItem('pk_food',    JSON.stringify(foodLogs));
     localStorage.setItem('pk_meas',    JSON.stringify(measLogs));
+    if (macrosOverride) localStorage.setItem('pk_macros_override', JSON.stringify(macrosOverride));
+    else localStorage.removeItem('pk_macros_override');
   } catch(e) { console.warn('persist error', e); }
 }
 
@@ -1280,8 +1322,8 @@ async function _onbStage(idx) {
     await _onbTyping('Где будешь тренироваться?');
     _onbBottom(`<div class="onb-chips">
       <div class="onb-chip" onclick="onbEquip(['gym'],this)">🏋️ Тренажёрный зал</div>
-      <div class="onb-chip" onclick="onbEquip(['home'],this)">🏠 Дома с инвентарём</div>
-      <div class="onb-chip" onclick="onbEquip(['no_equipment'],this)">💪 Только своё тело</div>
+      <div class="onb-chip" onclick="onbEquip(['dumbbells'],this)">🏠 Дома с инвентарём</div>
+      <div class="onb-chip" onclick="onbEquip(['none'],this)">💪 Только своё тело</div>
     </div>`);
 
   } else if (stage === 'schedule') {
@@ -1498,11 +1540,20 @@ function goTab(name) {
     document.getElementById(TAB_SCREENS[k]).classList.toggle('on', k===name);
     document.querySelector(`.ntab[data-sc="${k}"]`)?.classList.toggle('on', k===name);
   });
-  // title removed — logo always visible in center
+  const fab = document.getElementById('fab-btn');
+  if (fab) fab.style.display = (name==='home'||name==='tracker') ? 'flex' : 'none';
   if (name==='home')     renderHome();
   if (name==='tracker')  renderTracker();
   if (name==='progress') renderProgress();
   if (name==='profile')  renderProfile();
+}
+
+function fabAction() {
+  goTab('tracker');
+  setTimeout(() => {
+    const ta = document.getElementById('food-ta');
+    if (ta) { ta.focus(); ta.scrollIntoView({behavior:'smooth',block:'center'}); }
+  }, 120);
 }
 
 function updateHeader() {
@@ -1836,7 +1887,7 @@ function renderHome() {
     el.innerHTML='<div class="empty-state"><div class="empty-ico">⚡</div><div class="empty-txt">Загрузка данных...</div></div>';
     return;
   }
-  const m = planData?.macros||{};
+  const m = macrosOverride || planData?.macros||{};
   const today = todayKey();
   const consumed = foodLogs.filter(f=>f.date===today).reduce((a,f)=>({
     cal:a.cal+(f.total?.calories||0), p:a.p+(f.total?.protein_g||0),
@@ -2050,7 +2101,27 @@ async function sendChat() {
     const r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({message:msg,history:sanitizeHist(chatHist),profile,lang})});
     const data=await r.json(); typ.remove();
-    const reply=data.reply||'Не удалось получить ответ.';
+    const rawReply=data.reply||'Не удалось получить ответ.';
+    // Parse SET_TARGETS action from Арни's response
+    const tagMatch=rawReply.match(/\{\{SET_TARGETS:([^}]+)\}\}/);
+    const reply=rawReply.replace(/\s*\{\{SET_TARGETS:[^}]+\}\}\s*/g,'').trim();
+    if(tagMatch){
+      const p={};
+      tagMatch[1].split(',').forEach(part=>{const[k,v]=part.split('=');if(k&&v)p[k.trim()]=parseInt(v.trim());});
+      if(p.calories&&p.calories>500){
+        const base=macrosOverride||planData?.macros||{};
+        macrosOverride={
+          calories:p.calories,
+          protein_g:p.protein||base.protein_g||Math.round(p.calories*0.3/4),
+          fat_g:p.fat||base.fat_g||Math.round(p.calories*0.25/9),
+          carb_g:p.carbs||base.carb_g||Math.round(p.calories*0.45/4),
+        };
+        persist();
+        if(curTab==='home')renderHome();
+        toast(`Цели обновлены: ${p.calories} ккал`);
+        updateTargetsSubLabel();
+      }
+    }
     addMsg(el,'p',reply,'Арни');
     chatHist.push({role:'user',content:msg}); chatHist.push({role:'assistant',content:reply});
     persist(); saveChatToServer();
@@ -2306,8 +2377,9 @@ function renderProgress() {
 
   const calChart=(()=>{
     if(!calLogs.length) return '<div style="color:var(--text3);font-size:13px;text-align:center;padding:16px">Нет данных</div>';
-    const maxCal=Math.max(...calLogs.map(l=>l.cal),planData?.macros?.calories||2000);
-    const target=planData?.macros?.calories||2000;
+    const _effCal=(macrosOverride||planData?.macros||{}).calories||2000;
+    const maxCal=Math.max(...calLogs.map(l=>l.cal),_effCal);
+    const target=_effCal;
     const bars=calLogs.map(l=>{
       const p=Math.max(4,Math.round(l.cal/maxCal*100));
       const c=l.cal>target*1.1?'var(--red)':l.cal<target*0.7?'rgba(0,229,255,.4)':'var(--cyan)';
@@ -2842,12 +2914,14 @@ function openSettings() {
   if (nameSub) nameSub.textContent = profile?.name || '';
   document.getElementById('lang-ru').classList.toggle('on', lang==='ru');
   document.getElementById('lang-en').classList.toggle('on', lang==='en');
+  updateTargetsSubLabel();
   renderFaq();
 }
 
 function closeSettings() {
   closeLangPanel();
   closeNamePanel();
+  closeTargetsPanel();
   document.getElementById('settings-panel').classList.remove('on');
   document.getElementById('gear-btn').style.color = '';
 }
@@ -2927,6 +3001,57 @@ async function saveSettingsName() {
     toast(t('t_name_upd', formatted));
     closeNamePanel();
   }
+}
+
+// ══ TARGETS PANEL ══
+function openTargetsPanel() {
+  const eff = macrosOverride || planData?.macros || {};
+  const calIn  = document.getElementById('tgt-cal');
+  const protIn = document.getElementById('tgt-prot');
+  const fatIn  = document.getElementById('tgt-fat');
+  const carbIn = document.getElementById('tgt-carb');
+  if(calIn)  calIn.value  = eff.calories   || '';
+  if(protIn) protIn.value = eff.protein_g  || '';
+  if(fatIn)  fatIn.value  = eff.fat_g      || '';
+  if(carbIn) carbIn.value = eff.carb_g     || '';
+  document.getElementById('targets-panel').classList.add('on');
+}
+function closeTargetsPanel() {
+  document.getElementById('targets-panel')?.classList.remove('on');
+}
+function saveTargets() {
+  const cal  = parseInt(document.getElementById('tgt-cal')?.value);
+  const prot = parseInt(document.getElementById('tgt-prot')?.value);
+  const fat  = parseInt(document.getElementById('tgt-fat')?.value);
+  const carb = parseInt(document.getElementById('tgt-carb')?.value);
+  if (!cal || cal < 800 || cal > 6000) { toast('Введи калории (800–6000)'); return; }
+  macrosOverride = {
+    calories:  cal,
+    protein_g: prot || Math.round(cal * 0.3 / 4),
+    fat_g:     fat  || Math.round(cal * 0.25 / 9),
+    carb_g:    carb || Math.round(cal * 0.45 / 4),
+  };
+  persist();
+  updateTargetsSubLabel();
+  if (curTab === 'home') renderHome();
+  toast('Цели обновлены ✓');
+  closeTargetsPanel();
+}
+function resetTargets() {
+  macrosOverride = null;
+  persist();
+  updateTargetsSubLabel();
+  if (curTab === 'home') renderHome();
+  toast('Сброшено к расчётному плану');
+  closeTargetsPanel();
+}
+function updateTargetsSubLabel() {
+  const el = document.getElementById('targets-sub-label');
+  if (!el) return;
+  const m = macrosOverride || planData?.macros || {};
+  el.textContent = m.calories
+    ? `${m.calories} ккал · Б:${m.protein_g||'?'}г Ж:${m.fat_g||'?'}г У:${m.carb_g||'?'}г`
+    : 'По расчётному плану';
 }
 
 // ══ LANG PANEL ══
