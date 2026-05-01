@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException, Depends, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
-from app.api.deps import check_ai_quota, get_client_ip
+from app.api.deps import check_ai_quota, get_current_tg_id, get_client_ip
 from app.middleware.rate_limit import ip_limiter
 from bot.utils.calculators import compute_macros_for_profile
 from bot.services.ai_service import generate_nutrition_plan, generate_workout_plan
@@ -72,7 +72,7 @@ class ProfileRequest(BaseModel):
 async def create_profile(
     request: Request,
     body: ProfileRequest,
-    tg_id: int = Depends(check_ai_quota),
+    tg_id: int = Depends(get_current_tg_id),
 ):
     # 3 onboarding submissions per IP per hour (prevents account farming)
     ip = get_client_ip(request)
