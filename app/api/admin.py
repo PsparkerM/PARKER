@@ -4,11 +4,9 @@ import json
 from fastapi import APIRouter, Request, Form
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from db.queries import get_all_users, set_user_status, get_user_with_plans, get_user_logs, get_user
-from bot.config import VIP_USER_IDS, ADMIN_SECRET
+from bot.config import ADMIN_SECRET
 
 router = APIRouter()
-
-ADMIN_ID = 6135518022
 
 GOAL_MAP = {
     "lose_weight": "🔥 Похудение",
@@ -25,32 +23,17 @@ STATUS_BADGE = {
 
 
 def _check_admin(request: Request) -> bool:
-    # hardcoded admin tg_id always works
-    try:
-        if int(request.query_params.get("tg_id", "")) == ADMIN_ID:
-            return True
-    except (ValueError, TypeError):
-        pass
-    # also allow via ADMIN_SECRET
-    if ADMIN_SECRET:
-        secret = request.query_params.get("secret", "")
-        return hmac.compare_digest(secret, ADMIN_SECRET)
-    return False
+    if not ADMIN_SECRET:
+        return False
+    secret = request.query_params.get("secret", "")
+    return hmac.compare_digest(secret, ADMIN_SECRET)
 
-
-def _auth_param(request: Request) -> str:
-    if ADMIN_SECRET:
-        secret = request.query_params.get("secret", "")
-        return f"secret={_html.escape(secret)}"
-    return f"tg_id={ADMIN_ID}"
 
 
 def _resolve_status(u: dict) -> str:
-    db_status = u.get("status") or ""
+    db_status = (u.get("status") or "").lower()
     if db_status in ("vip", "pro", "free"):
         return db_status
-    if u.get("tg_id") in VIP_USER_IDS:
-        return "vip"
     return "free"
 
 
@@ -86,7 +69,11 @@ async def admin_set_status(request: Request):
     status = payload.get("status")
     if not tg_id or status not in ("free", "pro", "vip"):
         return JSONResponse({"error": "bad params"}, status_code=400)
-    ok = set_user_status(int(tg_id), status)
+    try:
+        tg_id_int = int(tg_id)
+    except (TypeError, ValueError):
+        return JSONResponse({"error": "tg_id must be an integer"}, status_code=400)
+    ok = set_user_status(tg_id_int, status)
     return JSONResponse({"ok": ok})
 
 
@@ -96,7 +83,6 @@ async def admin_panel(request: Request):
         return HTMLResponse("<h2>403 Forbidden</h2>", status_code=403)
 
     users = get_all_users()
-    auth = _auth_param(request)
 
     total = len(users)
     vip_count = sum(1 for u in users if _resolve_status(u) == "vip")
@@ -252,7 +238,7 @@ code.cpytg:hover{{background:rgba(125,211,252,.15)}}
 </head>
 <body>
 <h1>⚡ P.A.R.K.E.R. ADMIN</h1>
-<div class="sub">Панель управления · Только для администратора · <a href="/admin?{auth}" style="color:#f5c518">Обновить</a></div>
+<div class="sub">Панель управления · Только для администратора · <a href="#" onclick="location.href='/admin?'+AUTH;return false" style="color:#f5c518">Обновить</a></div>
 
 <div class="stats">
   <div class="sc"><div class="sv">{total}</div><div class="sl">Всего</div></div>
@@ -270,7 +256,7 @@ code.cpytg:hover{{background:rgba(125,211,252,.15)}}
     <option value="pro">💎 Pro</option>
     <option value="free">⚡ Free</option>
   </select>
-  <a class="btn" href="/admin/users?{auth}" target="_blank">📥 JSON</a>
+  <a class="btn" href="#" onclick="window.open('/admin/users?'+AUTH,'_blank');return false">📥 JSON</a>
 </div>
 
 <div class="wrap">
@@ -296,7 +282,17 @@ code.cpytg:hover{{background:rgba(125,211,252,.15)}}
 <div class="toast" id="toast"></div>
 
 <script>
-const AUTH = "{auth}";
+(function() {{
+  const p = new URLSearchParams(location.search);
+  const s = p.get('secret');
+  if (s) {{
+    sessionStorage.setItem('adm_secret', s);
+    p.delete('secret');
+    const qs = p.toString();
+    history.replaceState(null, '', location.pathname + (qs ? '?' + qs : ''));
+  }}
+}})();
+const AUTH = 'secret=' + encodeURIComponent(sessionStorage.getItem('adm_secret') || '');
 
 function showToast(msg, ok=true) {{
   const t = document.getElementById('toast');

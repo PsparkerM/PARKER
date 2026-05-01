@@ -1,47 +1,103 @@
 import logging
-from fastapi import APIRouter, HTTPException, Request
-from fastapi.responses import JSONResponse
+from typing import Optional, Annotated
+from enum import Enum
 
+from fastapi import APIRouter, HTTPException, Depends, Request
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel, Field
+
+from app.api.deps import check_ai_quota, get_client_ip
+from app.middleware.rate_limit import ip_limiter
 from bot.utils.calculators import compute_macros_for_profile
 from bot.services.ai_service import generate_nutrition_plan, generate_workout_plan
 from db.queries import upsert_user, save_plan
 
 router = APIRouter()
 
-REQUIRED_FIELDS = ["gender", "age", "height_cm", "weight_kg"]
+
+class GenderEnum(str, Enum):
+    male   = "male"
+    female = "female"
+
+
+class GoalEnum(str, Enum):
+    lose_weight   = "lose_weight"
+    gain_muscle   = "gain_muscle"
+    maintain      = "maintain"
+    recomposition = "recomposition"
+
+
+class ScheduleEnum(str, Enum):
+    standard   = "standard"
+    twelve_h   = "12h"
+    sixteen_h  = "16h+"
+    shift      = "shift"
+
+
+class HealthIssue(str, Enum):
+    none           = "none"
+    back_problems  = "back_problems"
+    knee_issues    = "knee_issues"
+    hypertension   = "hypertension"
+
+
+class Equipment(str, Enum):
+    none      = "none"
+    dumbbells = "dumbbells"
+    barbell   = "barbell"
+    gym       = "gym"
+    pool      = "pool"
+
+
+class ProfileRequest(BaseModel):
+    gender:      GenderEnum
+    age:         int   = Field(..., ge=10,  le=100)
+    height_cm:   int   = Field(..., ge=100, le=250)
+    weight_kg:   float = Field(..., ge=30,  le=300)
+    goal:        GoalEnum    = GoalEnum.maintain
+    schedule:    ScheduleEnum = ScheduleEnum.standard
+    health_issues: list[HealthIssue]  = Field(default=[], max_length=10)
+    equipment:     list[Equipment]    = Field(default=[Equipment.gym], max_length=10)
+    body_fat_pct:  Optional[float]    = Field(None, ge=3,  le=60)
+    waist_cm:      Optional[float]    = Field(None, ge=40, le=200)
+    hips_cm:       Optional[float]    = Field(None, ge=40, le=200)
+    chest_cm:      Optional[float]    = Field(None, ge=40, le=200)
+    thigh_cm:      Optional[float]    = Field(None, ge=40, le=200)
+    name:          Optional[Annotated[str, Field(max_length=100)]] = None
+
+    model_config = {"extra": "ignore"}
 
 
 @router.post("/api/profile")
-async def create_profile(request: Request):
-    try:
-        data = await request.json()
-    except Exception:
-        raise HTTPException(status_code=400, detail="Невалидный JSON")
+async def create_profile(
+    request: Request,
+    body: ProfileRequest,
+    tg_id: int = Depends(check_ai_quota),
+):
+    # 3 onboarding submissions per IP per hour (prevents account farming)
+    ip = get_client_ip(request)
+    if not await ip_limiter.is_allowed(f"register:{ip}", 3, 3600):
+        raise HTTPException(
+            status_code=429,
+            detail="Слишком много попыток регистрации. Попробуй через час.",
+            headers={"Retry-After": "3600"},
+        )
 
-    for field in REQUIRED_FIELDS:
-        if field not in data:
-            raise HTTPException(status_code=400, detail=f"Отсутствует поле: {field}")
-
-    # Defaults for optional fields
-    data.setdefault("goal", "maintain")
-    data.setdefault("schedule", "standard")
-    data.setdefault("health_issues", [])
-    data.setdefault("equipment", ["gym"])
+    data = body.model_dump()
 
     try:
         macros = compute_macros_for_profile(data)
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Ошибка расчёта КБЖУ: {e}")
+    except Exception:
+        logging.exception("compute_macros error")
+        raise HTTPException(status_code=400, detail="Ошибка расчёта КБЖУ")
 
     nutrition_plan, workout_plan = await _generate_plans(data, macros)
 
-    tg_id = data.get("tg_id")
-    if tg_id:
-        user = upsert_user(int(tg_id), data)
-        if user:
-            uid = user.get("id")
-            save_plan(uid, "nutrition", nutrition_plan, macros)
-            save_plan(uid, "workout", workout_plan, {})
+    user = upsert_user(tg_id, data)
+    if user:
+        uid = user.get("id")
+        save_plan(uid, "nutrition", nutrition_plan, macros)
+        save_plan(uid, "workout", workout_plan, {})
 
     return JSONResponse({
         "macros":         macros,

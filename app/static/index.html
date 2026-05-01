@@ -982,6 +982,18 @@ input[type=time]{color-scheme:dark}
 // ══ TELEGRAM ══
 const tg = window.Telegram?.WebApp;
 if (tg) { tg.ready(); tg.expand(); tg.disableVerticalSwipes?.(); }
+
+// ══ AUTH — attach initData header to every /api request ══
+;(function () {
+  const _orig = window.fetch.bind(window);
+  window.fetch = function (input, init) {
+    if (typeof input === 'string' && input.startsWith('/api')) {
+      init = init ? { ...init, headers: { 'X-Telegram-Init-Data': tg?.initData || '', ...init.headers } }
+                  : { headers: { 'X-Telegram-Init-Data': tg?.initData || '' } };
+    }
+    return _orig(input, init);
+  };
+})();
 function getTgId() {
   try {
     const fromInit = JSON.parse(new URLSearchParams(tg?.initData||'').get('user')||'{}').id||null;
@@ -2406,10 +2418,11 @@ function renderProfile() {
 }
 
 function openAdminPanel() {
-  const tgId = getTgId();
-  if (tgId != 6135518022) return;
-  if (tg?.openLink) tg.openLink(location.origin + '/admin?tg_id=' + tgId);
-  else window.open(location.origin + '/admin?tg_id=' + tgId, '_blank');
+  if (getTgId() != 6135518022) return;
+  // Admin access requires ADMIN_SECRET — open the base URL and enter secret manually
+  const url = location.origin + '/admin';
+  if (tg?.openLink) tg.openLink(url);
+  else window.open(url, '_blank');
 }
 
 function confirmReset() {

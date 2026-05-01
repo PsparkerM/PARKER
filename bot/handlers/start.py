@@ -5,7 +5,7 @@ from aiogram.types import (
 )
 from aiogram.filters import Command, CommandStart
 
-from bot.config import WEBAPP_URL, VIP_USER_IDS
+from bot.config import WEBAPP_URL
 from db.queries import get_user
 
 router = Router()
@@ -33,7 +33,8 @@ def _start_text(name: str, vip: bool) -> str:
 @router.message(CommandStart())
 async def cmd_start(message: Message) -> None:
     name = message.from_user.first_name or "друг"
-    vip = message.from_user.id in VIP_USER_IDS
+    user = get_user(message.from_user.id)
+    vip  = (user or {}).get("status") == "vip"
     await message.answer(
         _start_text(name, vip),
         reply_markup=APP_BTN(),

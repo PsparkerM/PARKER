@@ -253,13 +253,20 @@ def get_user_logs(user_id: str) -> dict:
         return {}
 
 
+_USER_MUTABLE_FIELDS = {"name", "avatar", "avatar_data"}
+
+
 def update_user_fields(tg_id: int, fields: dict) -> bool:
-    """Update specific user fields without touching other columns."""
+    """Update specific user fields. Only whitelisted columns are allowed."""
     db = get_client()
     if not db or not fields:
         return False
+    safe = {k: v for k, v in fields.items() if k in _USER_MUTABLE_FIELDS}
+    if not safe:
+        logging.warning("update_user_fields: all fields stripped by whitelist, tg_id=%s", tg_id)
+        return False
     try:
-        db.table("users").update(fields).eq("tg_id", tg_id).execute()
+        db.table("users").update(safe).eq("tg_id", tg_id).execute()
         return True
     except Exception:
         logging.exception("update_user_fields error")
@@ -278,6 +285,17 @@ def set_user_status(tg_id: int, status: str) -> bool:
         return False
 
 
+def get_reminder(reminder_id: str) -> dict | None:
+    db = get_client()
+    if not db:
+        return None
+    try:
+        result = db.table("reminders").select("*").eq("id", reminder_id).single().execute()
+        return result.data
+    except Exception:
+        return None
+
+
 def get_user(tg_id: int) -> dict | None:
     db = get_client()
     if not db:
@@ -293,3 +311,55 @@ def get_user(tg_id: int) -> dict | None:
         return result.data
     except Exception:
         return None
+
+
+# ── AI usage (Supabase-backed, persists across deploys) ────────────────────
+
+def get_ai_calls_today(user_id: str) -> int:
+    """Returns the number of AI calls made today by this user."""
+    from datetime import date
+    db = get_client()
+    if not db:
+        return 0
+    try:
+        result = (
+            db.table("ai_usage")
+            .select("call_count")
+            .eq("user_id", user_id)
+            .eq("used_date", date.today().isoformat())
+            .single()
+            .execute()
+        )
+        return result.data["call_count"] if result.data else 0
+    except Exception:
+        return 0
+
+
+def increment_ai_calls(user_id: str) -> None:
+    """Atomically increments today's AI call counter for the user."""
+    from datetime import date
+    db = get_client()
+    if not db:
+        return
+    today = date.today().isoformat()
+    try:
+        existing = (
+            db.table("ai_usage")
+            .select("id, call_count")
+            .eq("user_id", user_id)
+            .eq("used_date", today)
+            .single()
+            .execute()
+        )
+        if existing.data:
+            db.table("ai_usage").update({
+                "call_count": existing.data["call_count"] + 1
+            }).eq("id", existing.data["id"]).execute()
+        else:
+            db.table("ai_usage").insert({
+                "user_id":    user_id,
+                "used_date":  today,
+                "call_count": 1,
+            }).execute()
+    except Exception:
+        logging.exception("increment_ai_calls error user_id=%s", user_id)

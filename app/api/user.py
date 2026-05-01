@@ -1,56 +1,82 @@
 import logging
-from fastapi import APIRouter
-from fastapi.responses import JSONResponse
+from typing import Optional, Literal, Annotated
 
+from fastapi import APIRouter, Depends
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel, Field
+
+from app.api.deps import get_current_tg_id
 from db.queries import get_user_with_plans, upsert_chat_history, get_user, update_user_fields
 
 router = APIRouter()
 
+_PROFILE_PUBLIC_FIELDS = {
+    "tg_id", "name", "goal", "gender", "age", "height_cm", "weight_kg",
+    "body_fat_pct", "waist_cm", "hips_cm", "chest_cm", "thigh_cm",
+    "schedule", "health_issues", "equipment", "status",
+    "avatar", "avatar_data", "created_at", "updated_at",
+}
+
+_MAX_AVATAR_DATA = 5_000_000   # ~3.75 MB image as base64
+
+
+class UserUpdateRequest(BaseModel):
+    name:        Optional[Annotated[str, Field(min_length=1, max_length=100)]] = None
+    avatar:      Optional[Annotated[str, Field(max_length=10)]] = None   # single emoji
+    avatar_data: Optional[Annotated[str, Field(max_length=_MAX_AVATAR_DATA)]] = None
+
+    model_config = {"extra": "ignore"}
+
+
+class HistoryMessage(BaseModel):
+    role:    Literal["user", "assistant"]
+    content: Annotated[str, Field(max_length=10_000)]
+
+    model_config = {"extra": "ignore"}
+
+
+class ChatHistoryRequest(BaseModel):
+    history: list[HistoryMessage] = Field(default=[], max_length=100)
+
+    model_config = {"extra": "ignore"}
+
 
 @router.get("/api/user")
-async def load_user(tg_id: int):
-    """Cross-device sync: load profile + plans + chat history for a tg_id."""
+async def load_user(tg_id: int = Depends(get_current_tg_id)):
     try:
         data = get_user_with_plans(tg_id)
         if not data:
             return JSONResponse({"found": False})
+        if isinstance(data.get("profile"), dict):
+            data["profile"] = {k: v for k, v in data["profile"].items() if k in _PROFILE_PUBLIC_FIELDS}
         return JSONResponse({"found": True, **data})
-    except Exception as e:
+    except Exception:
         logging.exception("load_user error")
-        return JSONResponse({"found": False, "error": str(e)})
+        return JSONResponse({"found": False, "error": "Не удалось загрузить профиль"})
 
 
 @router.post("/api/user/update")
-async def update_user_data(payload: dict):
-    """Update specific user fields (name, avatar) without regenerating plans."""
+async def update_user_data(body: UserUpdateRequest, tg_id: int = Depends(get_current_tg_id)):
     try:
-        tg_id = payload.get("tg_id")
-        if not tg_id:
-            return JSONResponse({"ok": False, "error": "no tg_id"})
-        allowed = {"name", "avatar", "avatar_data"}
-        fields = {k: v for k, v in payload.items() if k in allowed and v is not None}
+        fields = body.model_dump(exclude_none=True)
         if not fields:
-            return JSONResponse({"ok": False, "error": "no valid fields"})
-        ok = update_user_fields(int(tg_id), fields)
+            return JSONResponse({"ok": False, "error": "Нет данных для обновления"})
+        ok = update_user_fields(tg_id, fields)
         return JSONResponse({"ok": ok})
-    except Exception as e:
+    except Exception:
         logging.exception("update_user_data error")
-        return JSONResponse({"ok": False, "error": str(e)})
+        return JSONResponse({"ok": False, "error": "Не удалось обновить профиль"})
 
 
 @router.post("/api/chat/history")
-async def save_chat_history(payload: dict):
-    """Save chat history to server for cross-device sync."""
+async def save_chat_history(body: ChatHistoryRequest, tg_id: int = Depends(get_current_tg_id)):
     try:
-        tg_id = payload.get("tg_id")
-        history = payload.get("history", [])
-        if not tg_id:
-            return JSONResponse({"ok": False, "error": "no tg_id"})
-        user = get_user(int(tg_id))
+        user = get_user(tg_id)
         if not user:
-            return JSONResponse({"ok": False, "error": "user not found"})
+            return JSONResponse({"ok": False, "error": "Пользователь не найден"})
+        history = [{"role": m.role, "content": m.content} for m in body.history]
         upsert_chat_history(user["id"], history)
         return JSONResponse({"ok": True})
-    except Exception as e:
+    except Exception:
         logging.exception("save_chat_history error")
-        return JSONResponse({"ok": False, "error": str(e)})
+        return JSONResponse({"ok": False, "error": "Не удалось сохранить историю"})
