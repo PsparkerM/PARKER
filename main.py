@@ -222,15 +222,16 @@ async def reset_webhook(request: Request):
         return JSONResponse({"error": "forbidden"}, status_code=403)
     if not WEBAPP_URL:
         return JSONResponse({"error": "WEBAPP_URL not set"}, status_code=500)
+    drop = request.query_params.get("drop", "false").lower() == "true"
     url = f"{WEBAPP_URL.rstrip('/')}{WEBHOOK_PATH}"
     try:
         await bot.set_webhook(
             url,
-            drop_pending_updates=False,
+            drop_pending_updates=drop,
             secret_token=WEBHOOK_SECRET_TOKEN or None,
         )
         info = await bot.get_webhook_info()
-        return {"ok": True, "webhook_url_len": len(info.url), "pending_updates": info.pending_update_count}
+        return {"ok": True, "dropped_pending": drop, "webhook_url_len": len(info.url), "pending_updates": info.pending_update_count}
     except Exception as e:
         return JSONResponse({"ok": False, "error": str(e)}, status_code=500)
 
