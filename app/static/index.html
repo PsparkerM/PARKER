@@ -1415,6 +1415,7 @@ async function tryLoadFromServer() {
       name:p.name||getTgName()||'друг', gender:p.gender||'male',
       age:p.age, height_cm:p.height_cm, weight_kg:p.weight_kg,
       goal:p.goal||'maintain', tg_id:p.tg_id, birthday:p.birthday,
+      status:p.status||'free', badge:p.badge||null,
     };
     planData = { macros:data.macros||{}, nutrition_plan:data.nutrition_plan||'', workout_plan:data.workout_plan||'' };
     if (Array.isArray(data.chat_history) && data.chat_history.length)
