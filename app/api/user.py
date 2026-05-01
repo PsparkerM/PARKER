@@ -14,7 +14,7 @@ _PROFILE_PUBLIC_FIELDS = {
     "tg_id", "name", "goal", "gender", "age", "height_cm", "weight_kg",
     "body_fat_pct", "waist_cm", "hips_cm", "chest_cm", "thigh_cm",
     "schedule", "health_issues", "equipment", "status",
-    "avatar", "avatar_data", "created_at", "updated_at",
+    "avatar", "avatar_data", "badge", "created_at", "updated_at",
 }
 
 _MAX_AVATAR_DATA = 5_000_000   # ~3.75 MB image as base64

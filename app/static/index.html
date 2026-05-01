@@ -152,6 +152,11 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 .ring-bar{height:100%;border-radius:2px;transition:width .5s ease}
 .ring-val{font-size:12px;font-weight:700;min-width:40px;text-align:right}
 .water-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px}
+.neon-badge{margin:0 0 14px;padding:16px 18px;border-radius:var(--radius);background:rgba(255,20,147,.07);border:1px solid rgba(255,105,180,.35);text-align:center;animation:nbpulse 2.4s ease-in-out infinite}
+.neon-badge-title{font-size:14px;font-weight:800;color:#ff69b4;letter-spacing:.4px;margin-bottom:8px;text-shadow:0 0 10px rgba(255,105,180,.9),0 0 22px rgba(255,20,147,.6),0 0 40px rgba(255,20,147,.3)}
+.neon-badge-berry{font-size:36px;line-height:1;margin-bottom:6px;filter:drop-shadow(0 0 8px rgba(255,20,147,.9)) drop-shadow(0 0 18px rgba(255,105,180,.7))}
+.neon-badge-sub{font-size:12px;font-weight:700;color:rgba(255,105,180,.8);letter-spacing:.6px;text-transform:uppercase;text-shadow:0 0 8px rgba(255,20,147,.5)}
+@keyframes nbpulse{0%,100%{box-shadow:0 0 10px rgba(255,20,147,.2),inset 0 0 10px rgba(255,20,147,.04)}50%{box-shadow:0 0 24px rgba(255,20,147,.5),0 0 50px rgba(255,20,147,.15),inset 0 0 18px rgba(255,20,147,.08)}}
 .water-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
 .water-ttl{font-size:14px;font-weight:700}.water-info{font-size:13px;font-weight:700;color:var(--blue)}
 .water-bar-wrap{height:6px;background:var(--surface2);border-radius:3px;overflow:hidden;margin-bottom:12px}
@@ -1927,7 +1932,14 @@ function renderHome() {
     </div>`;
   })() : '';
 
-  el.innerHTML = `
+  const badgeHtml = profile?.badge ? `
+    <div class="neon-badge">
+      <div class="neon-badge-title">✨ ${escHtml(profile.badge)}</div>
+      <div class="neon-badge-berry">🍓</div>
+      <div class="neon-badge-sub">Малина уже в кармане</div>
+    </div>` : '';
+
+  el.innerHTML = `${badgeHtml}
     <div class="ring-card">
       <div class="ring-wrap">
         <svg width="90" height="90" viewBox="0 0 96 96">
