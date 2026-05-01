@@ -74,9 +74,9 @@ async def create_profile(
     body: ProfileRequest,
     tg_id: int = Depends(get_current_tg_id),
 ):
-    # 10 onboarding submissions per IP per hour (prevents account farming)
+    # 50 onboarding submissions per IP per hour (office/team usage)
     ip = get_client_ip(request)
-    if not await ip_limiter.is_allowed(f"register:{ip}", 10, 3600):
+    if not await ip_limiter.is_allowed(f"register:{ip}", 50, 3600):
         raise HTTPException(
             status_code=429,
             detail="Слишком много попыток регистрации. Попробуй через час.",
