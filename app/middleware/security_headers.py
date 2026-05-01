@@ -57,6 +57,10 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             response.headers["X-Frame-Options"] = "DENY"
 
         # Remove server fingerprint injected by uvicorn/starlette
-        response.headers.pop("server", None)
+        # MutableHeaders has no pop() — use del with KeyError guard
+        try:
+            del response.headers["server"]
+        except (KeyError, Exception):
+            pass
 
         return response
