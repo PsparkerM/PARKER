@@ -3406,6 +3406,10 @@ function toggleFaqEntry(si, ii) {
 (async function boot() {
   if (profile && planData) {
     launchApp(false);
+    // Background sync — picks up server-side changes (badge, status, plan updates)
+    tryLoadFromServer().then(loaded => {
+      if (loaded && curTab === 'home') renderHome();
+    });
   } else {
     const loaded = await tryLoadFromServer();
     if (loaded && profile && planData) {
