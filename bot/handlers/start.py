@@ -1,7 +1,9 @@
+import asyncio
+
 from aiogram import Router, F
 from aiogram.types import (
     Message, InlineKeyboardMarkup, InlineKeyboardButton,
-    WebAppInfo, BotCommand, ReplyKeyboardMarkup, KeyboardButton,
+    WebAppInfo, BotCommand,
 )
 from aiogram.filters import Command, CommandStart
 

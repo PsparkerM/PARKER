@@ -48,7 +48,10 @@ SCHEDULE_LABELS = {
 # ──────────────────────────────────────────────
 #  System prompts
 # ──────────────────────────────────────────────
-ARNI_SYSTEM = """\
+
+# Static part — identical across all RU users → cached by Anthropic (5-min TTL).
+# Per-user profile/health are injected as a second non-cached block.
+ARNI_STATIC = """\
 Ты — Арнольд, он же Арни. Персональный тренер, нутрициолог и наставник в приложении P.A.R.K.E.R.
 
 ЛИЧНОСТЬ:
@@ -58,12 +61,6 @@ ARNI_SYSTEM = """\
 Даёшь советы с конкретными цифрами: граммы, подходы, время, проценты.
 Знаешь биохимию и физиологию на уровне эксперта.
 Понимаешь реальную жизнь — усталость, нехватку времени, стресс.
-
-ПРОФИЛЬ ПОЛЬЗОВАТЕЛЯ:
-%%PROFILE%%
-
-ЗАПРЕТЫ ПО ЗДОРОВЬЮ (АБСОЛЮТНЫЕ):
-%%HEALTH%%
 
 ПРАВИЛА ОТВЕТОВ:
 - Короткий вопрос → короткий ответ. Просят расчёт → конкретные цифры.
@@ -79,6 +76,8 @@ ARNI_SYSTEM = """\
 {{SET_TARGETS:calories=XXXX,protein=XXX,fat=XXX,carbs=XXX}}
 Все значения — целые числа. calories обязателен. Остальные рассчитай по стандартным соотношениям если не указаны явно.\
 """
+
+ARNI_STATIC_EN = ARNI_STATIC + "\n\nIMPORTANT: The user's interface language is English. You MUST respond ONLY in English. All advice, plans, and answers should be in English."
 
 PARKER_SYSTEM_PROMPT = """\
 Ты — P.A.R.K.E.R. AI-нутрициолог и тренер. Цифровой двойник лучшего специалиста.
@@ -242,7 +241,6 @@ def _sanitize_history(history: list) -> list:
         if not content:
             continue
         if clean and clean[-1]["role"] == role:
-            # merge consecutive same-role messages
             clean[-1]["content"] += "\n" + content
         else:
             clean.append({"role": role, "content": content})
@@ -252,12 +250,10 @@ def _sanitize_history(history: list) -> list:
 def _extract_json(raw: str) -> dict:
     """Extract first JSON object from raw text."""
     raw = raw.strip()
-    # Try direct parse first
     try:
         return json.loads(raw)
     except json.JSONDecodeError:
         pass
-    # Find the outermost {...}
     m = re.search(r'\{[\s\S]*\}', raw)
     if m:
         try:
@@ -265,6 +261,11 @@ def _extract_json(raw: str) -> dict:
         except json.JSONDecodeError:
             pass
     raise ValueError(f"No valid JSON in response: {raw[:200]}")
+
+
+def _cached(text: str) -> dict:
+    """Wrap a system prompt block with Anthropic prompt caching."""
+    return {"type": "text", "text": text, "cache_control": {"type": "ephemeral"}}
 
 
 # ──────────────────────────────────────────────
@@ -275,14 +276,16 @@ async def generate_chat_response(message: str, history: list, profile: dict, lan
         return "Arnie is temporarily unavailable — API key not set." if lang == "en" else "Арни временно недоступен — API ключ не задан."
     try:
         client = _get_client()
-        lang_instruction = "\n\nIMPORTANT: The user's interface language is English. You MUST respond ONLY in English. All advice, plans, and answers should be in English." if lang == "en" else ""
-        system = (
-            ARNI_SYSTEM
-            .replace("%%PROFILE%%", _build_profile_block(profile))
-            .replace("%%HEALTH%%", _build_health_rules(profile))
-        ) + lang_instruction
+        static_text = ARNI_STATIC_EN if lang == "en" else ARNI_STATIC
+        dynamic_text = (
+            f"ПРОФИЛЬ ПОЛЬЗОВАТЕЛЯ:\n{_build_profile_block(profile)}\n\n"
+            f"ЗАПРЕТЫ ПО ЗДОРОВЬЮ (АБСОЛЮТНЫЕ):\n{_build_health_rules(profile)}"
+        )
+        system = [
+            _cached(static_text),
+            {"type": "text", "text": dynamic_text},
+        ]
         safe_hist = _sanitize_history(history)
-        # Must end on assistant (or be empty) before we append user
         if safe_hist and safe_hist[-1]["role"] == "user":
             safe_hist = safe_hist[:-1]
         messages = safe_hist[-18:] + [{"role": "user", "content": message}]
@@ -318,7 +321,7 @@ async def calculate_food_macros(text: str) -> dict:
         msg = await client.messages.create(
             model=MODEL,
             max_tokens=900,
-            system=FOOD_SYSTEM,
+            system=[_cached(FOOD_SYSTEM)],
             messages=[{"role": "user", "content": f"Рассчитай КБЖУ: {text}"}],
         )
         return _extract_json(msg.content[0].text)
@@ -341,7 +344,7 @@ async def calculate_food_macros_from_photo(image_b64: str, media_type: str = "im
         msg = await client.messages.create(
             model=MODEL,
             max_tokens=900,
-            system=PHOTO_FOOD_SYSTEM,
+            system=[_cached(PHOTO_FOOD_SYSTEM)],
             messages=[{
                 "role": "user",
                 "content": [
@@ -388,7 +391,7 @@ async def generate_nutrition_plan(profile: dict, macros: dict) -> str:
         msg = await client.messages.create(
             model=MODEL,
             max_tokens=2500,
-            system=PARKER_SYSTEM_PROMPT,
+            system=[_cached(PARKER_SYSTEM_PROMPT)],
             messages=[{"role": "user", "content": prompt}],
         )
         return msg.content[0].text
@@ -415,7 +418,7 @@ async def generate_workout_plan(profile: dict) -> str:
         msg = await client.messages.create(
             model=MODEL,
             max_tokens=2500,
-            system=PARKER_SYSTEM_PROMPT,
+            system=[_cached(PARKER_SYSTEM_PROMPT)],
             messages=[{"role": "user", "content": prompt}],
         )
         return msg.content[0].text
@@ -447,7 +450,7 @@ async def generate_weekly_adaptation(profile: dict, logs: list, food_logs: list,
         msg = await client.messages.create(
             model=MODEL,
             max_tokens=700,
-            system=ADAPT_SYSTEM,
+            system=[_cached(ADAPT_SYSTEM)],
             messages=[{"role": "user", "content": user_msg}],
         )
         return _extract_json(msg.content[0].text)
