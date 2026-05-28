@@ -22,8 +22,9 @@ def upsert_user(tg_id: int, profile: dict) -> dict | None:
             "chest_cm":      profile.get("chest_cm"),
             "thigh_cm":      profile.get("thigh_cm"),
             "schedule":      profile.get("schedule", "standard"),
-            "health_issues": profile.get("health_issues", []),
-            "equipment":     profile.get("equipment", ["gym"]),
+            "health_issues":   profile.get("health_issues", []),
+            "equipment":       profile.get("equipment", ["gym"]),
+            "food_blacklist":  profile.get("food_blacklist", []),
         }
         result = (
             db.table("users")
@@ -335,6 +336,19 @@ def get_user(tg_id: int) -> dict | None:
         return result.data
     except Exception:
         return None
+
+
+def update_last_seen(tg_id: int) -> None:
+    from datetime import datetime, timezone
+    db = get_client()
+    if not db:
+        return
+    try:
+        db.table("users").update(
+            {"last_seen": datetime.now(timezone.utc).isoformat()}
+        ).eq("tg_id", tg_id).execute()
+    except Exception:
+        logging.exception("update_last_seen error")
 
 
 # ── AI usage (Supabase-backed, persists across deploys) ────────────────────

@@ -6,7 +6,7 @@ from aiogram.types import (
 from aiogram.filters import Command, CommandStart
 
 from bot.config import WEBAPP_URL, ADMIN_TG_IDS
-from db.queries import get_user
+from db.queries import get_user, update_last_seen, get_all_users
 
 router = Router()
 
@@ -33,8 +33,32 @@ def _start_text(name: str, vip: bool) -> str:
 @router.message(CommandStart())
 async def cmd_start(message: Message) -> None:
     name = message.from_user.first_name or "друг"
-    user = get_user(message.from_user.id)
+    tg_id = message.from_user.id
+    user = get_user(tg_id)
     vip  = (user or {}).get("status") == "vip"
+
+    # track last_seen only for registered users (column exists after migration 006)
+    if user:
+        import asyncio
+        asyncio.create_task(asyncio.to_thread(update_last_seen, tg_id))
+
+    # notify admins when a brand-new user hits /start for the first time (no profile yet)
+    if not user and ADMIN_TG_IDS:
+        username = message.from_user.username
+        un_str = f"@{username}" if username else "нет username"
+        alert = (
+            f"👤 *Новый пользователь зашёл!*\n\n"
+            f"Имя: {message.from_user.full_name}\n"
+            f"TG ID: `{tg_id}`\n"
+            f"Username: {un_str}\n\n"
+            f"Профиль ещё не заполнен."
+        )
+        for admin_id in ADMIN_TG_IDS:
+            try:
+                await message.bot.send_message(admin_id, alert, parse_mode="Markdown")
+            except Exception:
+                pass
+
     await message.answer(
         _start_text(name, vip),
         reply_markup=APP_BTN(),
@@ -144,6 +168,111 @@ async def cmd_dm(message: Message) -> None:
         await message.answer(f"❌ Не удалось отправить: {e}")
 
 
+GOAL_MAP = {
+    "lose_weight":   "Похудение",
+    "gain_muscle":   "Набор массы",
+    "maintain":      "Поддержание",
+    "recomposition": "Рекомпозиция",
+}
+
+
+@router.message(Command("stats"))
+async def cmd_stats(message: Message) -> None:
+    if message.from_user.id not in ADMIN_TG_IDS:
+        return
+
+    users = get_all_users()
+    if not users:
+        await message.answer("Нет пользователей.")
+        return
+
+    from datetime import datetime, timezone, timedelta
+    now = datetime.now(timezone.utc)
+    week_ago = (now - timedelta(days=7)).isoformat()
+    day_ago  = (now - timedelta(days=1)).isoformat()
+
+    total    = len(users)
+    vip_cnt  = sum(1 for u in users if (u.get("status") or "free") == "vip")
+    pro_cnt  = sum(1 for u in users if (u.get("status") or "free") == "pro")
+    free_cnt = sum(1 for u in users if (u.get("status") or "free") == "free")
+    new_week = sum(1 for u in users if (u.get("created_at") or "") >= week_ago)
+    active_day = sum(1 for u in users if (u.get("last_seen") or "") >= day_ago)
+
+    # last 5 registered
+    recent = sorted(users, key=lambda u: u.get("created_at") or "", reverse=True)[:5]
+    recent_lines = []
+    for u in recent:
+        nm = u.get("name") or "—"
+        tid = u.get("tg_id", "—")
+        dt  = (u.get("created_at") or "")[:10]
+        recent_lines.append(f"• {nm} (`{tid}`) — {dt}")
+
+    # last 5 seen
+    seen = [u for u in users if u.get("last_seen")]
+    seen_sorted = sorted(seen, key=lambda u: u.get("last_seen") or "", reverse=True)[:5]
+    seen_lines = []
+    for u in seen_sorted:
+        nm  = u.get("name") or "—"
+        tid = u.get("tg_id", "—")
+        ls  = (u.get("last_seen") or "")[:16].replace("T", " ")
+        seen_lines.append(f"• {nm} (`{tid}`) — {ls}")
+
+    text = (
+        "📊 *P.A.R.K.E.R. — Статистика*\n\n"
+        f"👥 Всего пользователей: *{total}*\n"
+        f"👑 VIP: *{vip_cnt}*  |  💎 Pro: *{pro_cnt}*  |  ⚡ Free: *{free_cnt}*\n"
+        f"📅 За 7 дней: *{new_week}*\n"
+        f"🟢 Активны за 24 ч: *{active_day}*\n\n"
+        "🕐 *Последние регистрации:*\n" + "\n".join(recent_lines or ["нет данных"])
+    )
+    if seen_lines:
+        text += "\n\n👁 *Последние активные:*\n" + "\n".join(seen_lines)
+
+    await message.answer(text, parse_mode="Markdown")
+
+
+@router.message(Command("users"))
+async def cmd_users(message: Message) -> None:
+    if message.from_user.id not in ADMIN_TG_IDS:
+        return
+
+    users = get_all_users()
+    if not users:
+        await message.answer("Нет пользователей.")
+        return
+
+    lines = []
+    for u in users:
+        status = u.get("status") or "free"
+        badge  = "👑" if status == "vip" else ("💎" if status == "pro" else "⚡")
+        nm     = u.get("name") or "—"
+        tid    = u.get("tg_id", "—")
+        goal   = GOAL_MAP.get(u.get("goal", ""), "—")
+        wt     = u.get("weight_kg", "—")
+        ht     = u.get("height_cm", "—")
+        age    = u.get("age", "—")
+        ls     = (u.get("last_seen") or "")[:10] or "не заходил"
+        lines.append(
+            f"{badge} *{nm}* `{tid}`\n"
+            f"   {goal} · {age}л · {wt}кг / {ht}см\n"
+            f"   Последний вход: {ls}"
+        )
+
+    # split into chunks ≤4096 chars
+    chunks = []
+    current = "👥 *Все пользователи P.A.R.K.E.R.:*\n\n"
+    for line in lines:
+        if len(current) + len(line) + 2 > 4000:
+            chunks.append(current)
+            current = ""
+        current += line + "\n\n"
+    if current.strip():
+        chunks.append(current)
+
+    for chunk in chunks:
+        await message.answer(chunk.strip(), parse_mode="Markdown")
+
+
 async def set_bot_commands(bot) -> None:
     await bot.set_my_commands([
         BotCommand(command="start",     description="Открыть P.A.R.K.E.R."),
@@ -151,4 +280,6 @@ async def set_bot_commands(bot) -> None:
         BotCommand(command="progress",  description="Мой прогресс"),
         BotCommand(command="restart",   description="Начать заново"),
         BotCommand(command="help",      description="Справка"),
+        BotCommand(command="stats",     description="[Admin] Статистика пользователей"),
+        BotCommand(command="users",     description="[Admin] Список всех пользователей"),
     ])

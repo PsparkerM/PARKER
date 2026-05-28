@@ -1,10 +1,15 @@
+import asyncio
 import hmac
 import html as _html
 import json
-from fastapi import APIRouter, Request, Form
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+import logging
+
+from fastapi import APIRouter, Request
+from fastapi.responses import HTMLResponse, JSONResponse
 from db.queries import get_all_users, set_user_status, get_user_with_plans, get_user_logs, get_user
 from bot.config import ADMIN_SECRET
+from app.middleware.rate_limit import ip_limiter
+from app.middleware.access_log import log_security_event
 
 router = APIRouter()
 
@@ -22,11 +27,26 @@ STATUS_BADGE = {
 }
 
 
-def _check_admin(request: Request) -> bool:
+_ADMIN_RATE = 20  # requests per minute per IP
+
+
+def _get_ip(request: Request) -> str:
+    fwd = request.headers.get("x-forwarded-for", "")
+    return fwd.split(",")[0].strip() if fwd else (request.client.host if request.client else "unknown")
+
+
+async def _check_admin(request: Request) -> bool:
+    ip = _get_ip(request)
+    if not await ip_limiter.is_allowed(f"admin:{ip}", _ADMIN_RATE, 60):
+        log_security_event("ADMIN_RATE_LIMITED", ip=ip, path=str(request.url.path))
+        return False
     if not ADMIN_SECRET:
         return False
     secret = request.query_params.get("secret", "")
-    return hmac.compare_digest(secret, ADMIN_SECRET)
+    ok = bool(secret) and hmac.compare_digest(secret, ADMIN_SECRET)
+    if not ok:
+        log_security_event("ADMIN_AUTH_FAILURE", ip=ip, path=str(request.url.path))
+    return ok
 
 
 
@@ -39,27 +59,29 @@ def _resolve_status(u: dict) -> str:
 
 @router.get("/admin/users", response_class=JSONResponse)
 async def admin_users_json(request: Request):
-    if not _check_admin(request):
+    if not await _check_admin(request):
         return JSONResponse({"error": "forbidden"}, status_code=403)
-    users = get_all_users()
+    users = await asyncio.to_thread(get_all_users)
     return JSONResponse({"users": users, "total": len(users)})
 
 
 @router.get("/admin/user-detail", response_class=JSONResponse)
 async def admin_user_detail(request: Request, tg_id: int):
-    if not _check_admin(request):
+    if not await _check_admin(request):
         return JSONResponse({"error": "forbidden"}, status_code=403)
-    data = get_user_with_plans(tg_id)
+    data, user = await asyncio.gather(
+        asyncio.to_thread(get_user_with_plans, tg_id),
+        asyncio.to_thread(get_user, tg_id),
+    )
     if not data:
         return JSONResponse({"error": "not found"}, status_code=404)
-    user = get_user(tg_id)
-    logs_data = get_user_logs(user["id"]) if user else {}
+    logs_data = await asyncio.to_thread(get_user_logs, user["id"]) if user else {}
     return JSONResponse({**data, "logs": logs_data})
 
 
 @router.post("/admin/set-status")
 async def admin_set_status(request: Request):
-    if not _check_admin(request):
+    if not await _check_admin(request):
         return JSONResponse({"error": "forbidden"}, status_code=403)
     try:
         payload = await request.json()
@@ -73,16 +95,16 @@ async def admin_set_status(request: Request):
         tg_id_int = int(tg_id)
     except (TypeError, ValueError):
         return JSONResponse({"error": "tg_id must be an integer"}, status_code=400)
-    ok = set_user_status(tg_id_int, status)
+    ok = await asyncio.to_thread(set_user_status, tg_id_int, status)
     return JSONResponse({"ok": ok})
 
 
 @router.get("/admin", response_class=HTMLResponse)
 async def admin_panel(request: Request):
-    if not _check_admin(request):
+    if not await _check_admin(request):
         return HTMLResponse("<h2>403 Forbidden</h2>", status_code=403)
 
-    users = get_all_users()
+    users = await asyncio.to_thread(get_all_users)
 
     total = len(users)
     vip_count = sum(1 for u in users if _resolve_status(u) == "vip")

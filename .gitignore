@@ -2,5 +2,6 @@
 .venv/
 __pycache__/
 *.pyc
+*.pyo
+seed_lera.py
 .DS_Store
-seed_*.py

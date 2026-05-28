@@ -51,29 +51,45 @@ PARKER/
 ├── app/
 │   ├── api/
 │   │   ├── __init__.py
-│   │   ├── profile.py      # POST /api/profile — КБЖУ + план
-│   │   ├── checkin.py      # POST /api/checkin — ежедневный отчёт
-│   │   └── webhook.py      # POST /webhook/{token}
+│   │   ├── adapt.py        # POST /api/adapt — еженедельная адаптация плана
+│   │   ├── admin.py        # GET /admin — HTML-панель управления
+│   │   ├── chat.py         # POST /api/chat — чат с Арни
+│   │   ├── deps.py         # Зависимости FastAPI (auth, AI-квота)
+│   │   ├── food.py         # POST /api/food, /api/food/photo — КБЖУ по тексту/фото
+│   │   ├── logs.py         # GET/POST /api/logs — трекер веса/еды/замеров
+│   │   ├── notify.py       # POST /api/notify — отправка сообщений пользователям
+│   │   ├── profile.py      # POST /api/profile — онбординг, КБЖУ + планы
+│   │   ├── reminders.py    # GET/POST/DELETE /api/reminders — напоминания
+│   │   └── user.py         # GET /api/user, POST /api/user/update, /api/chat/history
+│   ├── middleware/
+│   │   ├── access_log.py   # Логирование + аномалии (TRAFFIC_SPIKE, SUSPICIOUS_IP)
+│   │   ├── rate_limit.py   # SlidingWindowLimiter (in-memory, per-IP и per-user)
+│   │   └── security_headers.py  # CSP, HSTS, X-Frame-Options
 │   └── static/
-│       └── index.html      # Telegram Mini App (форма онбординга)
+│       └── index.html      # Telegram Mini App (SPA)
 ├── bot/
 │   ├── handlers/
-│   │   └── start.py        # /start → WebApp button
+│   │   └── start.py        # /start, /plan, /progress, /restart, /dm
 │   ├── services/
-│   │   ├── ai_service.py   # Claude API + fallback шаблоны
-│   │   └── nutrition.py    # build_profile_summary, compute_macros
+│   │   └── ai_service.py   # Claude API — чат, планы, КБЖУ, адаптация + fallback
 │   └── utils/
-│       └── calculators.py  # BMR, TDEE, макросы
+│       ├── calculators.py  # BMR (Кетч-МакАрдл / Миффлин), TDEE, макросы
+│       └── telegram_auth.py # HMAC-верификация Telegram initData
+├── bot/
+│   ├── bot_instance.py     # Singleton aiogram Bot
+│   ├── config.py           # Env-переменные
+│   └── scheduler.py        # APScheduler — напоминания (вода/еда/замеры)
 ├── db/
-│   ├── client.py           # Supabase клиент
-│   └── queries.py          # upsert_user, save_plan, get_user
-├── main.py                 # FastAPI app + lifespan (webhook setup)
+│   ├── client.py           # Supabase singleton-клиент
+│   ├── migrations/         # SQL-миграции (002–005)
+│   └── queries.py          # Все DB-операции (sync, вызывать через asyncio.to_thread)
+├── main.py                 # FastAPI app + lifespan (webhook, scheduler)
 ├── requirements.txt
 ├── railway.toml
-├── runtime.txt
+├── runtime.txt             # python-3.12.0
 ├── .env.example
-├── CLAUDE.md
-└── PROJECT_IDEA.md
+├── .gitignore
+└── CLAUDE.md
 ```
 
 ---

@@ -10,7 +10,9 @@ from app.api.deps import check_ai_quota, get_current_tg_id, get_client_ip
 from app.middleware.rate_limit import ip_limiter
 from bot.utils.calculators import compute_macros_for_profile
 from bot.services.ai_service import generate_nutrition_plan, generate_workout_plan
-from db.queries import upsert_user, save_plan
+from db.queries import upsert_user, save_plan, get_user
+
+import asyncio as _asyncio
 
 router = APIRouter()
 
@@ -85,6 +87,10 @@ async def create_profile(
 
     data = body.model_dump()
 
+    # check before upsert so we know if this is a new registration
+    existing = await _asyncio.to_thread(get_user, tg_id)
+    is_new = existing is None
+
     try:
         macros = compute_macros_for_profile(data)
     except Exception:
@@ -93,11 +99,15 @@ async def create_profile(
 
     nutrition_plan, workout_plan = await _generate_plans(data, macros)
 
-    user = upsert_user(tg_id, data)
+    user = await _asyncio.to_thread(upsert_user, tg_id, data)
     if user:
         uid = user.get("id")
-        save_plan(uid, "nutrition", nutrition_plan, macros)
-        save_plan(uid, "workout", workout_plan, {})
+        await _asyncio.gather(
+            _asyncio.to_thread(save_plan, uid, "nutrition", nutrition_plan, macros),
+            _asyncio.to_thread(save_plan, uid, "workout", workout_plan, {}),
+        )
+        if is_new:
+            _asyncio.create_task(_notify_admins_new_user(tg_id, data, macros))
 
     return JSONResponse({
         "macros":         macros,
@@ -107,9 +117,46 @@ async def create_profile(
 
 
 async def _generate_plans(data: dict, macros: dict):
-    import asyncio
-    nutrition, workout = await asyncio.gather(
+    nutrition, workout = await _asyncio.gather(
         generate_nutrition_plan(data, macros),
         generate_workout_plan(data),
     )
     return nutrition, workout
+
+
+async def _notify_admins_new_user(tg_id: int, data: dict, macros: dict) -> None:
+    from bot.bot_instance import bot
+    from bot.config import ADMIN_TG_IDS
+
+    if not ADMIN_TG_IDS:
+        return
+
+    goal_map = {
+        "lose_weight": "🔥 Похудение",
+        "gain_muscle": "💪 Набор массы",
+        "maintain": "⚖️ Поддержание",
+        "recomposition": "🔄 Рекомпозиция",
+    }
+    goal   = goal_map.get(data.get("goal", ""), "—")
+    gender = "♀ Жен" if data.get("gender") == "female" else "♂ Муж"
+    cal    = macros.get("calories", "—")
+    prot   = macros.get("protein_g", "—")
+    fat    = macros.get("fat_g", "—")
+    carb   = macros.get("carb_g", "—")
+    name   = data.get("name") or "—"
+
+    text = (
+        f"🎉 *Новый пользователь заполнил анкету!*\n\n"
+        f"Имя: {name}\n"
+        f"TG ID: `{tg_id}`\n"
+        f"Пол: {gender} · Возраст: {data.get('age')} лет\n"
+        f"Рост: {data.get('height_cm')} см · Вес: {data.get('weight_kg')} кг\n"
+        f"Цель: {goal}\n\n"
+        f"📊 КБЖУ: *{cal}* ккал · Б:{prot}г · Ж:{fat}г · У:{carb}г"
+    )
+
+    for admin_id in ADMIN_TG_IDS:
+        try:
+            await bot.send_message(admin_id, text, parse_mode="Markdown")
+        except Exception:
+            logging.exception("notify admin error admin_id=%s", admin_id)

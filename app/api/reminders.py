@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import re
 from typing import Optional, Literal, Annotated
@@ -47,19 +48,20 @@ class ReminderRequest(BaseModel):
 
 @router.get("/api/reminders")
 async def get_reminders(tg_id: int = Depends(get_current_tg_id)):
-    user = get_user(tg_id)
+    user = await asyncio.to_thread(get_user, tg_id)
     if not user:
         return JSONResponse({"reminders": []})
-    return JSONResponse({"reminders": get_reminders_for_user(user["id"])})
+    reminders = await asyncio.to_thread(get_reminders_for_user, user["id"])
+    return JSONResponse({"reminders": reminders})
 
 
 @router.post("/api/reminders")
 async def save_reminder(body: ReminderRequest, tg_id: int = Depends(get_current_tg_id)):
-    user = get_user(tg_id)
+    user = await asyncio.to_thread(get_user, tg_id)
     if not user:
         return JSONResponse({"ok": False, "error": "Пользователь не найден"}, status_code=404)
 
-    result = upsert_reminder(user["id"], tg_id, body.model_dump())
+    result = await asyncio.to_thread(upsert_reminder, user["id"], tg_id, body.model_dump())
     if not result:
         return JSONResponse({"ok": False, "error": "Ошибка сохранения"}, status_code=500)
 
@@ -74,7 +76,7 @@ async def save_reminder(body: ReminderRequest, tg_id: int = Depends(get_current_
 
 @router.delete("/api/reminders/{reminder_id}")
 async def remove_reminder(reminder_id: str, tg_id: int = Depends(get_current_tg_id)):
-    reminder = get_reminder(reminder_id)
+    reminder = await asyncio.to_thread(get_reminder, reminder_id)
     if not reminder:
         raise HTTPException(status_code=404, detail="Напоминание не найдено")
     if reminder.get("tg_id") != tg_id:
@@ -86,5 +88,5 @@ async def remove_reminder(reminder_id: str, tg_id: int = Depends(get_current_tg_
     except Exception as e:
         logging.warning("unschedule_reminder failed: %s", e)
 
-    ok = delete_reminder(reminder_id)
+    ok = await asyncio.to_thread(delete_reminder, reminder_id)
     return JSONResponse({"ok": ok})
