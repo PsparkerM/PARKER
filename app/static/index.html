@@ -1659,6 +1659,7 @@ function addSteps(n) {
   setSteps(v);
   _updateStepCard();
   if (n>0) toast(`+${n.toLocaleString()} 👟`);
+  scheduleSyncLogs();
 }
 
 // Step tracker state (persists across renderHome)
@@ -2395,6 +2396,7 @@ document.getElementById('photo-input').addEventListener('change',async function(
     if(data.error){if(res){res.style.display='block';res.innerHTML=`<div style="color:var(--red);font-size:13px;margin-top:8px">${escHtml(data.error)}</div>`;}return;}
     if(data.description&&document.getElementById('food-ta'))document.getElementById('food-ta').value=data.description;
     showFoodResult(data,data.description||'Фото');
+    if(data.advice&&res){const adv=document.createElement('div');adv.style.cssText='margin-top:10px;padding:10px 12px;background:rgba(0,229,255,.06);border:1px solid rgba(0,229,255,.2);border-radius:10px;font-size:12px;color:#a5f3fc;line-height:1.5';adv.textContent='💡 '+data.advice;res.appendChild(adv);}
   } catch{if(res){res.style.display='block';res.innerHTML='<div style="color:var(--red);font-size:13px;margin-top:8px">Ошибка</div>';}}
   finally{if(btn){btn.textContent='Посчитать КБЖУ →';btn.disabled=false;}this.value='';}
 });
