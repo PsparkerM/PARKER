@@ -5,8 +5,11 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
+import asyncio
+
 from app.api.deps import check_ai_quota
 from bot.services.ai_service import calculate_food_macros, calculate_food_macros_from_photo
+from db.queries import get_user
 
 router = APIRouter()
 
@@ -42,7 +45,8 @@ async def food_calc(req: FoodRequest, tg_id: int = Depends(check_ai_quota)):
 @router.post("/api/food/photo")
 async def food_from_photo(req: PhotoRequest, tg_id: int = Depends(check_ai_quota)):
     try:
-        result = await calculate_food_macros_from_photo(req.image_b64, req.media_type)
+        profile = await asyncio.to_thread(get_user, tg_id) or {}
+        result = await calculate_food_macros_from_photo(req.image_b64, req.media_type, profile=profile)
         return JSONResponse(result)
     except Exception:
         logging.exception("food_photo error")

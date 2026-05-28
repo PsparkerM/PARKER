@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 
 from app.api.deps import check_ai_quota
 from bot.services.ai_service import generate_chat_response
-from db.queries import get_user, update_plan_macros
+from db.queries import get_user, update_plan_macros, get_user_logs
 
 router = APIRouter()
 
@@ -73,8 +73,14 @@ class ChatRequest(BaseModel):
 async def chat(req: ChatRequest, tg_id: int = Depends(check_ai_quota)):
     try:
         profile = await asyncio.to_thread(get_user, tg_id) or {}
+        logs: dict = {}
+        if profile.get("id"):
+            try:
+                logs = await asyncio.to_thread(get_user_logs, profile["id"])
+            except Exception:
+                pass
         history = [{"role": m.role, "content": m.content} for m in req.history]
-        reply   = await generate_chat_response(req.message, history, profile, lang=req.lang or "ru")
+        reply   = await generate_chat_response(req.message, history, profile, lang=req.lang or "ru", logs=logs)
 
         clean_reply, new_macros = _parse_set_targets(reply)
 

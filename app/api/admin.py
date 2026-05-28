@@ -6,7 +6,7 @@ import logging
 
 from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse, JSONResponse
-from db.queries import get_all_users, set_user_status, get_user_with_plans, get_user_logs, get_user
+from db.queries import get_all_users, set_user_status, get_user_with_plans, get_user_logs, get_user, delete_user, get_ai_calls_today
 from bot.config import ADMIN_SECRET
 from app.middleware.rate_limit import ip_limiter
 from app.middleware.access_log import log_security_event
@@ -75,8 +75,31 @@ async def admin_user_detail(request: Request, tg_id: int):
     )
     if not data:
         return JSONResponse({"error": "not found"}, status_code=404)
-    logs_data = await asyncio.to_thread(get_user_logs, user["id"]) if user else {}
-    return JSONResponse({**data, "logs": logs_data})
+    uid = (user or {}).get("id", "")
+    logs_data, ai_calls = await asyncio.gather(
+        asyncio.to_thread(get_user_logs, uid) if uid else asyncio.sleep(0, result={}),
+        asyncio.to_thread(get_ai_calls_today, uid) if uid else asyncio.sleep(0, result=0),
+    )
+    return JSONResponse({**data, "logs": logs_data or {}, "ai_calls_today": ai_calls})
+
+
+@router.post("/admin/delete-user")
+async def admin_delete_user(request: Request):
+    if not await _check_admin(request):
+        return JSONResponse({"error": "forbidden"}, status_code=403)
+    try:
+        payload = await request.json()
+    except Exception:
+        return JSONResponse({"error": "invalid json"}, status_code=400)
+    tg_id = payload.get("tg_id")
+    if not tg_id:
+        return JSONResponse({"error": "tg_id required"}, status_code=400)
+    try:
+        tg_id_int = int(tg_id)
+    except (TypeError, ValueError):
+        return JSONResponse({"error": "tg_id must be integer"}, status_code=400)
+    ok = await asyncio.to_thread(delete_user, tg_id_int)
+    return JSONResponse({"ok": ok})
 
 
 @router.post("/admin/set-status")
@@ -142,17 +165,19 @@ async def admin_panel(request: Request):
 
         modal_id = f"m{tg_id_val}"
 
+        last_seen_raw = str(u.get("last_seen") or "")
+        last_seen = _html.escape(last_seen_raw[:16].replace("T", " ")) if last_seen_raw else "—"
+
         rows += f"""
         <tr onclick="showModal('{modal_id}')" style="cursor:pointer">
           <td><code class="cpytg" onclick="copyTg(event,'{tg_id_disp}')">{tg_id_disp}</code></td>
-          <td>{uid[:8]}…</td>
           <td><b>{name}</b></td>
           <td>{badge_html}</td>
           <td>{goal}</td>
-          <td>{gender}</td>
           <td>{age}</td>
           <td>{weight} кг / {height} см</td>
           <td>{created}</td>
+          <td style="color:{'#34d399' if last_seen_raw else '#6b6b88'};font-size:11px">{last_seen}</td>
           <td onclick="event.stopPropagation()">
             <div class="sbtn-group">
               <button class="sbtn {'sact' if status=='free' else ''}" onclick="setStatus('{tg_id_disp}','free',this)">⚡</button>

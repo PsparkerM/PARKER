@@ -209,6 +209,39 @@ def _build_profile_block(profile: dict) -> str:
     return "\n".join(parts) or "Профиль частично заполнен."
 
 
+def _build_logs_context(logs: dict) -> str:
+    """Build a concise recent-data summary to give Arni real context."""
+    from datetime import datetime, timezone, timedelta
+    lines = []
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    week_ago = (datetime.now(timezone.utc) - timedelta(days=7)).strftime("%Y-%m-%d")
+
+    weight_entries = [l for l in logs.get("weight_logs", []) if l.get("weight") and l.get("date", "") >= week_ago]
+    if weight_entries:
+        weight_entries = sorted(weight_entries, key=lambda x: x.get("date", ""))
+        wpts = [f"{l['date'][5:]}: {l['weight']}кг" for l in weight_entries]
+        lines.append(f"Вес за 7 дней: {', '.join(wpts)}")
+        if len(weight_entries) >= 2:
+            delta = round(weight_entries[-1]["weight"] - weight_entries[0]["weight"], 1)
+            trend = "растёт" if delta > 0.2 else ("снижается" if delta < -0.2 else "стабильный")
+            lines.append(f"Тренд веса: {trend} ({'+' if delta > 0 else ''}{delta} кг)")
+
+    water_today = next((e.get("ml", 0) for e in logs.get("water", []) if e.get("date") == today), 0)
+    if water_today:
+        lines.append(f"Вода сегодня: {water_today} мл")
+
+    recent_food = sorted(logs.get("food", []), key=lambda x: x.get("date", ""), reverse=True)[:3]
+    if recent_food:
+        food_parts = []
+        for f in recent_food:
+            cal = int((f.get("total") or {}).get("calories", 0))
+            desc = (f.get("description") or f.get("name") or "").strip()[:30]
+            food_parts.append(f"{f.get('date', '')[-5:]}: {desc} ({cal} ккал)" if desc else f"{f.get('date', '')[-5:]}: {cal} ккал")
+        lines.append(f"Последние приёмы пищи: {'; '.join(food_parts)}")
+
+    return "\n".join(lines)
+
+
 def _build_health_rules(profile: dict) -> str:
     health = profile.get("health_issues", [])
     rules = []
@@ -271,7 +304,7 @@ def _cached(text: str) -> dict:
 # ──────────────────────────────────────────────
 #  Chat
 # ──────────────────────────────────────────────
-async def generate_chat_response(message: str, history: list, profile: dict, lang: str = "ru") -> str:
+async def generate_chat_response(message: str, history: list, profile: dict, lang: str = "ru", logs: dict = None) -> str:
     if not ANTHROPIC_API_KEY:
         return "Arnie is temporarily unavailable — API key not set." if lang == "en" else "Арни временно недоступен — API ключ не задан."
     try:
@@ -281,6 +314,10 @@ async def generate_chat_response(message: str, history: list, profile: dict, lan
             f"ПРОФИЛЬ ПОЛЬЗОВАТЕЛЯ:\n{_build_profile_block(profile)}\n\n"
             f"ЗАПРЕТЫ ПО ЗДОРОВЬЮ (АБСОЛЮТНЫЕ):\n{_build_health_rules(profile)}"
         )
+        if logs:
+            ctx = _build_logs_context(logs)
+            if ctx:
+                dynamic_text += f"\n\nАКТУАЛЬНЫЕ ДАННЫЕ (используй при ответе):\n{ctx}"
         system = [
             _cached(static_text),
             {"type": "text", "text": dynamic_text},
@@ -336,15 +373,21 @@ async def calculate_food_macros(text: str) -> dict:
         return {"error": "Ошибка расчёта КБЖУ — попробуй ещё раз"}
 
 
-async def calculate_food_macros_from_photo(image_b64: str, media_type: str = "image/jpeg") -> dict:
+async def calculate_food_macros_from_photo(image_b64: str, media_type: str = "image/jpeg", profile: dict = None) -> dict:
     if not ANTHROPIC_API_KEY:
         return {"error": "AI недоступен"}
     try:
         client = _get_client()
+        system_text = PHOTO_FOOD_SYSTEM
+        if profile:
+            goal_label = GOAL_LABELS.get(profile.get("goal", ""), "")
+            cal = ""
+            if goal_label:
+                system_text += f"\n\nЦЕЛЬ ПОЛЬЗОВАТЕЛЯ: {goal_label}. После КБЖУ добавь поле \"advice\" — 1-2 предложения с советом по этому блюду с учётом цели (например: много жиров для похудения, хороший белок для набора)."
         msg = await client.messages.create(
             model=MODEL,
-            max_tokens=900,
-            system=[_cached(PHOTO_FOOD_SYSTEM)],
+            max_tokens=1000,
+            system=[_cached(system_text)],
             messages=[{
                 "role": "user",
                 "content": [
