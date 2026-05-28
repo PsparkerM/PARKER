@@ -815,6 +815,38 @@ input[type=time]{color-scheme:dark}
 .skel-line.lg{height:18px;width:80%}
 .skel-circle{border-radius:50%}
 
+/* STREAK CARD */
+.streak-card{background:linear-gradient(135deg,rgba(139,92,246,.1),rgba(247,37,133,.06));
+  border:1px solid rgba(139,92,246,.22);border-radius:var(--radius);padding:16px;
+  display:flex;align-items:center;gap:14px;position:relative;overflow:hidden}
+.streak-card::after{content:'';position:absolute;top:-24px;right:-16px;width:80px;height:80px;border-radius:50%;
+  background:radial-gradient(circle,rgba(247,37,133,.1),transparent 70%);pointer-events:none}
+.streak-left{display:flex;flex-direction:column;align-items:center;gap:2px;flex-shrink:0;min-width:52px}
+.streak-fire{font-size:34px;line-height:1;filter:drop-shadow(0 0 8px rgba(255,140,0,.5))}
+.streak-num{font-size:28px;font-weight:900;color:var(--violet);line-height:1;font-variant-numeric:tabular-nums}
+.streak-unit{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px}
+.streak-msg{font-size:13px;color:var(--text2);line-height:1.45;flex:1}
+/* WORKOUT DONE */
+.wo-done-wrap{margin-top:14px;padding-top:14px;border-top:1px solid var(--border)}
+.wo-done-btn{width:100%;padding:13px;border-radius:var(--radius-sm);font-size:15px;font-weight:700;
+  background:linear-gradient(135deg,var(--emerald),rgba(16,217,128,.7));color:#fff;min-height:50px;
+  box-shadow:0 0 18px rgba(16,217,128,.2);transition:transform .1s}
+.wo-done-btn:active{transform:scale(.97)}
+.wo-done-badge{text-align:center;padding:12px;font-size:14px;font-weight:700;color:var(--emerald);
+  background:rgba(16,217,128,.07);border:1px solid rgba(16,217,128,.2);border-radius:var(--radius-sm)}
+/* SLEEP CHART */
+.sleep-bars{display:flex;align-items:flex-end;gap:5px;height:60px;margin-top:10px}
+.sleep-bar{flex:1;border-radius:5px 5px 0 0;min-height:3px;transition:height .4s cubic-bezier(.34,1.56,.64,1)}
+.sleep-labels{display:flex;gap:5px;margin-top:5px}
+.sleep-label{flex:1;font-size:10px;color:var(--text3);text-align:center;font-weight:600}
+.sleep-label.td{color:var(--gold);font-weight:800}
+.sleep-stats{display:flex;justify-content:space-between;font-size:12px;color:var(--text3);margin-top:8px;padding-top:8px;border-top:1px solid var(--border)}
+/* FOOD DATE TABS */
+.food-date-tabs{display:flex;gap:6px;margin-bottom:10px}
+.food-date-tab{padding:5px 14px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;
+  border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:var(--text3);transition:all .15s;touch-action:manipulation}
+.food-date-tab.on{border-color:rgba(0,200,255,.35);background:rgba(0,200,255,.1);color:var(--cyan)}
+.food-date-tab:active{opacity:.7}
 /* card hover glow on desktop */
 @media(hover:hover){
   .ring-card:hover,.water-card:hover,.step-card:hover,.plan-card:hover,.card:hover{
@@ -1712,7 +1744,7 @@ function goTab(name) {
   const fab = document.getElementById('fab-btn');
   if (fab) fab.style.display = (name==='home'||name==='tracker') ? 'flex' : 'none';
   if (name==='home')     renderHome();
-  if (name==='tracker')  renderTracker();
+  if (name==='tracker')  { _trackerFoodDate = todayKey(); renderTracker(); }
   if (name==='progress') renderProgress();
   if (name==='profile')  renderProfile();
 }
@@ -2055,12 +2087,28 @@ function openWorkoutSheet(dayNum, dayName) {
         </div>`).join('')}
     </div>`;
   }
+  const todayDayNum = ((new Date().getDay()+6)%7)+1;
+  if (dayNum === todayDayNum) {
+    const isDone = getWorkoutDone(todayKey());
+    const ru2 = lang !== 'en';
+    body.innerHTML += isDone
+      ? `<div class="wo-done-wrap"><div class="wo-done-badge">✅ ${ru2?'Тренировка выполнена сегодня':'Workout done today'} 💪</div></div>`
+      : `<div class="wo-done-wrap"><button class="wo-done-btn" onclick="markWorkoutDone()">✅ ${ru2?'Отметить как выполненную':'Mark as done!'}</button></div>`;
+  }
   document.getElementById('wo-overlay').classList.add('on');
   document.getElementById('wo-sheet').classList.add('on');
 }
 function closeWorkoutSheet() {
   document.getElementById('wo-overlay').classList.remove('on');
   document.getElementById('wo-sheet').classList.remove('on');
+}
+function getWorkoutDone(key) { return localStorage.getItem('pk_wo_' + key) === '1'; }
+function markWorkoutDone() {
+  localStorage.setItem('pk_wo_' + todayKey(), '1');
+  hapticSuccess();
+  closeWorkoutSheet();
+  toast(lang==='en' ? 'Workout done! 💪' : 'Тренировка выполнена! 💪');
+  if (curTab === 'home') renderHome();
 }
 
 function renderHome() {
@@ -2079,7 +2127,8 @@ function renderHome() {
   const target = {cal:m.calories||2000, p:m.protein_g||150, fat:m.fat_g||70, c:m.carb_g||200};
   const consumed_safe = {cal:consumed.cal||0, p:consumed.p||0, fat:consumed.fat||0, c:consumed.c||0};
   const pct=(v,t)=>Math.min(100,Math.round(v/t*100));
-  const remaining = Math.max(0, target.cal - Math.round(consumed_safe.cal));
+  const calDiff = target.cal - Math.round(consumed_safe.cal);
+  const remaining = Math.max(0, calDiff);
   const calPct = pct(consumed_safe.cal, target.cal);
   const R=44, circ=2*Math.PI*R, dash=circ*(1-calPct/100);
   const ringColor = calPct >= 100 ? 'var(--red)' : 'url(#calGrad)';
@@ -2096,14 +2145,15 @@ function renderHome() {
   const _dayFullNamesEn = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
   const _dayFullName = ru ? _dayFullNamesRu[_now.getDay()] : _dayFullNamesEn[_now.getDay()];
   const _dateStr = `${String(_now.getDate()).padStart(2,'0')}.${String(_now.getMonth()+1).padStart(2,'0')}.${_now.getFullYear()}`;
+  const _woDoneToday = getWorkoutDone(todayKey());
   const workoutHtml = `<div class="daily-card" onclick="openDailyPanel()">
     <div class="daily-card-left">
       <div class="daily-day-name">${_dayFullName}</div>
       <div class="daily-date-str">${_dateStr}</div>
-      <div class="daily-tap-hint">${ru?'Нажми — план на сегодня':'Tap for today\'s plan'}</div>
+      <div class="daily-tap-hint">${_woDoneToday?(ru?'✅ Тренировка выполнена':'✅ Workout done'):(ru?'Нажми — план на сегодня':'Tap for today\'s plan')}</div>
     </div>
     <div class="daily-card-right">
-      <div class="daily-card-ico">📅</div>
+      <div class="daily-card-ico">${_woDoneToday?'✅':'📅'}</div>
       <div class="daily-card-badge">${ru?'Сегодня':'Today'}</div>
     </div>
   </div>`;
@@ -2221,6 +2271,7 @@ function renderHome() {
             <div class="ring-bar-wrap"><div class="ring-bar" style="width:${p}%;background:${c}"></div></div>
             <div class="ring-val">${v}</div>
           </div>`).join('')}
+        ${calDiff < 0 ? `<div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(244,63,94,.15);font-size:12px;font-weight:700;color:var(--red);text-align:center">⚠️ ${ru?'Превышение':'Over target'}: +${-calDiff} ${ru?'ккал':'kcal'}</div>` : ''}
       </div>
     </div>
 
@@ -2239,6 +2290,15 @@ function renderHome() {
     </div>
 
     ${_buildStepCardHtml()}
+
+    ${streak > 0 ? `<div class="streak-card">
+      <div class="streak-left">
+        <div class="streak-fire">🔥</div>
+        <div class="streak-num">${streak}</div>
+        <div class="streak-unit">${ru?(streak%10===1&&streak%100!==11?'день':streak%10>=2&&streak%10<=4&&(streak%100<10||streak%100>=20)?'дня':'дней'):'day'+(streak===1?'':'s')}</div>
+      </div>
+      <div class="streak-msg">${streak>=30?(ru?'Легенда! 🏆':'Legend! 🏆'):streak>=14?(ru?'Две недели! 💎':'Two weeks! 💎'):streak>=7?(ru?'Неделя подряд! 💪':'One week! 💪'):streak>=3?(ru?'Хорошая серия! Держи!':'Nice streak! Keep it up!'):ru?'Начало положено! Не останавливайся 💪':'Great start! Keep it going 💪'}</div>
+    </div>` : ''}
 
     ${workoutHtml}${mealSchedHtml}${nutrCard}${wrkCard}
   `;
@@ -2343,6 +2403,8 @@ async function sendChat() {
 
 // ══ TRACKER ══
 let pendingFood=null;
+let _trackerFoodDate = null;
+function setFoodLogDate(key) { _trackerFoodDate = key; renderTracker(); haptic('light'); }
 function todayFoodLogs() { return foodLogs.filter(f=>f.date===todayKey()); }
 function todayFoodTotal() {
   return todayFoodLogs().reduce((a,f)=>({
@@ -2353,7 +2415,11 @@ function todayFoodTotal() {
 
 function renderTracker() {
   const el=document.getElementById('tracker-content');
-  const today=todayKey(), tot=todayFoodTotal(), dayLogs=todayFoodLogs();
+  const today=todayKey();
+  if (!_trackerFoodDate) _trackerFoodDate = today;
+  const dispDate = _trackerFoodDate;
+  const dayLogs = foodLogs.filter(f=>f.date===dispDate);
+  const tot = dayLogs.reduce((a,f)=>({cal:a.cal+(f.total?.calories||0),p:a.p+(f.total?.protein_g||0),fat:a.fat+(f.total?.fat_g||0),c:a.c+(f.total?.carb_g||0)}),{cal:0,p:0,fat:0,c:0});
   const lastLog=logs.slice().reverse().find(l=>l.weight);
   const lastMeas=measLogs.slice(-1)[0];
   const m=macrosOverride||planData?.macros||{};
@@ -2362,39 +2428,50 @@ function renderTracker() {
   const calPct=pct(tot.cal,tgt.cal);
   const remaining=tgt.cal-Math.round(tot.cal);
   const calColor=tot.cal>tgt.cal*1.1?'var(--red)':calPct>=80?'var(--emerald)':'var(--violet)';
+  const ru = lang !== 'en';
+
+  const yest = new Date(); yest.setDate(yest.getDate()-1);
+  const yesterdayKey = yest.toLocaleDateString('ru-RU');
+  const dateTabs = `<div class="food-date-tabs">
+    <button class="food-date-tab ${dispDate===today?'on':''}" onclick="setFoodLogDate('${today}')">${ru?'Сегодня':'Today'}</button>
+    <button class="food-date-tab ${dispDate===yesterdayKey?'on':''}" onclick="setFoodLogDate('${yesterdayKey}')">${ru?'Вчера':'Yesterday'}</button>
+  </div>`;
 
   el.innerHTML=`
     <div class="card">
-      <div class="card-ttl"><span>🍽</span> Добавить еду</div>
+      <div class="card-ttl"><span>🍽</span> ${ru?'Добавить еду':'Log food'}</div>
       <div class="food-row">
-        <textarea class="food-ta" id="food-ta" placeholder="куриная грудка 200г, гречка 150г..."></textarea>
+        <textarea class="food-ta" id="food-ta" placeholder="${ru?'куриная грудка 200г, гречка 150г...':'chicken breast 200g, rice 150g...'}"></textarea>
         <div class="cam-btn" onclick="document.getElementById('photo-input').click()">📷</div>
       </div>
-      <button class="calc-btn" id="calc-btn" onclick="calcFood()">Посчитать КБЖУ →</button>
+      <button class="calc-btn" id="calc-btn" onclick="calcFood()">${ru?'Посчитать КБЖУ →':'Calculate macros →'}</button>
       <div class="food-result" id="food-result"></div>
     </div>
 
     <div class="card">
-      <div class="card-ttl"><span>📊</span> Сегодня — ${today}</div>
+      <div class="card-ttl" style="flex-direction:column;align-items:flex-start;gap:8px">
+        <div style="display:flex;align-items:center;gap:8px"><span>📊</span> ${ru?'Дневник питания':'Food diary'}</div>
+        ${dateTabs}
+      </div>
       <div style="margin-bottom:14px">
         <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
-          <span style="font-size:14px;font-weight:800">${Math.round(tot.cal)} <span style="font-size:12px;font-weight:400;color:var(--text3)">/ ${tgt.cal} ккал</span></span>
-          <span style="font-size:12px;color:${remaining>=0?'var(--text3)':'var(--red)'}">${remaining>=0?`осталось ${remaining}`:`превышение +${Math.abs(remaining)}`}</span>
+          <span style="font-size:14px;font-weight:800">${Math.round(tot.cal)} <span style="font-size:12px;font-weight:400;color:var(--text3)">/ ${tgt.cal} ${ru?'ккал':'kcal'}</span></span>
+          <span style="font-size:12px;color:${remaining>=0?'var(--text3)':'var(--red)'}">${remaining>=0?(ru?`осталось ${remaining} ккал`:`${remaining} kcal left`):(ru?`превышение +${Math.abs(remaining)}`:`+${Math.abs(remaining)} over`)}</span>
         </div>
         <div style="height:5px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden">
           <div style="height:100%;width:${calPct}%;background:${calColor};border-radius:3px;transition:width .6s ease"></div>
         </div>
       </div>
       <div class="ftot-row">
-        <div class="ftot-item"><div class="ftot-val">${Math.round(tot.cal)}</div><div class="ftot-lbl">ккал</div></div>
+        <div class="ftot-item"><div class="ftot-val">${Math.round(tot.cal)}</div><div class="ftot-lbl">${ru?'ккал':'kcal'}</div></div>
         <div class="ftot-item">
           <div class="ftot-val" style="color:${pct(tot.p,tgt.p)>=80?'var(--emerald)':'var(--gold)'}">${tot.p.toFixed(1)}</div>
-          <div class="ftot-lbl">белки ${pct(tot.p,tgt.p)}%</div>
+          <div class="ftot-lbl">${ru?`белки ${pct(tot.p,tgt.p)}%`:`prot ${pct(tot.p,tgt.p)}%`}</div>
         </div>
-        <div class="ftot-item"><div class="ftot-val">${tot.fat.toFixed(1)}</div><div class="ftot-lbl">жиры</div></div>
-        <div class="ftot-item"><div class="ftot-val">${tot.c.toFixed(1)}</div><div class="ftot-lbl">углев</div></div>
+        <div class="ftot-item"><div class="ftot-val">${tot.fat.toFixed(1)}</div><div class="ftot-lbl">${ru?'жиры':'fat'}</div></div>
+        <div class="ftot-item"><div class="ftot-val">${tot.c.toFixed(1)}</div><div class="ftot-lbl">${ru?'углев':'carbs'}</div></div>
       </div>
-      ${dayLogs.length?renderFoodLog(dayLogs):'<div style="color:var(--text3);font-size:13px;text-align:center;padding:12px 0">Ничего не добавлено</div>'}
+      ${dayLogs.length?renderFoodLog(dayLogs):`<div style="color:var(--text3);font-size:13px;text-align:center;padding:12px 0">${ru?'Ничего не добавлено':'Nothing logged yet'}</div>`}
     </div>
 
     <div class="card">
@@ -2439,7 +2516,7 @@ function renderFoodLog(items) {
       <div class="fli-edit" onclick="editFoodEntry(${f.ts||0})">✏️</div>
       <div class="fli-del" onclick="deleteFoodEntry(${f.ts||0})">✕</div>
     </div>`;}).join('');
-  const tot=todayFoodTotal();
+  const tot=items.reduce((a,f)=>({cal:a.cal+(f.total?.calories||0),p:a.p+(f.total?.protein_g||0),fat:a.fat+(f.total?.fat_g||0),c:a.c+(f.total?.carb_g||0)}),{cal:0,p:0,fat:0,c:0});
   return rows+`<div class="day-total-row">
     <span style="color:var(--text2)">Итого:</span>
     <strong style="color:var(--cyan)">${Math.round(tot.cal)} ккал · Б:${tot.p.toFixed(0)}г Ж:${tot.fat.toFixed(0)}г У:${tot.c.toFixed(0)}г</strong>
@@ -2671,28 +2748,59 @@ function renderProgress() {
       <span class="wlog-act" onclick="deleteWeightLog('${l.date}')">✕</span>
     </div>`).join('');
 
+  const ruP = lang !== 'en';
+  const sleepChart = (()=>{
+    const sleepLogs = logs.filter(l=>l.sleep!=null&&l.sleep>0).slice(-7);
+    if (!sleepLogs.length) return '';
+    const maxS = Math.max(...sleepLogs.map(l=>l.sleep), 9);
+    const bars = sleepLogs.map((l,i)=>{
+      const h = Math.max(3, Math.round(l.sleep/maxS*60));
+      const good = l.sleep >= 7;
+      const isLast = i === sleepLogs.length-1;
+      const bg = isLast ? 'var(--cyan)' : good ? 'rgba(0,200,255,.5)' : 'rgba(244,63,94,.4)';
+      return `<div class="sleep-bar" style="height:${h}px;background:${bg}"></div>`;
+    }).join('');
+    const labels = sleepLogs.map((l,i)=>`<div class="sleep-label ${i===sleepLogs.length-1?'td':''}">${l.date.slice(5).replace('-','/')}</div>`).join('');
+    const avg = (sleepLogs.reduce((s,l)=>s+l.sleep,0)/sleepLogs.length).toFixed(1);
+    const lastS = sleepLogs[sleepLogs.length-1]?.sleep || 0;
+    return `<div class="chart-card">
+      <div class="chart-hd">
+        <div class="chart-ttl">😴 ${ruP?'Сон / ночь':'Sleep / night'}</div>
+        <div class="chart-period">${ruP?`Среднее: ${avg} ч`:`Avg: ${avg}h`}</div>
+      </div>
+      <div class="sleep-bars">${bars}</div>
+      <div class="sleep-labels">${labels}</div>
+      <div class="sleep-stats">
+        <span>${ruP?'Сегодня':'Last'}: <b style="color:${lastS>=7?'var(--emerald)':'var(--red)'}">${lastS} ${ruP?'ч':'h'}</b></span>
+        <span>${ruP?'Норма: 7–9 ч':'Target: 7–9h'}</span>
+        <span style="display:flex;gap:8px"><span style="color:rgba(0,200,255,.7)">● ${ruP?'Норма':'Good'}</span><span style="color:rgba(244,63,94,.7)">● ${ruP?'Мало':'Low'}</span></span>
+      </div>
+    </div>`;
+  })();
+
   el.innerHTML=`
     <div class="adapt-card">
-      <div class="chart-hd"><div class="chart-ttl">🤖 Адаптация плана</div></div>
-      <div style="font-size:13px;color:var(--text2);margin-bottom:12px">Арни проанализирует данные за неделю и скорректирует план</div>
-      <button class="save-btn-blue" id="adapt-btn" onclick="getWeeklyAdapt()">Получить адаптацию ↗</button>
+      <div class="chart-hd"><div class="chart-ttl">🤖 ${ruP?'Адаптация плана':'Plan adaptation'}</div></div>
+      <div style="font-size:13px;color:var(--text2);margin-bottom:12px">${ruP?'Арни проанализирует данные за неделю и скорректирует план':'Arnie will analyze your weekly data and adjust the plan'}</div>
+      <button class="save-btn-blue" id="adapt-btn" onclick="getWeeklyAdapt()">${ruP?'Получить адаптацию ↗':'Get adaptation ↗'}</button>
       <div class="adapt-result" id="adapt-result" style="display:none"></div>
     </div>
     <div class="chart-card">
       <div class="chart-hd">
-        <div class="chart-ttl">⚖️ Динамика веса</div>
+        <div class="chart-ttl">⚖️ ${ruP?'Динамика веса':'Weight dynamics'}</div>
         <div style="display:flex;gap:4px">
-          ${[14,30,90].map(p=>`<button onclick="_progressPeriod=${p};renderProgress()" style="padding:3px 8px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid rgba(255,255,255,.12);background:${_progressPeriod===p?'rgba(0,229,255,.15)':'rgba(255,255,255,.04)'};color:${_progressPeriod===p?'var(--cyan)':'var(--text3)'}">${p}д</button>`).join('')}
+          ${[14,30,90].map(p=>`<button onclick="_progressPeriod=${p};renderProgress()" style="padding:3px 8px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid rgba(255,255,255,.12);background:${_progressPeriod===p?'rgba(0,229,255,.15)':'rgba(255,255,255,.04)'};color:${_progressPeriod===p?'var(--cyan)':'var(--text3)'}">${p}${ruP?'д':'d'}</button>`).join('')}
         </div>
       </div>
       ${weightChart}
     </div>
     ${weightLogs.length?`<div class="chart-card" style="margin-top:0">
-      <div class="chart-hd"><div class="chart-ttl">📋 История веса</div></div>${wlogRows}</div>`:''}
+      <div class="chart-hd"><div class="chart-ttl">📋 ${ruP?'История веса':'Weight history'}</div></div>${wlogRows}</div>`:''}
     <div class="chart-card">
-      <div class="chart-hd"><div class="chart-ttl">🔥 Калории / день</div><div class="chart-period">14 дней</div></div>
+      <div class="chart-hd"><div class="chart-ttl">🔥 ${ruP?'Калории / день':'Calories / day'}</div><div class="chart-period">14 ${ruP?'дней':'days'}</div></div>
       ${calChart}
     </div>
+    ${sleepChart}
     ${measTable}`;
 }
 
