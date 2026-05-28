@@ -432,6 +432,40 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 .wlog-date{font-size:13px;color:var(--text2);flex:1}.wlog-val{font-size:14px;font-weight:700}
 .wlog-act{font-size:15px;color:var(--text3);padding:2px 6px;cursor:pointer;opacity:.7}
 
+/* SUBSCRIPTION CARD */
+.sub-card{border-radius:18px;overflow:hidden;padding:18px}
+.sub-card.free{background:var(--bg2);border:1px solid rgba(255,255,255,.08)}
+.sub-card.pro{background:linear-gradient(135deg,rgba(139,92,246,.08),rgba(236,72,153,.05));border:1px solid rgba(139,92,246,.25)}
+.sub-card.vip{background:linear-gradient(135deg,rgba(0,200,255,.08),rgba(139,92,246,.06));border:1px solid rgba(0,200,255,.3)}
+.sub-status-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.sub-badge{font-size:12px;font-weight:800;padding:3px 10px;border-radius:20px;letter-spacing:.3px}
+.sub-badge.free{background:rgba(255,255,255,.08);color:var(--text3)}
+.sub-badge.pro{background:linear-gradient(135deg,var(--violet),var(--pink));color:#fff}
+.sub-badge.vip{background:linear-gradient(135deg,var(--cyan),var(--violet));color:#fff}
+.sub-plan-name{font-size:16px;font-weight:800}
+.sub-desc{font-size:13px;color:var(--text2);margin-bottom:14px;line-height:1.45}
+.sub-upgrade-btn{width:100%;padding:14px;border-radius:14px;font-size:15px;font-weight:700;
+  background:linear-gradient(135deg,var(--cyan),var(--violet));color:#fff;
+  box-shadow:0 4px 18px rgba(0,200,255,.18);transition:transform .1s;min-height:50px;
+  touch-action:manipulation}
+.sub-upgrade-btn:active{transform:scale(.97)}
+.sub-features{display:flex;flex-direction:column;gap:5px;margin-bottom:14px}
+.sub-feature{font-size:13px;color:var(--text2);display:flex;align-items:center;gap:7px}
+.sub-feature::before{content:'✓';color:var(--emerald);font-weight:800;font-size:12px;flex-shrink:0}
+/* quota exceeded message in chat */
+.chat-quota-msg{background:linear-gradient(135deg,rgba(139,92,246,.1),rgba(236,72,153,.07));
+  border:1px solid rgba(139,92,246,.2);border-radius:14px;padding:14px 16px;margin:4px 0}
+.chat-quota-title{font-size:13px;font-weight:800;color:var(--violet);margin-bottom:6px}
+.chat-quota-body{font-size:13px;color:var(--text2);line-height:1.5;margin-bottom:12px}
+.chat-quota-btn{width:100%;padding:11px;border-radius:11px;font-size:13px;font-weight:700;
+  background:linear-gradient(135deg,var(--cyan),var(--violet));color:#fff;transition:transform .1s}
+.chat-quota-btn:active{transform:scale(.97)}
+/* header pro badge */
+.hdr-pro-wrap{position:relative;display:inline-flex}
+.hdr-pro-pip{position:absolute;bottom:-1px;right:-1px;width:14px;height:14px;border-radius:50%;
+  background:linear-gradient(135deg,var(--violet),var(--pink));border:2px solid var(--bg);
+  display:flex;align-items:center;justify-content:center;font-size:7px;color:#fff;font-weight:800;line-height:1}
+
 /* PROFILE */
 .prof-scrl{padding:16px;padding-bottom:calc(var(--nav-h) + 40px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:16px}
 .prof-hero{background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:20px;
@@ -798,7 +832,10 @@ input[type=time]{color-scheme:dark}
     <div class="logo">P.A.R.K.E.R.</div>
     <div class="hdr-right">
       <button class="gear-btn" id="gear-btn" onclick="openSettings()" style="display:none">⚙️</button>
-      <div class="hdr-avatar" id="hdr-av" style="display:none"></div>
+      <div class="hdr-pro-wrap" id="hdr-pro-wrap" style="display:none">
+        <div class="hdr-avatar" id="hdr-av"></div>
+        <div class="hdr-pro-pip" id="hdr-pro-pip" style="display:none">★</div>
+      </div>
     </div>
   </div>
 
@@ -1705,7 +1742,16 @@ function updateHeader() {
     av.textContent = selectedAvatar || (profile.name||'?')[0].toUpperCase();
     av.style.fontSize = selectedAvatar ? '20px' : '15px';
   }
-  av.style.display = 'flex';
+  const wrap = document.getElementById('hdr-pro-wrap');
+  if (wrap) wrap.style.display = 'inline-flex';
+  const pip = document.getElementById('hdr-pro-pip');
+  if (pip) {
+    const isPro = profile.status === 'pro' || profile.status === 'vip';
+    pip.style.display = isPro ? 'flex' : 'none';
+    pip.style.background = profile.status === 'vip'
+      ? 'linear-gradient(135deg,var(--cyan),var(--violet))'
+      : 'linear-gradient(135deg,var(--violet),var(--pink))';
+  }
   const gear = document.getElementById('gear-btn');
   if (gear) gear.style.display = 'flex';
 }
@@ -2240,6 +2286,14 @@ async function sendChat() {
     const r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({message:msg,history:sanitizeHist(chatHist),profile,lang})});
     const data=await r.json(); typ.remove();
+    if (r.status===429) {
+      const isPro = profile?.status==='pro'||profile?.status==='vip';
+      const limitMsg = isPro
+        ? '<div class="chat-quota-msg"><div class="chat-quota-title">⏳ Дневной лимит AI</div><div class="chat-quota-body">50 запросов в день исчерпаны. Обновится в полночь по UTC.</div></div>'
+        : '<div class="chat-quota-msg"><div class="chat-quota-title">⚡ Лимит Free исчерпан</div><div class="chat-quota-body">5 AI-запросов в день закончились.\n\nС <b>Pro</b> — 50 запросов/день, неограниченный чат с Арни.</div><button class="chat-quota-btn" onclick="openProUpgrade()">Получить Pro →</button></div>';
+      const d=document.createElement('div'); d.className='msg p'; d.innerHTML=limitMsg; el.appendChild(d);
+      btn.disabled=false; scrollBottom(el); return;
+    }
     const rawReply=data.reply||'Не удалось получить ответ.';
     // Parse SET_TARGETS action from Арни's response
     const tagMatch=rawReply.match(/\{\{SET_TARGETS:([^}]+)\}\}/);
@@ -2606,6 +2660,33 @@ function renderProgress() {
 }
 
 // ══ PROFILE ══
+function _renderSubCard(status) {
+  const ru = lang !== 'en';
+  if (status === 'vip') {
+    return `<div class="sub-card vip">
+      <div class="sub-status-row"><div class="sub-badge vip">👑 VIP</div><div class="sub-plan-name">P.A.R.K.E.R. VIP</div></div>
+      <div class="sub-features">
+        <div class="sub-feature">${ru?'Безлимитный чат с Арни':'Unlimited Arnie chat'}</div>
+        <div class="sub-feature">${ru?'Приоритетная поддержка':'Priority support'}</div>
+      </div>
+    </div>`;
+  }
+  if (status === 'pro') {
+    return `<div class="sub-card pro">
+      <div class="sub-status-row"><div class="sub-badge pro">⭐ Pro</div><div class="sub-plan-name">P.A.R.K.E.R. Pro</div></div>
+      <div class="sub-features">
+        <div class="sub-feature">${ru?'50 AI-запросов в день':'50 AI requests/day'}</div>
+        <div class="sub-feature">${ru?'Неограниченный чат с Арни':'Unlimited Arnie chat'}</div>
+      </div>
+    </div>`;
+  }
+  return `<div class="sub-card free">
+    <div class="sub-status-row"><div class="sub-badge free">⚡ Free</div><div class="sub-plan-name">${ru?'5 запросов / день':'5 requests / day'}</div></div>
+    <div class="sub-desc">${ru?'Обновись до Pro — 50 AI-запросов в день и неограниченный чат с Арни':'Upgrade to Pro — 50 AI requests/day and unlimited Arnie chat'}</div>
+    <button class="sub-upgrade-btn" onclick="openProUpgrade()" style="touch-action:manipulation">${ru?'⭐ Получить Pro →':'⭐ Get Pro →'}</button>
+  </div>`;
+}
+
 function renderProfile() {
   const el=document.getElementById('profile-content'); if(!profile) return;
   const GOAL_MAP = {lose_weight:t('goal_lose'),gain_muscle:t('goal_gain'),maintain:t('goal_maintain'),recomposition:t('goal_recomp')};
@@ -2665,7 +2746,14 @@ function renderProfile() {
       <span class="set-nav-arr">›</span>
     </button>` : ''}
 
+    ${_renderSubCard(profile?.status)}
+
     <div class="disc">${t('pf_disc')}</div>`;
+}
+
+function openProUpgrade() {
+  haptic('medium');
+  toast(lang==='en' ? 'Type /subscribe in the bot' : 'Напиши /подписка в боте P.A.R.K.E.R.');
 }
 
 function openAdminPanel() {
