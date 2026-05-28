@@ -1004,8 +1004,14 @@ input[type=time]{color-scheme:dark}
     </div>
   </div>
 
+  <!-- BOOT SPLASH (показывается до решения куда идти) -->
+  <div id="boot-splash" style="position:fixed;inset:0;background:var(--bg);z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px">
+    <div style="font-size:32px;font-weight:900;letter-spacing:.6px;background:linear-gradient(135deg,#8B5CF6,#F72585);-webkit-background-clip:text;-webkit-text-fill-color:transparent">P.A.R.K.E.R.</div>
+    <div style="width:32px;height:32px;border-radius:50%;border:3px solid rgba(139,92,246,.18);border-top-color:#8B5CF6;animation:sp 1s linear infinite"></div>
+  </div>
+
   <!-- ONBOARDING -->
-  <div class="screen on" id="sc-onboard">
+  <div class="screen" id="sc-onboard">
     <!-- header: Arnie avatar + progress dots -->
     <div class="onb-iv-hdr">
       <div class="onb-iv-av">🤖</div>
@@ -1831,6 +1837,7 @@ function launchApp(isNew) {
   document.getElementById('nav').style.display = 'flex';
   updateHeader(); goTab('home'); initChat(isNew);
   loadLogsFromServer();
+  _startMultiDeviceSync();
   setTimeout(() => {
     _checkAutoAdapt();
     _maybeShowChallenge(isNew);
@@ -1838,9 +1845,60 @@ function launchApp(isNew) {
   }, 1500);
 }
 
+// ══ MULTI-DEVICE SYNC ══
+// Polling каждые 30с пока вкладка активна + refetch при возврате фокуса.
+// Решает рассинхрон iOS↔Mac без WebSocket.
+let _multiSyncTimer = null;
+
+async function _refetchAll(force = false) {
+  const fresh1 = await tryLoadFromServer(force);
+  await loadLogsFromServer(force);
+  if (fresh1) {
+    if (curTab === 'home') renderHome();
+    else if (curTab === 'tracker') renderTracker();
+    else if (curTab === 'progress') renderProgress();
+    else if (curTab === 'profile') renderProfile();
+  }
+}
+
+function _startMultiDeviceSync() {
+  if (_multiSyncTimer) clearInterval(_multiSyncTimer);
+  _multiSyncTimer = setInterval(() => {
+    if (document.visibilityState === 'visible') _refetchAll(true);
+  }, 30_000);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') _refetchAll(true);
+  });
+}
+
 // ══ SERVER SYNC ══
-async function tryLoadFromServer() {
+const STATE_TTL_MS = 5 * 60 * 1000;
+const STATE_KEY_TS = 'pk_state_ts';
+let _refetching = false;
+
+function _stateAgeMs() {
+  const ts = +(localStorage.getItem(STATE_KEY_TS) || 0);
+  return ts ? (Date.now() - ts) : Infinity;
+}
+
+function _showRefetchBadge(on) {
+  let b = document.getElementById('refetch-pip');
+  if (on && !b) {
+    b = document.createElement('div');
+    b.id = 'refetch-pip';
+    b.style.cssText = 'position:fixed;top:8px;right:8px;z-index:9999;background:rgba(139,92,246,.18);color:#a78bfa;font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;pointer-events:none;animation:sp 1s linear infinite';
+    b.textContent = '↻';
+    document.body.appendChild(b);
+  } else if (!on && b) b.remove();
+}
+
+async function tryLoadFromServer(force = false) {
   const tgId = getTgId(); if (!tgId) return false;
+  if (_refetching) return false;
+  if (!force && _stateAgeMs() < STATE_TTL_MS) return false;   // кэш свежий — пропуск
+  _refetching = true;
+  const wasStale = _stateAgeMs() > STATE_TTL_MS;
+  if (wasStale) _showRefetchBadge(true);
   try {
     const r = await fetch(`/api/user?tg_id=${tgId}`);
     if (!r.ok) return false;
@@ -1856,7 +1914,6 @@ async function tryLoadFromServer() {
     planData = { macros:data.macros||{}, nutrition_plan:data.nutrition_plan||'', workout_plan:data.workout_plan||'' };
     if (Array.isArray(data.chat_history) && data.chat_history.length)
       chatHist = data.chat_history;
-    // restore avatar: photo takes priority over emoji
     if (p.avatar_data) {
       avatarPhoto = p.avatar_data;
       selectedAvatar = '';
@@ -1868,8 +1925,14 @@ async function tryLoadFromServer() {
       localStorage.setItem('pk_avatar', selectedAvatar);
       localStorage.removeItem('pk_avatar_img');
     }
-    persist(); return true;
+    persist();
+    localStorage.setItem(STATE_KEY_TS, String(Date.now()));
+    return true;
   } catch { return false; }
+  finally {
+    _refetching = false;
+    _showRefetchBadge(false);
+  }
 }
 
 async function saveChatToServer() {
@@ -1935,13 +1998,16 @@ async function syncLogsToServer() {
   }
 }
 
-async function loadLogsFromServer() {
+async function loadLogsFromServer(force = false) {
   const tgId = getTgId(); if (!tgId) return;
+  const lastTs = +(localStorage.getItem('pk_logs_ts') || 0);
+  if (!force && Date.now() - lastTs < STATE_TTL_MS) return;
   try {
     const r = await fetch(`/api/logs?tg_id=${tgId}`);
     if (!r.ok) return;
     const data = await r.json();
     if (!data.found) return;
+    localStorage.setItem('pk_logs_ts', String(Date.now()));
     if (Array.isArray(data.food) && data.food.length > foodLogs.length)
       foodLogs = data.food;
     if (Array.isArray(data.weight_logs) && data.weight_logs.length > logs.length)
@@ -4576,28 +4642,32 @@ function updatePwaLabel() {
 }
 
 // ══ BOOT ══
+function _hideBootSplash() {
+  const s = document.getElementById('boot-splash');
+  if (s) s.remove();
+}
+function _showOnboarding() {
+  document.getElementById('sc-onboard').classList.add('on');
+  initOnboarding();
+}
 (async function boot() {
   if (profile && planData) {
+    _hideBootSplash();
     launchApp(false);
-    // Background sync — picks up server-side changes (badge, status, plan updates, chat history)
-    tryLoadFromServer().then(loaded => {
+    tryLoadFromServer(true).then(loaded => {
       if (!loaded) return;
       if (curTab === 'home') renderHome();
-      // Re-render chat if server returned more history than localStorage had
       if (curTab === 'chat') initChat(false);
       else {
-        // Silently update chat history so it's ready when user opens chat tab
         const el = document.getElementById('chat-msgs');
         if (el && chatHist.length > 0) initChat(false);
       }
     });
   } else {
-    const loaded = await tryLoadFromServer();
-    if (loaded && profile && planData) {
-      launchApp(false);
-    } else {
-      initOnboarding();
-    }
+    const loaded = await tryLoadFromServer(true);
+    _hideBootSplash();
+    if (loaded && profile && planData) launchApp(false);
+    else _showOnboarding();
   }
 })();
 </script>
