@@ -68,7 +68,7 @@ dp.include_router(payment_handler.router)
 WEBHOOK_PATH = f"/webhook/{BOT_TOKEN}"
 
 # ── Request body size limits ──────────────────────────────────────────────
-_UPLOAD_PATHS  = {"/api/food/photo"}
+_UPLOAD_PATHS  = {"/api/food/photo", "/api/chat"}
 _UPLOAD_LIMIT  = 10 * 1_024 * 1_024   # 10 MB — image uploads
 _DEFAULT_LIMIT =  1 * 1_024 * 1_024   # 1 MB  — all other API routes
 

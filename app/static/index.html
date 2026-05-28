@@ -4469,19 +4469,32 @@ let _chatMediaType = 'image/jpeg';
 document.getElementById('chat-photo-input').addEventListener('change', function() {
   const file = this.files[0];
   if (!file) return;
-  _chatMediaType = file.type || 'image/jpeg';
+  this.value = '';
   const reader = new FileReader();
   reader.onload = e => {
-    const dataUrl = e.target.result;
-    _chatImageB64 = dataUrl.split(',')[1];
-    const preview = document.getElementById('chat-img-preview');
-    const wrap    = document.getElementById('chat-img-preview-wrap');
-    if (preview) preview.src = dataUrl;
-    if (wrap) wrap.style.display = 'flex';
-    haptic('light');
+    const img = new Image();
+    img.onload = () => {
+      const MAX_PX = 1024;
+      let w = img.naturalWidth, h = img.naturalHeight;
+      if (w > MAX_PX || h > MAX_PX) {
+        if (w > h) { h = Math.round(h * MAX_PX / w); w = MAX_PX; }
+        else { w = Math.round(w * MAX_PX / h); h = MAX_PX; }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.75);
+      _chatImageB64 = dataUrl.split(',')[1];
+      _chatMediaType = 'image/jpeg';
+      const preview = document.getElementById('chat-img-preview');
+      const wrap    = document.getElementById('chat-img-preview-wrap');
+      if (preview) preview.src = dataUrl;
+      if (wrap) wrap.style.display = 'flex';
+      haptic('light');
+    };
+    img.src = e.target.result;
   };
   reader.readAsDataURL(file);
-  this.value = '';
 });
 
 function removeChatPhoto() {
