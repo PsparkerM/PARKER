@@ -1261,10 +1261,16 @@ async function saveReminderToBackend(type) {
 async function sendTestNotif() {
   const tgId = getTgId();
   if (!tgId) { toast('Открой через Telegram'); return; }
+  // Use saved admin secret if available (admin only), otherwise inform user
+  const secret = sessionStorage.getItem('adm_secret') || '';
+  if (!secret) {
+    toast(lang==='en' ? 'Test works only for admins' : 'Тест доступен только администратору');
+    return;
+  }
   try {
     const r = await fetch('/api/notify', {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({tg_id: tgId, text: '⚡ P.A.R.K.E.R. напоминает: время выпить воды и записать результаты! 💧'})
+      body: JSON.stringify({secret, tg_id: parseInt(tgId), text: '⚡ P.A.R.K.E.R. напоминает: время выпить воды и записать результаты! 💧'})
     });
     const d = await r.json();
     toast(d.ok ? t('t_notif_ok') : (lang==='en'?'Error: ':'Ошибка: ') + d.error);
@@ -1580,9 +1586,10 @@ function _collectWaterEntries() {
   const entries = [];
   for (let i = 0; i < 30; i++) {
     const d = new Date(); d.setDate(d.getDate() - i);
-    const key = d.toISOString().slice(0,10);
-    const ml = parseInt(localStorage.getItem('pk_water_' + key) || '0');
-    if (ml > 0) entries.push({date: key, ml});
+    const localeKey = d.toLocaleDateString('ru-RU');
+    const isoKey = d.toISOString().slice(0,10);
+    const ml = parseInt(localStorage.getItem('pk_water_' + localeKey) || '0');
+    if (ml > 0) entries.push({date: isoKey, ml});
   }
   return entries;
 }
@@ -1591,9 +1598,10 @@ function _collectStepsEntries() {
   const entries = [];
   for (let i = 0; i < 30; i++) {
     const d = new Date(); d.setDate(d.getDate() - i);
-    const key = d.toISOString().slice(0,10);
-    const steps = parseInt(localStorage.getItem('pk_steps_' + key) || '0');
-    if (steps > 0) entries.push({date: key, steps});
+    const localeKey = d.toLocaleDateString('ru-RU');
+    const isoKey = d.toISOString().slice(0,10);
+    const steps = parseInt(localStorage.getItem('pk_steps_' + localeKey) || '0');
+    if (steps > 0) entries.push({date: isoKey, steps});
   }
   return entries;
 }
@@ -1601,7 +1609,7 @@ function _collectStepsEntries() {
 async function syncLogsToServer() {
   const tgId = getTgId(); if (!tgId) return;
   try {
-    fetch('/api/logs', {
+    await fetch('/api/logs', {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({
         tg_id: tgId,
@@ -1612,7 +1620,7 @@ async function syncLogsToServer() {
         steps: _collectStepsEntries(),
       })
     });
-  } catch {}
+  } catch(e) { console.warn('syncLogs error', e); }
 }
 
 async function loadLogsFromServer() {
@@ -1629,9 +1637,21 @@ async function loadLogsFromServer() {
     if (Array.isArray(data.meas_logs) && data.meas_logs.length > measLogs.length)
       measLogs = data.meas_logs;
     if (Array.isArray(data.water))
-      data.water.forEach(e => { if (e.date && e.ml > 0) localStorage.setItem('pk_water_' + e.date, String(e.ml)); });
+      data.water.forEach(e => {
+        if (e.date && e.ml > 0) {
+          const [y,m,d] = e.date.split('-');
+          const lk = new Date(+y,+m-1,+d).toLocaleDateString('ru-RU');
+          localStorage.setItem('pk_water_' + lk, String(e.ml));
+        }
+      });
     if (Array.isArray(data.steps))
-      data.steps.forEach(e => { if (e.date && e.steps > 0) localStorage.setItem('pk_steps_' + e.date, String(e.steps)); });
+      data.steps.forEach(e => {
+        if (e.date && e.steps > 0) {
+          const [y,m,d] = e.date.split('-');
+          const lk = new Date(+y,+m-1,+d).toLocaleDateString('ru-RU');
+          localStorage.setItem('pk_steps_' + lk, String(e.steps));
+        }
+      });
     persist();
     if (curTab === 'home') renderHome();
     if (curTab === 'tracker') renderTracker();
@@ -1782,7 +1802,7 @@ function _buildStepCardHtml() {
     const maxDay  = Math.max(...days.map(d=>d.steps));
     const bars    = days.map(d=>{
       const h = Math.max(3, Math.round((d.steps/maxS)*72));
-      const bg = d.isToday ? '#00E5FF' : d.steps>0 ? 'rgba(0,229,255,.35)' : 'rgba(255,255,255,.06)';
+      const bg = d.isToday ? '#8B5CF6' : d.steps>0 ? 'rgba(139,92,246,.4)' : 'rgba(255,255,255,.06)';
       return `<div class="step-wbar" style="height:${h}px;background:${bg}"></div>`;
     }).join('');
     const labels = days.map(d=>
@@ -2019,7 +2039,8 @@ function renderHome() {
   const ringColor = calPct >= 100 ? 'var(--red)' : 'url(#calGrad)';
 
   const water = getWater();
-  const wPct = Math.min(100, Math.round(water/2500*100));
+  const waterTarget = Math.round((profile?.weight_kg||70) * 33);
+  const wPct = Math.min(100, Math.round(water/waterTarget*100));
 
   const dayNum = ((new Date().getDay()+6)%7)+1;
   const dayNames=['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
@@ -2113,8 +2134,8 @@ function renderHome() {
         <svg width="90" height="90" viewBox="0 0 96 96">
           <defs>
             <linearGradient id="calGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stop-color="#00E5FF"/>
-              <stop offset="100%" stop-color="#00b8cc"/>
+              <stop offset="0%" stop-color="#8B5CF6"/>
+              <stop offset="100%" stop-color="#F72585"/>
             </linearGradient>
           </defs>
           <circle cx="48" cy="48" r="${R}" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="8"/>
@@ -2125,9 +2146,9 @@ function renderHome() {
         <div class="ring-center"><div class="ring-cal">${remaining}</div><div class="ring-lbl">${t('home_remaining')}</div></div>
       </div>
       <div class="ring-stats">
-        ${[[t('home_protein'),'var(--cyan)',pct(consumed_safe.p,target.p),`${consumed_safe.p.toFixed(0)}/${target.p}г`],
+        ${[[t('home_protein'),'var(--violet)',pct(consumed_safe.p,target.p),`${consumed_safe.p.toFixed(0)}/${target.p}г`],
            [t('home_fat'),'#f87171',pct(consumed_safe.fat,target.fat),`${consumed_safe.fat.toFixed(0)}/${target.fat}г`],
-           [t('home_carbs'),'rgba(0,229,255,.5)',pct(consumed_safe.c,target.c),`${consumed_safe.c.toFixed(0)}/${target.c}г`],
+           [t('home_carbs'),'rgba(139,92,246,.4)',pct(consumed_safe.c,target.c),`${consumed_safe.c.toFixed(0)}/${target.c}г`],
           ].map(([n,c,p,v])=>`
           <div class="ring-row">
             <div class="ring-dot" style="background:${c}"></div>
@@ -2141,7 +2162,7 @@ function renderHome() {
     <div class="water-card">
       <div class="water-hd">
         <div class="water-ttl">${t('home_water')}</div>
-        <div class="water-info" id="water-info">${water} / 2500 мл</div>
+        <div class="water-info" id="water-info">${water} / ${waterTarget} мл</div>
       </div>
       <div class="water-bar-wrap"><div class="water-bar" id="water-bar" style="width:${wPct}%"></div></div>
       <div class="water-btns">
@@ -2313,16 +2334,20 @@ function renderTracker() {
 }
 
 function renderFoodLog(items) {
-  const rows=items.map(f=>`
+  const rows=items.map(f=>{
+    const txt = f.text||f.description||f.name||'—';
+    const disp = txt.length>45 ? txt.slice(0,45)+'…' : txt;
+    const timeStr = f.ts ? new Date(f.ts).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'}) : '';
+    return `
     <div class="food-log-item">
       <div style="flex:1">
-        <div class="fli-name">${f.text.length>45?f.text.slice(0,45)+'…':f.text}</div>
-        <span class="fli-time">${new Date(f.ts).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})}</span>
+        <div class="fli-name">${disp}</div>
+        ${timeStr?`<span class="fli-time">${timeStr}</span>`:''}
       </div>
       <div class="fli-cal">${Math.round(f.total?.calories||0)} ккал</div>
-      <div class="fli-edit" onclick="editFoodEntry(${f.ts})">✏️</div>
-      <div class="fli-del" onclick="deleteFoodEntry(${f.ts})">✕</div>
-    </div>`).join('');
+      <div class="fli-edit" onclick="editFoodEntry(${f.ts||0})">✏️</div>
+      <div class="fli-del" onclick="deleteFoodEntry(${f.ts||0})">✕</div>
+    </div>`;}).join('');
   const tot=todayFoodTotal();
   return rows+`<div class="day-total-row">
     <span style="color:var(--text2)">Итого:</span>
@@ -2447,7 +2472,7 @@ document.getElementById('photo-input').addEventListener('change',async function(
     if(data.error){if(res){res.style.display='block';res.innerHTML=`<div style="color:var(--red);font-size:13px;margin-top:8px">${escHtml(data.error)}</div>`;}return;}
     if(data.description&&document.getElementById('food-ta'))document.getElementById('food-ta').value=data.description;
     showFoodResult(data,data.description||'Фото');
-    if(data.advice&&res){const adv=document.createElement('div');adv.style.cssText='margin-top:10px;padding:10px 12px;background:rgba(0,229,255,.06);border:1px solid rgba(0,229,255,.2);border-radius:10px;font-size:12px;color:#a5f3fc;line-height:1.5';adv.textContent='💡 '+data.advice;res.appendChild(adv);}
+    if(data.advice&&res){const adv=document.createElement('div');adv.style.cssText='margin-top:10px;padding:10px 12px;background:rgba(139,92,246,.07);border:1px solid rgba(139,92,246,.25);border-radius:10px;font-size:12px;color:#c4b5fd;line-height:1.5';adv.textContent='💡 '+data.advice;res.appendChild(adv);}
   } catch{if(res){res.style.display='block';res.innerHTML='<div style="color:var(--red);font-size:13px;margin-top:8px">Ошибка</div>';}}
   finally{if(btn){btn.textContent='Посчитать КБЖУ →';btn.disabled=false;}this.value='';}
 });
@@ -2476,7 +2501,7 @@ function renderProgress() {
     const x=i=>pad+(i/(vals.length-1))*(W-pad*2);
     const y=v=>H-pad-((v-minV)/(maxV-minV))*(H-pad*2);
     const pts=vals.map((v,i)=>`${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
-    const dots=vals.map((v,i)=>`<circle cx="${x(i).toFixed(1)}" cy="${y(v).toFixed(1)}" r="${i===vals.length-1?5:3}" fill="${i===vals.length-1?'var(--cyan)':'rgba(0,229,255,.6)'}" stroke="none"/>`).join('');
+    const dots=vals.map((v,i)=>`<circle cx="${x(i).toFixed(1)}" cy="${y(v).toFixed(1)}" r="${i===vals.length-1?5:3}" fill="${i===vals.length-1?'var(--violet)':'rgba(139,92,246,.6)'}" stroke="none"/>`).join('');
     // Linear trend line
     const n=vals.length, sx=vals.reduce((_,__,i)=>_+i,0), sy=vals.reduce((a,v)=>a+v,0);
     const sxy=vals.reduce((a,v,i)=>a+i*v,0), sx2=vals.reduce((a,_,i)=>a+i*i,0);
@@ -2493,11 +2518,11 @@ function renderProgress() {
     </div>
     <svg width="100%" viewBox="0 0 ${W} ${H}" style="overflow:visible">
       <defs><linearGradient id="wg" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="var(--cyan)" stop-opacity=".2"/><stop offset="100%" stop-color="var(--cyan)" stop-opacity="0"/>
+        <stop offset="0%" stop-color="var(--violet)" stop-opacity=".25"/><stop offset="100%" stop-color="var(--violet)" stop-opacity="0"/>
       </linearGradient></defs>
       <polygon points="${pts} ${x(vals.length-1).toFixed(1)},${H} ${pad},${H}" fill="url(#wg)"/>
       <line x1="${tx0}" y1="${ty0}" x2="${tx1}" y2="${ty1}" stroke="rgba(255,255,255,.2)" stroke-width="1.5" stroke-dasharray="4,3"/>
-      <polyline points="${pts}" fill="none" stroke="var(--cyan)" stroke-width="2" stroke-linejoin="round"/>
+      <polyline points="${pts}" fill="none" stroke="var(--violet)" stroke-width="2" stroke-linejoin="round"/>
       ${dots}
     </svg>
     <div style="display:flex;justify-content:space-between;margin-top:4px;font-size:10px;color:var(--text3)">
@@ -2514,7 +2539,7 @@ function renderProgress() {
     const target=_effCal;
     const bars=calLogs.map(l=>{
       const p=Math.max(4,Math.round(l.cal/maxCal*100));
-      const c=l.cal>target*1.1?'var(--red)':l.cal<target*0.7?'rgba(0,229,255,.4)':'var(--cyan)';
+      const c=l.cal>target*1.1?'var(--red)':l.cal<target*0.7?'rgba(139,92,246,.3)':'var(--violet)';
       return `<div class="wb" style="height:${p}%;background:${c};opacity:${l.date===todayKey()?1:.7}" title="${l.date}: ${Math.round(l.cal)} ккал"></div>`;
     }).join('');
     const labels=calLogs.map(l=>`<div class="wd-lbl ${l.date===todayKey()?'today':''}">${l.date.slice(5).replace('-','/')}</div>`).join('');
@@ -3719,7 +3744,7 @@ function triggerPwaInstall() {
     const msg = ru
       ? 'На iPhone: нажми кнопку «Поделиться» в Safari, затем «На экран Домой»'
       : 'On iPhone: tap the Share button in Safari, then «Add to Home Screen»';
-    toast(msg, 5000);
+    toast(msg);
   }
 }
 

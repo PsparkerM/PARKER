@@ -127,6 +127,14 @@ async def lifespan(app: FastAPI):
             "Добавь WEBHOOK_SECRET_TOKEN в Railway Variables → Settings → Variables."
         )
 
+    from bot.config import ADMIN_SECRET
+    if not ADMIN_SECRET:
+        logging.warning(
+            "⚠️  ADMIN_SECRET не задан — /admin будет возвращать 403 для любого запроса. "
+            "Добавь ADMIN_SECRET=<любой_пароль> в Railway → Settings → Variables. "
+            "После этого открывай: /admin?secret=<твой_пароль>"
+        )
+
     if WEBAPP_URL:
         url = f"{WEBAPP_URL.rstrip('/')}{WEBHOOK_PATH}"
         try:
