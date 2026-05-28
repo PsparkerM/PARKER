@@ -1021,7 +1021,11 @@ input[type=time]{color-scheme:dark}
     <div class="onb-iv-bottom" id="onb-iv-bottom"></div>
   </div>
 
-  <div class="screen" id="sc-home"><div class="home-scrl" id="home-content"></div></div>
+  <div class="screen" id="sc-home"><div class="home-scrl" id="home-content">
+    <div class="skel-card"><div class="skel skel-circle" style="width:90px;height:90px;align-self:flex-start"></div><div class="skel skel-line lg"></div><div class="skel skel-line"></div><div class="skel skel-line sm"></div></div>
+    <div class="skel-card"><div class="skel skel-line lg"></div><div class="skel skel-line"></div></div>
+    <div class="skel-card"><div class="skel skel-line lg"></div><div class="skel skel-line"></div><div class="skel skel-line sm"></div></div>
+  </div></div>
   <div class="screen" id="sc-chat">
     <div class="chat-wrap" id="chat-msgs"></div>
     <div class="chat-input-area">
@@ -1238,6 +1242,12 @@ input[type=time]{color-scheme:dark}
       <button class="rem-close" onclick="closeNotifModal()">✕</button>
     </div>
     <div class="rem-body" id="rem-body"></div>
+    <div style="padding:0 18px">
+      <button onclick="sendTestNotif(_remType)" style="width:100%;padding:11px;border-radius:var(--radius-sm);font-size:13px;font-weight:700;
+        background:rgba(0,200,255,.08);border:1px solid rgba(0,200,255,.22);color:var(--cyan);touch-action:manipulation">
+        ⚡ Отправить тестовое в бота
+      </button>
+    </div>
     <div class="rem-footer">
       <button class="rem-cancel-btn" onclick="closeNotifModal()" id="rem-cancel-lbl">Отмена</button>
       <button class="rem-save-btn" onclick="saveNotifModal()" id="rem-save-lbl">Сохранить ✓</button>
@@ -1551,14 +1561,15 @@ async function saveReminderToBackend(type) {
   } catch { toast(t('t_conn_err')); }
 }
 
-async function sendTestNotif() {
+async function sendTestNotif(type) {
   const tgId = getTgId();
   if (!tgId) { toast(lang==='en' ? 'Open via Telegram' : 'Открой через Telegram'); return; }
+  const url = type ? `/api/notify/test?type=${encodeURIComponent(type)}` : '/api/notify/test';
   try {
-    const r = await fetch('/api/notify/test', { method:'POST' });
+    const r = await fetch(url, { method:'POST' });
     const d = await r.json();
     toast(d.ok
-      ? (lang==='en' ? '✓ Test notification sent to bot' : '✓ Тестовое уведомление отправлено в бота')
+      ? (lang==='en' ? '✓ Sent to bot — check Telegram' : '✓ Отправлено в бота — смотри Telegram')
       : (lang==='en' ? 'Error: ' : 'Ошибка: ') + (d.error || ''));
   } catch { toast(t('t_conn_err')); }
 }
@@ -1889,18 +1900,6 @@ function _collectWaterEntries() {
   return entries;
 }
 
-function _collectStepsEntries() {
-  const entries = [];
-  for (let i = 0; i < 30; i++) {
-    const d = new Date(); d.setDate(d.getDate() - i);
-    const localeKey = d.toLocaleDateString('ru-RU');
-    const isoKey = d.toISOString().slice(0,10);
-    const steps = parseInt(localStorage.getItem('pk_steps_' + localeKey) || '0');
-    if (steps > 0) entries.push({date: isoKey, steps});
-  }
-  return entries;
-}
-
 async function syncLogsToServer() {
   const tgId = getTgId(); if (!tgId) return;
   try {
@@ -1912,7 +1911,6 @@ async function syncLogsToServer() {
         weight_logs: logs.slice(-365),
         meas_logs: measLogs.slice(-365),
         water: _collectWaterEntries(),
-        steps: _collectStepsEntries(),
       })
     });
   } catch(e) { console.warn('syncLogs error', e); }
@@ -1937,14 +1935,6 @@ async function loadLogsFromServer() {
           const [y,m,d] = e.date.split('-');
           const lk = new Date(+y,+m-1,+d).toLocaleDateString('ru-RU');
           localStorage.setItem('pk_water_' + lk, String(e.ml));
-        }
-      });
-    if (Array.isArray(data.steps))
-      data.steps.forEach(e => {
-        if (e.date && e.steps > 0) {
-          const [y,m,d] = e.date.split('-');
-          const lk = new Date(+y,+m-1,+d).toLocaleDateString('ru-RU');
-          localStorage.setItem('pk_steps_' + lk, String(e.steps));
         }
       });
     persist();
@@ -2731,6 +2721,8 @@ function saveMetrics() {
   const i=logs.findIndex(l=>l.date===today);
   if(i>=0)Object.assign(logs[i],entry); else logs.push(entry);
   if(wt&&profile)profile.weight_kg=wt;
+  if(wt&&!localStorage.getItem('pk_baseline_weight'))
+    localStorage.setItem('pk_baseline_weight', String(wt));
   if(chest||waist||hips||arm){
     const mi=measLogs.findIndex(m=>m.date===today);
     const me={date:today,chest:chest||null,waist:waist||null,hips:hips||null,arm:arm||null};

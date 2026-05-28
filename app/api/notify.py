@@ -1,6 +1,6 @@
 import hmac
 import logging
-from typing import Annotated
+from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
@@ -21,6 +21,14 @@ _TEST_MSG = (
     "⚖️ Взвешивание работает!\n\n"
     "Напоминания настроены корректно ✓"
 )
+
+_TYPE_MESSAGES = {
+    "food":       "🍽 Время покушать!\n\nЭто как будет выглядеть твоё напоминание о приёме пищи.\nНе забудь записать что съел в трекер.",
+    "water":      "💧 Пора выпить воды!\n\nЭто пример напоминания о воде. Норма — 30 мл на кг веса.",
+    "log":        "📏 Время взвешивания и замеров!\n\nЗапиши данные в трекер — Арни увидит динамику и подскажет если что-то не так.",
+    "workout":    "💪 Пора тренироваться!\n\nЭто пример напоминания о тренировке. Открой план дня и вперёд.",
+    "motivation": "🔥 Привет от Арни!\n\nКаждый день — шаг вперёд. Не сравнивай себя со вчерашним собой — побеждай сегодняшнего.",
+}
 
 
 class NotifyRequest(BaseModel):
@@ -44,10 +52,15 @@ async def send_notification(body: NotifyRequest):
 
 
 @router.post("/api/notify/test")
-async def send_test_notification(tg_id: int = Depends(get_current_tg_id)):
-    """Any authenticated user can send themselves a test reminder."""
+async def send_test_notification(
+    type: Optional[str] = None,
+    tg_id: int = Depends(get_current_tg_id),
+):
+    """Any authenticated user can send themselves a test reminder.
+    Optional `?type=<food|water|log|workout|motivation>` sends a type-specific preview."""
+    text = _TYPE_MESSAGES.get((type or "").lower(), _TEST_MSG)
     try:
-        await bot.send_message(chat_id=tg_id, text=_TEST_MSG)
+        await bot.send_message(chat_id=tg_id, text=text)
         return JSONResponse({"ok": True})
     except Exception as e:
         logging.warning("test notify error tg_id=%s: %s", tg_id, e)
