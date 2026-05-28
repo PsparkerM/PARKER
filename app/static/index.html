@@ -854,6 +854,139 @@ input[type=time]{color-scheme:dark}
     box-shadow:0 4px 32px rgba(139,92,246,.12),0 0 0 1px rgba(139,92,246,.15);
     transition:border-color .2s,box-shadow .2s}
 }
+
+/* ── WEEK PROGRESS CARD ── */
+.week-prog-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px}
+.week-prog-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.week-prog-ttl{font-size:14px;font-weight:700}
+.week-prog-cal-btn{font-size:12px;font-weight:700;color:var(--cyan);background:none;border:none;padding:4px 8px;touch-action:manipulation}
+.week-prog-days{display:flex;gap:6px;align-items:flex-end;margin-bottom:8px}
+.wpd{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px}
+.wpd-bar-wrap{width:100%;height:40px;display:flex;align-items:flex-end;justify-content:center}
+.wpd-bar{width:100%;border-radius:4px 4px 0 0;min-height:3px;transition:height .4s cubic-bezier(.25,.46,.45,.94)}
+.wpd-day{font-size:10px;color:var(--text3);font-weight:600}
+.wpd-day.td{color:var(--gold);font-weight:800}
+.wpd-dot{width:6px;height:6px;border-radius:50%}
+.week-prog-legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:4px}
+.week-prog-leg-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text3)}
+.week-prog-leg-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0}
+
+/* ── 7-DAY CHALLENGE ── */
+.chal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:400;
+  display:flex;align-items:flex-end;justify-content:center;
+  opacity:0;pointer-events:none;transition:opacity .25s}
+.chal-overlay.on{opacity:1;pointer-events:all}
+.chal-sheet{background:linear-gradient(180deg,rgba(20,20,35,.99) 0%,rgba(12,12,20,.99) 100%);
+  border-radius:28px 28px 0 0;width:100%;max-width:480px;padding:24px 20px 40px;
+  transform:translateY(100%);transition:transform .35s cubic-bezier(.32,1,.23,1);
+  box-shadow:0 -4px 40px rgba(139,92,246,.3)}
+.chal-overlay.on .chal-sheet{transform:translateY(0)}
+.chal-handle{width:40px;height:4px;border-radius:2px;background:rgba(255,255,255,.2);margin:0 auto 20px}
+.chal-title{font-size:22px;font-weight:900;text-align:center;margin-bottom:6px;
+  background:linear-gradient(135deg,var(--cyan),var(--violet));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.chal-sub{font-size:14px;color:var(--text2);text-align:center;margin-bottom:18px;line-height:1.5}
+.chal-days-row{display:flex;gap:8px;justify-content:center;margin-bottom:16px}
+.chal-day-chip{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:14px;font-weight:800;border:2px solid var(--border2);background:var(--surface);color:var(--text3);
+  transition:all .2s;flex-shrink:0}
+.chal-day-chip.done{background:linear-gradient(135deg,var(--emerald),rgba(34,197,94,.7));border-color:var(--emerald);color:#fff;box-shadow:0 0 12px rgba(34,197,94,.4)}
+.chal-day-chip.today{border-color:var(--cyan);background:rgba(0,200,255,.12);color:var(--cyan);box-shadow:0 0 10px rgba(0,200,255,.3)}
+.chal-prog-bar-wrap{height:6px;background:rgba(255,255,255,.07);border-radius:3px;overflow:hidden;margin-bottom:8px}
+.chal-prog-bar{height:100%;background:linear-gradient(90deg,var(--cyan),var(--violet));border-radius:3px;transition:width .5s cubic-bezier(.25,.46,.45,.94)}
+.chal-prog-lbl{font-size:12px;color:var(--text2);text-align:center;margin-bottom:18px}
+.chal-rules{background:rgba(0,200,255,.06);border:1px solid rgba(0,200,255,.15);border-radius:14px;padding:12px 14px;margin-bottom:18px}
+.chal-rule{font-size:13px;color:var(--text2);display:flex;align-items:center;gap:8px;padding:4px 0;line-height:1.4}
+.chal-accept-btn{width:100%;padding:16px;border-radius:16px;font-size:17px;font-weight:800;
+  background:linear-gradient(135deg,var(--cyan),var(--violet));color:#fff;
+  box-shadow:0 4px 24px rgba(0,200,255,.3);transition:transform .1s;min-height:56px;touch-action:manipulation}
+.chal-accept-btn:active{transform:scale(.97)}
+.chal-dismiss{width:100%;padding:12px;font-size:13px;color:var(--text3);background:none;border:none;margin-top:8px}
+/* Challenge mini-card on home */
+.chal-card{background:linear-gradient(135deg,rgba(0,200,255,.08),rgba(139,92,246,.05));
+  border:1px solid rgba(0,200,255,.2);border-radius:var(--radius);padding:14px 16px;cursor:pointer;
+  touch-action:manipulation;transition:opacity .15s}
+.chal-card:active{opacity:.8}
+.chal-card-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.chal-card-ttl{font-size:14px;font-weight:800;color:var(--cyan)}
+.chal-card-badge{font-size:11px;font-weight:700;padding:3px 8px;border-radius:8px;
+  background:rgba(0,200,255,.15);border:1px solid rgba(0,200,255,.3);color:var(--cyan)}
+
+/* ── CALENDAR PANEL ── */
+.cal-month-hd{display:flex;align-items:center;justify-content:space-between;padding:10px 16px 14px}
+.cal-month-nav{width:36px;height:36px;border-radius:50%;border:1px solid var(--border2);background:var(--surface2);
+  font-size:18px;color:var(--text2);display:flex;align-items:center;justify-content:center;touch-action:manipulation}
+.cal-month-nav:active{opacity:.7}
+.cal-month-name{font-size:16px;font-weight:800}
+.cal-weekdays{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;padding:0 16px;margin-bottom:6px}
+.cal-wd{font-size:10px;font-weight:700;color:var(--text3);text-align:center;padding:4px 0;text-transform:uppercase;letter-spacing:.3px}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;padding:0 16px 16px}
+.cal-cell{aspect-ratio:1;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  cursor:pointer;position:relative;touch-action:manipulation;transition:background .12s}
+.cal-cell:active{background:var(--surface2)}
+.cal-cell.empty{pointer-events:none}
+.cal-cell-num{font-size:14px;font-weight:700;line-height:1}
+.cal-cell.today .cal-cell-num{color:var(--cyan);font-weight:900}
+.cal-cell.today::before{content:'';position:absolute;inset:0;border-radius:10px;border:1.5px solid var(--cyan)}
+.cal-cell.has-wo::after,.cal-cell.has-food::after,.cal-cell.has-both::after{
+  content:'';position:absolute;bottom:4px;width:4px;height:4px;border-radius:50%}
+.cal-cell.has-wo::after{background:var(--violet)}
+.cal-cell.has-food::after{background:var(--emerald)}
+.cal-cell.has-both::after{background:var(--cyan)}
+.cal-cell.future{opacity:.35;pointer-events:none}
+.cal-day-sheet-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:320;
+  opacity:0;pointer-events:none;transition:opacity .2s}
+.cal-day-sheet-overlay.on{opacity:1;pointer-events:all}
+.cal-day-sheet{position:fixed;bottom:0;left:0;right:0;z-index:321;
+  background:linear-gradient(180deg,rgba(14,14,28,.99) 0%,rgba(10,10,22,.99) 100%);
+  border-radius:24px 24px 0 0;max-height:80vh;display:flex;flex-direction:column;
+  transform:translateY(100%);transition:transform .3s cubic-bezier(.32,1,.23,1);
+  box-shadow:0 -4px 40px rgba(0,0,0,.6);max-width:480px;margin:0 auto}
+.cal-day-sheet.on{transform:translateY(0)}
+.cal-day-sheet-hd{display:flex;align-items:center;justify-content:space-between;padding:14px 18px 10px;border-bottom:1px solid var(--border);flex-shrink:0}
+.cal-day-sheet-ttl{font-size:17px;font-weight:800}
+.cal-day-sheet-cls{font-size:20px;color:var(--text3);padding:4px 8px}
+.cal-day-sheet-body{flex:1;min-height:0;overflow-y:auto;padding:14px 16px 32px;-webkit-overflow-scrolling:touch}
+
+/* ── iOS INSTALL SHEET ── */
+.ios-install-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:350;
+  opacity:0;pointer-events:none;transition:opacity .25s}
+.ios-install-overlay.on{opacity:1;pointer-events:all}
+.ios-install-sheet{position:fixed;bottom:0;left:0;right:0;z-index:351;
+  background:linear-gradient(180deg,rgba(14,14,28,.99),rgba(10,10,22,.99));
+  border-radius:24px 24px 0 0;padding:20px 20px 40px;
+  transform:translateY(100%);transition:transform .32s cubic-bezier(.32,1,.23,1);
+  box-shadow:0 -4px 40px rgba(0,0,0,.6),0 -1px 0 rgba(0,200,255,.15);
+  max-width:480px;margin:0 auto}
+.ios-install-sheet.on{transform:translateY(0)}
+.ios-install-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.ios-install-ttl{font-size:18px;font-weight:800}
+.ios-install-cls{font-size:20px;color:var(--text3);padding:4px 8px;background:none;border:none}
+.ios-step{display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
+.ios-step:last-child{border-bottom:none}
+.ios-step-num{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--cyan),var(--violet));
+  color:#fff;font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ios-step-txt{font-size:14px;color:var(--text2);line-height:1.5;padding-top:4px}
+.ios-step-ico{font-size:18px;flex-shrink:0;padding-top:3px}
+
+/* ── CHAT PHOTO ── */
+.chat-photo-btn{width:44px;height:44px;border-radius:50%;flex-shrink:0;
+  border:1.5px solid rgba(139,92,246,.35);background:rgba(139,92,246,.08);color:var(--violet);
+  font-size:20px;display:flex;align-items:center;justify-content:center;transition:opacity .15s;touch-action:manipulation}
+.chat-photo-btn:active{opacity:.7}
+.chat-img-preview-wrap{padding:8px 12px 0;display:flex;gap:8px;align-items:center}
+.chat-img-preview{width:60px;height:60px;border-radius:10px;object-fit:cover;border:1.5px solid var(--border2)}
+.chat-img-remove{width:22px;height:22px;border-radius:50%;background:rgba(244,63,94,.2);border:1px solid rgba(244,63,94,.4);
+  color:var(--red);font-size:12px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+
+/* ── AUTO-ADAPT BANNER ── */
+.auto-adapt-banner{background:linear-gradient(135deg,rgba(139,92,246,.1),rgba(139,92,246,.05));
+  border:1px solid rgba(139,92,246,.25);border-radius:var(--radius);padding:14px 16px;
+  display:flex;align-items:center;gap:12px;cursor:pointer;touch-action:manipulation;transition:opacity .15s}
+.auto-adapt-banner:active{opacity:.8}
+.auto-adapt-ico{font-size:28px;flex-shrink:0}
+.auto-adapt-txt{flex:1}
+.auto-adapt-title{font-size:14px;font-weight:800;color:var(--violet);margin-bottom:2px}
+.auto-adapt-sub{font-size:12px;color:var(--text2);line-height:1.4}
 </style>
 </head>
 <body>
@@ -892,7 +1025,13 @@ input[type=time]{color-scheme:dark}
   <div class="screen" id="sc-chat">
     <div class="chat-wrap" id="chat-msgs"></div>
     <div class="chat-input-area">
+      <div id="chat-img-preview-wrap" style="display:none" class="chat-img-preview-wrap">
+        <img class="chat-img-preview" id="chat-img-preview" src="" alt="">
+        <div class="chat-img-remove" onclick="removeChatPhoto()">✕</div>
+        <span style="font-size:12px;color:var(--text3);flex:1">Фото прикреплено</span>
+      </div>
       <div class="chat-row">
+        <button class="chat-photo-btn" onclick="document.getElementById('chat-photo-input').click()">📷</button>
         <textarea class="chat-in" id="chat-in" rows="1" placeholder="Спроси Арни... / Ask Arnie..."></textarea>
         <button class="send-btn" id="chat-send">➤</button>
       </div>
@@ -1131,6 +1270,78 @@ input[type=time]{color-scheme:dark}
 
   <input type="file" id="photo-input" accept="image/*" capture="environment">
   <input type="file" id="avatar-photo-input" accept="image/*" style="display:none">
+  <input type="file" id="chat-photo-input" accept="image/*" style="display:none">
+
+  <!-- CALENDAR FULL-SCREEN PANEL -->
+  <div class="sub-panel" id="cal-panel">
+    <div class="sub-panel-hdr">
+      <button class="sub-back-btn" onclick="closeSubPanel('cal-panel')">‹ Назад</button>
+      <div class="sub-panel-ttl" id="cal-panel-ttl">📅 Планировщик</div>
+      <div style="min-width:70px"></div>
+    </div>
+    <div style="flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain">
+      <div class="cal-month-hd">
+        <button class="cal-month-nav" onclick="calPrevMonth()">‹</button>
+        <div class="cal-month-name" id="cal-month-name"></div>
+        <button class="cal-month-nav" onclick="calNextMonth()">›</button>
+      </div>
+      <div class="cal-weekdays" id="cal-weekdays"></div>
+      <div class="cal-grid" id="cal-grid"></div>
+    </div>
+  </div>
+
+  <!-- CALENDAR DAY SHEET -->
+  <div class="cal-day-sheet-overlay" id="cal-day-overlay" onclick="closeCalDaySheet()"></div>
+  <div class="cal-day-sheet" id="cal-day-sheet">
+    <div class="cal-day-sheet-hd">
+      <div class="cal-day-sheet-ttl" id="cal-day-ttl"></div>
+      <button class="cal-day-sheet-cls" onclick="closeCalDaySheet()">✕</button>
+    </div>
+    <div class="cal-day-sheet-body" id="cal-day-body"></div>
+  </div>
+
+  <!-- 7-DAY CHALLENGE -->
+  <div class="chal-overlay" id="chal-overlay">
+    <div class="chal-sheet">
+      <div class="chal-handle"></div>
+      <div class="chal-title">🔥 7-дневный вызов</div>
+      <div class="chal-sub">7 дней держишь план — получаешь 30 дней подписки бесплатно</div>
+      <div class="chal-days-row" id="chal-days-row"></div>
+      <div class="chal-prog-bar-wrap"><div class="chal-prog-bar" id="chal-prog-bar" style="width:0%"></div></div>
+      <div class="chal-prog-lbl" id="chal-prog-lbl">0 из 7 дней</div>
+      <div class="chal-rules">
+        <div class="chal-rule"><span>💧</span>Выпить дневную норму воды</div>
+        <div class="chal-rule"><span>🥗</span>Записать все приёмы пищи</div>
+        <div class="chal-rule"><span>💪</span>Отметить тренировку (или день отдыха)</div>
+      </div>
+      <button class="chal-accept-btn" onclick="acceptChallenge()">Принять вызов 🔥</button>
+      <button class="chal-dismiss" onclick="dismissChallenge()">Не сейчас</button>
+    </div>
+  </div>
+
+  <!-- iOS INSTALL SHEET -->
+  <div class="ios-install-overlay" id="ios-install-overlay" onclick="closeIosInstall()"></div>
+  <div class="ios-install-sheet" id="ios-install-sheet">
+    <div class="ios-install-hd">
+      <div class="ios-install-ttl">📲 На экран домой</div>
+      <button class="ios-install-cls" onclick="closeIosInstall()">✕</button>
+    </div>
+    <div class="ios-step">
+      <div class="ios-step-num">1</div>
+      <span class="ios-step-ico">⬆️</span>
+      <div class="ios-step-txt">Нажми кнопку <b>«Поделиться»</b> (квадрат со стрелкой) в нижней панели Safari</div>
+    </div>
+    <div class="ios-step">
+      <div class="ios-step-num">2</div>
+      <span class="ios-step-ico">📋</span>
+      <div class="ios-step-txt">Прокрути вниз и выбери <b>«На экран «Домой»»</b></div>
+    </div>
+    <div class="ios-step">
+      <div class="ios-step-num">3</div>
+      <span class="ios-step-ico">✅</span>
+      <div class="ios-step-txt">Нажми <b>«Добавить»</b> в правом углу — приложение появится на экране</div>
+    </div>
+  </div>
 
   <div class="qe-overlay" id="qe-overlay" onclick="closeQE()"></div>
   <div class="qe-sheet" id="qe-sheet">
@@ -1280,13 +1491,14 @@ function removeAvatarPhoto() {
 }
 
 function toggleNotif(key) {
+  if (!notifSettings[key]) notifSettings[key] = {active:false};
   notifSettings[key].active = !notifSettings[key].active;
   localStorage.setItem('pk_notif', JSON.stringify(notifSettings));
   renderProfile();
   const notifEl = document.getElementById('pf-notif-content');
   if (notifEl && document.getElementById('pf-notif-panel')?.classList.contains('on')) renderPfNotifContent(notifEl);
-  const typeMap = {food:'meal', water:'water', log:'log'};
-  saveReminderToBackend(typeMap[key]);
+  const typeMap = {food:'meal', water:'water', log:'log', workout:'workout', motivation:'motivation'};
+  saveReminderToBackend(typeMap[key] || key);
 }
 
 function notifSubText(key) {
@@ -1307,19 +1519,31 @@ function notifSubText(key) {
     return txt + nightLabel + ' ›';
   }
   if (key === 'log') return (s.time || '21:00') + ' ›';
+  if (key === 'workout') {
+    const daysRu = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+    const daysEn = ['Mo','Tu','We','Th','Fr','Sa','Su'];
+    const names  = lang !== 'en' ? daysRu : daysEn;
+    const dayStr = (s.days || []).map(i => names[i]).join(' ');
+    return `${s.time || '07:00'} · ${dayStr} ›`;
+  }
+  if (key === 'motivation') {
+    return `${s.time || '09:00'} ›`;
+  }
   return '';
 }
 
 async function saveReminderToBackend(type) {
   const tgId = getTgId();
   if (!tgId) { toast(lang==='en' ? 'Open via Telegram to save reminders' : 'Открой через Telegram чтобы сохранить напоминание'); return; }
-  const keyMap = {meal:'food', water:'water', log:'log'};
-  const ns = notifSettings[keyMap[type]];
-  const base = {tg_id: tgId, type, active: ns.active, utc_offset: ns.utc_offset ?? getUtcOffset()};
+  const nsKeyMap = {meal:'food', water:'water', log:'log', workout:'workout', motivation:'motivation'};
+  const nsKey = nsKeyMap[type] || type;
+  const ns = notifSettings[nsKey] || {};
+  const base = {tg_id: tgId, type, active: ns.active ?? false, utc_offset: ns.utc_offset ?? getUtcOffset()};
   let payload;
-  if (type === 'meal')  payload = {...base, times: ns.times, labels: ns.labels};
+  if (type === 'meal')       payload = {...base, times: ns.times, labels: ns.labels};
   else if (type === 'water') payload = {...base, interval_min: ns.interval_min, night_mode: ns.night_mode};
-  else payload = {...base, time: ns.time};
+  else if (type === 'workout' || type === 'motivation') payload = {...base, time: ns.time};
+  else                       payload = {...base, time: ns.time};
   try {
     const r = await fetch('/api/reminders', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
     const d = await r.json();
@@ -1329,20 +1553,13 @@ async function saveReminderToBackend(type) {
 
 async function sendTestNotif() {
   const tgId = getTgId();
-  if (!tgId) { toast('Открой через Telegram'); return; }
-  // Use saved admin secret if available (admin only), otherwise inform user
-  const secret = sessionStorage.getItem('adm_secret') || '';
-  if (!secret) {
-    toast(lang==='en' ? 'Test works only for admins' : 'Тест доступен только администратору');
-    return;
-  }
+  if (!tgId) { toast(lang==='en' ? 'Open via Telegram' : 'Открой через Telegram'); return; }
   try {
-    const r = await fetch('/api/notify', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({secret, tg_id: parseInt(tgId), text: '⚡ P.A.R.K.E.R. напоминает: время выпить воды и записать результаты! 💧'})
-    });
+    const r = await fetch('/api/notify/test', { method:'POST' });
     const d = await r.json();
-    toast(d.ok ? t('t_notif_ok') : (lang==='en'?'Error: ':'Ошибка: ') + d.error);
+    toast(d.ok
+      ? (lang==='en' ? '✓ Test notification sent to bot' : '✓ Тестовое уведомление отправлено в бота')
+      : (lang==='en' ? 'Error: ' : 'Ошибка: ') + (d.error || ''));
   } catch { toast(t('t_conn_err')); }
 }
 
@@ -1581,6 +1798,10 @@ async function submitOnboarding() {
     await new Promise(r=>setTimeout(r,400));
     planData = data; profile = {...onbData};
     chatHist = []; setWater(0);
+    // Сохраняем стартовый вес как baseline (однократно)
+    if (onbData.weight_kg && !localStorage.getItem('pk_baseline_weight')) {
+      localStorage.setItem('pk_baseline_weight', String(onbData.weight_kg));
+    }
     persist();
     launchApp(true);
   } catch(e) {
@@ -1599,6 +1820,11 @@ function launchApp(isNew) {
   document.getElementById('nav').style.display = 'flex';
   updateHeader(); goTab('home'); initChat(isNew);
   loadLogsFromServer();
+  setTimeout(() => {
+    _checkAutoAdapt();
+    _maybeShowChallenge(isNew);
+    _checkChallengeToday();
+  }, 1500);
 }
 
 // ══ SERVER SYNC ══
@@ -1800,171 +2026,78 @@ function _mealIcon(label) {
   return '🍴';
 }
 
-function getSteps() { return parseInt(localStorage.getItem('pk_steps_'+todayKey())||'0'); }
-function setSteps(v) { localStorage.setItem('pk_steps_'+todayKey(), String(v)); }
-function getStepsForDate(k) { return parseInt(localStorage.getItem('pk_steps_'+k)||'0'); }
-function addSteps(n) {
-  const v = Math.max(0, getSteps()+n);
-  setSteps(v);
-  _updateStepCard();
-  if (n>0) toast(`+${n.toLocaleString()} 👟`);
-  scheduleSyncLogs();
+// ── WEEK PROGRESS CARD (replaces step tracker) ──
+const DAILY_QUOTES_RU = [
+  'Результат — это сумма маленьких решений каждый день.',
+  'Не жди подходящего момента. Создай его.',
+  'Слабость — это выбор. Сила — тоже.',
+  'Каждая тренировка — инвестиция в себя.',
+  'Дисциплина делает то, что мотивация не может.',
+  'Прогресс, а не совершенство.',
+  'Тело добивается того, во что верит разум.',
+];
+const DAILY_QUOTES_EN = [
+  'Results are the sum of small daily decisions.',
+  'Don\'t wait for the right moment. Create it.',
+  'Weakness is a choice. So is strength.',
+  'Every workout is an investment in yourself.',
+  'Discipline does what motivation can\'t.',
+  'Progress, not perfection.',
+  'The body achieves what the mind believes.',
+];
+
+function _getDailyQuote() {
+  const day = new Date().getDay();
+  const arr = lang !== 'en' ? DAILY_QUOTES_RU : DAILY_QUOTES_EN;
+  return arr[day % arr.length];
 }
 
-// Step tracker state (persists across renderHome)
-let _stepView          = 'day';
-let _stepTrackerActive = false;
-let _stepSessionCount  = 0;
-let _stepMotionHandler = null;
-let _stepRising        = false;
-let _stepLastAt        = 0;
-const _STEP_THRESHOLD  = 11;
-const _STEP_MIN_GAP    = 300;
-
-function getLast7Days() {
+function _buildWeekProgressCard() {
   const ru = lang !== 'en';
-  const names = ru
-    ? ['Вс','Пн','Вт','Ср','Чт','Пт','Сб']
-    : ['Su','Mo','Tu','We','Th','Fr','Sa'];
+  const today = todayKey();
+  const dayNamesRu = ['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
+  const dayNamesEn = ['Su','Mo','Tu','We','Th','Fr','Sa'];
   const days = [];
   for (let i = 6; i >= 0; i--) {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    const key = d.toISOString().slice(0,10);
-    days.push({ key, name: names[d.getDay()], steps: getStepsForDate(key), isToday: i===0 });
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const key = d.toLocaleDateString('ru-RU');
+    const isoKey = d.toISOString().slice(0,10);
+    const name = (ru ? dayNamesRu : dayNamesEn)[d.getDay()];
+    const hasFood = foodLogs.some(f => f.date === key);
+    const hasWo   = getWorkoutDone(key);
+    const waterMl = parseInt(localStorage.getItem('pk_water_' + key) || '0');
+    const waterTarget = Math.round((profile?.weight_kg||70) * 33);
+    const hasWater = waterMl >= waterTarget * 0.7;
+    const score = (hasFood ? 1 : 0) + (hasWo ? 1 : 0) + (hasWater ? 1 : 0);
+    const barH = Math.max(4, Math.round((score / 3) * 40));
+    const barBg = score === 3 ? 'var(--emerald)' : score === 2 ? 'var(--cyan)' : score === 1 ? 'rgba(139,92,246,.5)' : 'rgba(255,255,255,.06)';
+    days.push({ key, isoKey, name, hasFood, hasWo, hasWater, score, barH, barBg, isToday: i===0 });
   }
-  return days;
-}
-
-function _setStepView(v) { _stepView = v; _updateStepCard(); }
-
-function _buildStepCardHtml() {
-  const steps    = getSteps();
-  const stepGoal = 10000;
-  const sPct     = Math.min(100, Math.round(steps / stepGoal * 100));
-  const ru       = lang !== 'en';
-
-  const tabs = `<div class="step-tabs">
-    <button class="step-tab ${_stepView==='day'?'on':''}" onclick="_setStepView('day')">${ru?'День':'Day'}</button>
-    <button class="step-tab ${_stepView==='week'?'on':''}" onclick="_setStepView('week')">${ru?'Неделя':'Week'}</button>
+  const totalScore = days.reduce((s, d) => s + d.score, 0);
+  const maxScore   = days.length * 3;
+  const pct        = Math.round(totalScore / maxScore * 100);
+  const daysHtml   = days.map(d => `
+    <div class="wpd">
+      <div class="wpd-bar-wrap">
+        <div class="wpd-bar" style="height:${d.barH}px;background:${d.barBg}"></div>
+      </div>
+      <div class="wpd-day ${d.isToday ? 'td' : ''}">${d.name}</div>
+    </div>`).join('');
+  const quote = _getDailyQuote();
+  return `<div class="week-prog-card">
+    <div class="week-prog-hd">
+      <div class="week-prog-ttl">📊 ${ru ? 'Прогресс недели' : 'Week progress'} · ${pct}%</div>
+      <button class="week-prog-cal-btn" onclick="haptic('light');openCalPanel()">📅 ${ru ? 'План' : 'Plan'}</button>
+    </div>
+    <div class="week-prog-days">${daysHtml}</div>
+    <div class="week-prog-legend">
+      <div class="week-prog-leg-item"><div class="week-prog-leg-dot" style="background:var(--emerald)"></div>${ru ? 'Отлично' : 'Perfect'}</div>
+      <div class="week-prog-leg-item"><div class="week-prog-leg-dot" style="background:var(--cyan)"></div>${ru ? 'Хорошо' : 'Good'}</div>
+      <div class="week-prog-leg-item"><div class="week-prog-leg-dot" style="background:rgba(255,255,255,.06)"></div>${ru ? 'Нет данных' : 'No data'}</div>
+    </div>
+    <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:12px;color:var(--text3);font-style:italic;line-height:1.5">💬 "${escHtml(quote)}"</div>
   </div>`;
-
-  let body;
-  if (_stepView === 'day') {
-    body = `
-      <div class="step-card-hdr">
-        <div>
-          <div class="step-big">${steps.toLocaleString()}</div>
-          <div class="step-big-sub">${ru?`из ${stepGoal.toLocaleString()} шагов · ${sPct}%`:`of ${stepGoal.toLocaleString()} steps · ${sPct}%`}</div>
-        </div>
-        ${tabs}
-      </div>
-      <div class="step-bar-wrap" style="margin-bottom:12px"><div class="step-bar" style="width:${sPct}%"></div></div>
-      <div class="step-btns">
-        <button class="step-btn" onclick="addSteps(1000)">+1 000</button>
-        <button class="step-btn" onclick="addSteps(3000)">+3 000</button>
-        <button class="step-btn" onclick="addSteps(5000)">+5 000</button>
-        <button class="step-btn reset" onclick="addSteps(-getSteps())">↺</button>
-      </div>
-      <div class="step-auto-row">
-        <button class="step-auto-btn ${_stepTrackerActive?'on':''}" id="step-auto-btn" onclick="toggleStepTracking()">
-          ${_stepTrackerActive?(ru?'⏹ Стоп':'⏹ Stop'):(ru?'📲 Авто-подсчёт':'📲 Auto-track')}
-        </button>
-        ${_stepTrackerActive?`<div class="step-live"><div class="step-live-dot"></div>+${_stepSessionCount} ${ru?'сейчас':'now'}</div>`:''}
-      </div>`;
-  } else {
-    const days    = getLast7Days();
-    const maxS    = Math.max(...days.map(d=>d.steps), 1);
-    const avg     = Math.round(days.reduce((s,d)=>s+d.steps,0)/7);
-    const todayS  = days[days.length-1].steps;
-    const maxDay  = Math.max(...days.map(d=>d.steps));
-    const bars    = days.map(d=>{
-      const h = Math.max(3, Math.round((d.steps/maxS)*72));
-      const bg = d.isToday ? '#8B5CF6' : d.steps>0 ? 'rgba(139,92,246,.4)' : 'rgba(255,255,255,.06)';
-      return `<div class="step-wbar" style="height:${h}px;background:${bg}"></div>`;
-    }).join('');
-    const labels = days.map(d=>
-      `<div class="step-wlabel ${d.isToday?'td':''}">${d.name}</div>`
-    ).join('');
-    body = `
-      <div class="step-card-hdr">
-        <div>
-          <div class="step-big">${avg.toLocaleString()}</div>
-          <div class="step-big-sub">${ru?'среднее за 7 дней':'7-day average'}</div>
-        </div>
-        ${tabs}
-      </div>
-      <div class="step-wchart">${bars}</div>
-      <div class="step-wlabels">${labels}</div>
-      <div class="step-wstats">
-        <span>${ru?'Сегодня':'Today'}: <b class="step-wstat-val">${todayS.toLocaleString()}</b></span>
-        <span>${ru?'Макс.':'Max'}: <b class="step-wstat-val">${maxDay.toLocaleString()}</b></span>
-        <span>${ru?'Цель':'Goal'}: <b class="step-wstat-val">${stepGoal.toLocaleString()}</b></span>
-      </div>`;
-  }
-  return `<div class="step-card" id="step-card-slot">${body}</div>`;
 }
-
-function _updateStepCard() {
-  const slot = document.getElementById('step-card-slot');
-  if (!slot) return;
-  const tmp = document.createElement('div');
-  tmp.innerHTML = _buildStepCardHtml();
-  slot.replaceWith(tmp.firstChild);
-}
-
-function _stepOnMotion(e) {
-  const acc = e.accelerationIncludingGravity || e.acceleration;
-  if (!acc || acc.x == null) return;
-  const mag = Math.sqrt((acc.x||0)**2+(acc.y||0)**2+(acc.z||0)**2);
-  const now = Date.now();
-  if (mag > _STEP_THRESHOLD) {
-    _stepRising = true;
-  } else if (_stepRising) {
-    _stepRising = false;
-    if (now - _stepLastAt > _STEP_MIN_GAP) {
-      _stepLastAt = now;
-      _stepSessionCount++;
-      setSteps(getSteps()+1);
-      _updateStepCard();
-    }
-  }
-}
-
-async function toggleStepTracking() {
-  if (_stepTrackerActive) {
-    if (_stepMotionHandler) window.removeEventListener('devicemotion', _stepMotionHandler);
-    _stepTrackerActive = false;
-    _stepMotionHandler = null;
-    _updateStepCard();
-    toast(lang==='en'?`Tracked: +${_stepSessionCount} steps`:`Записано: +${_stepSessionCount} шагов`);
-    return;
-  }
-  if (typeof DeviceMotionEvent === 'undefined') {
-    toast(lang==='en'?'Accelerometer not supported':'Акселерометр не поддерживается'); return;
-  }
-  if (typeof DeviceMotionEvent.requestPermission === 'function') {
-    let perm;
-    try { perm = await DeviceMotionEvent.requestPermission(); } catch { perm='denied'; }
-    if (perm !== 'granted') {
-      toast(lang==='en'?'Motion access denied':'Доступ к датчику отклонён'); return;
-    }
-  }
-  _stepSessionCount=0; _stepRising=false; _stepLastAt=0;
-  _stepMotionHandler = _stepOnMotion;
-  window.addEventListener('devicemotion', _stepMotionHandler, {passive:true});
-  _stepTrackerActive = true;
-  _updateStepCard();
-  toast(lang==='en'?'📲 Tracking started':'📲 Подсчёт запущен');
-}
-
-document.addEventListener('visibilitychange', () => {
-  if (document.hidden && _stepTrackerActive) {
-    if (_stepMotionHandler) window.removeEventListener('devicemotion', _stepMotionHandler);
-    _stepTrackerActive=false; _stepMotionHandler=null;
-    _updateStepCard();
-  }
-});
 
 function parseWorkoutDay(plan, dayNum) {
   if (!plan) return '';
@@ -2289,7 +2422,7 @@ function renderHome() {
       </div>
     </div>
 
-    ${_buildStepCardHtml()}
+    ${_buildWeekProgressCard()}
 
     ${streak > 0 ? `<div class="streak-card">
       <div class="streak-left">
@@ -2300,7 +2433,7 @@ function renderHome() {
       <div class="streak-msg">${streak>=30?(ru?'Легенда! 🏆':'Legend! 🏆'):streak>=14?(ru?'Две недели! 💎':'Two weeks! 💎'):streak>=7?(ru?'Неделя подряд! 💪':'One week! 💪'):streak>=3?(ru?'Хорошая серия! Держи!':'Nice streak! Keep it up!'):ru?'Начало положено! Не останавливайся 💪':'Great start! Keep it going 💪'}</div>
     </div>` : ''}
 
-    ${workoutHtml}${mealSchedHtml}${nutrCard}${wrkCard}
+    ${_buildChallengeCard()}${workoutHtml}${mealSchedHtml}${nutrCard}${wrkCard}
   `;
 }
 
@@ -2355,15 +2488,29 @@ function addMsg(el,cls,text,sender) {
 }
 
 async function sendChat() {
-  const inp=document.getElementById('chat-in'), msg=inp.value.trim(); if(!msg) return;
+  const inp=document.getElementById('chat-in');
+  let msg=inp.value.trim();
+  const hasImg = !!_chatImageB64;
+  if(!msg && !hasImg) return;
+  if(!msg && hasImg) msg = lang!=='en' ? 'Что на фото?' : "What's in the photo?";
   const btn=document.getElementById('chat-send'), el=document.getElementById('chat-msgs');
+  const imgB64=_chatImageB64, mtype=_chatMediaType;
+  if(hasImg) removeChatPhoto();
   inp.value=''; inp.style.height='auto'; btn.disabled=true;
-  addMsg(el,'u',msg); scrollBottom(el);
+  const userDiv=addMsg(el,'u',msg);
+  if(hasImg){
+    const imgEl=document.createElement('img');
+    imgEl.style.cssText='max-width:180px;border-radius:10px;margin-top:6px;display:block';
+    imgEl.src=`data:${mtype};base64,${imgB64}`;
+    userDiv.appendChild(imgEl);
+  }
+  scrollBottom(el);
   const typ=document.createElement('div'); typ.className='typing';
   typ.innerHTML='<span></span><span></span><span></span>'; el.appendChild(typ); scrollBottom(el);
   try {
-    const r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({message:msg,history:sanitizeHist(chatHist),profile,lang})});
+    const body={message:msg,history:sanitizeHist(chatHist),lang};
+    if(hasImg){body.image_b64=imgB64;body.media_type=mtype;}
+    const r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     const data=await r.json(); typ.remove();
     if (r.status===429) {
       const isPro = profile?.status==='pro'||profile?.status==='vip';
@@ -2374,7 +2521,6 @@ async function sendChat() {
       btn.disabled=false; scrollBottom(el); return;
     }
     const rawReply=data.reply||'Не удалось получить ответ.';
-    // Parse SET_TARGETS action from Арни's response
     const tagMatch=rawReply.match(/\{\{SET_TARGETS:([^}]+)\}\}/);
     const reply=rawReply.replace(/\s*\{\{SET_TARGETS:[^}]+\}\}\s*/g,'').trim();
     if(tagMatch){
@@ -2778,7 +2924,43 @@ function renderProgress() {
     </div>`;
   })();
 
-  el.innerHTML=`
+  // Start → Now → Goal card
+  const startWeight = parseFloat(localStorage.getItem('pk_baseline_weight') || '0');
+  const currentWeight = (logs.slice().reverse().find(l => l.weight)?.weight) || profile?.weight_kg || 0;
+  const goalWeight = profile?.goal === 'lose_weight'
+    ? Math.max(currentWeight - 5, 50)
+    : profile?.goal === 'gain_muscle'
+      ? currentWeight + 5
+      : currentWeight;
+  const goalLabel = {lose_weight: ruP ? 'Снижение' : 'Cut', gain_muscle: ruP ? 'Набор' : 'Bulk', maintain: ruP ? 'Поддержание' : 'Maintain', recomposition: ruP ? 'Рекомп' : 'Recomp'}[profile?.goal] || '—';
+  const weightDelta = startWeight && currentWeight ? (currentWeight - startWeight).toFixed(1) : null;
+  const deltaColor = weightDelta === null ? '' : parseFloat(weightDelta) > 0 ? 'color:var(--red)' : 'color:var(--emerald)';
+  const startNowGoalCard = startWeight ? `
+    <div class="chart-card" style="margin-top:0">
+      <div class="chart-hd" style="margin-bottom:14px">
+        <div class="chart-ttl">🎯 ${ruP ? 'Твой путь' : 'Your journey'}</div>
+        ${weightDelta !== null ? `<div style="font-size:13px;font-weight:800;${deltaColor}">${parseFloat(weightDelta)>0?'+':''}${weightDelta} кг</div>` : ''}
+      </div>
+      <div style="display:flex;gap:0;text-align:center">
+        <div style="flex:1;padding:12px 8px;background:rgba(255,255,255,.04);border-radius:12px 0 0 12px;border:1px solid var(--border)">
+          <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">${ruP ? 'СТАРТ' : 'START'}</div>
+          <div style="font-size:22px;font-weight:900">${startWeight}</div>
+          <div style="font-size:11px;color:var(--text3)">${ruP ? 'кг' : 'kg'}</div>
+        </div>
+        <div style="flex:1;padding:12px 8px;background:rgba(0,200,255,.06);border-radius:0;border:1.5px solid rgba(0,200,255,.25);border-left:none;border-right:none">
+          <div style="font-size:10px;font-weight:700;color:var(--cyan);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">${ruP ? 'СЕЙЧАС' : 'NOW'}</div>
+          <div style="font-size:22px;font-weight:900;color:var(--cyan)">${currentWeight || '—'}</div>
+          <div style="font-size:11px;color:var(--text3)">${ruP ? 'кг' : 'kg'}</div>
+        </div>
+        <div style="flex:1;padding:12px 8px;background:rgba(139,92,246,.06);border-radius:0 12px 12px 0;border:1px solid rgba(139,92,246,.2)">
+          <div style="font-size:10px;font-weight:700;color:var(--violet);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">${ruP ? 'ЦЕЛЬ' : 'GOAL'}</div>
+          <div style="font-size:16px;font-weight:800;color:var(--violet)">${goalLabel}</div>
+          <div style="font-size:11px;color:var(--text3)">≈${goalWeight} ${ruP ? 'кг' : 'kg'}</div>
+        </div>
+      </div>
+    </div>` : '';
+
+  el.innerHTML=`${startNowGoalCard}
     <div class="adapt-card">
       <div class="chart-hd"><div class="chart-ttl">🤖 ${ruP?'Адаптация плана':'Plan adaptation'}</div></div>
       <div style="font-size:13px;color:var(--text2);margin-bottom:12px">${ruP?'Арни проанализирует данные за неделю и скорректирует план':'Arnie will analyze your weekly data and adjust the plan'}</div>
@@ -3566,30 +3748,25 @@ function renderPfDataContent(el) {
 function renderPfNotifContent(el) {
   if (!el) return;
   const ns = notifSettings || {};
+  const ru = lang !== 'en';
+  const _nsub = (key, modal, label) => `
+    <div class="notif-row">
+      <div class="notif-row-tap" onclick="openNotifModal('${modal}')" style="touch-action:manipulation">
+        <div class="notif-lbl">${label}</div>
+        <div class="notif-sub">${notifSubText(key)}</div>
+      </div>
+      <button class="toggle ${ns[key]?.active?'on':''}" onclick="toggleNotif('${key}')" style="touch-action:manipulation"></button>
+    </div>`;
   el.innerHTML = `<div class="pf-card pf-notif-card">
-    <div class="notif-row">
-      <div class="notif-row-tap" onclick="openNotifModal('meal')" style="touch-action:manipulation">
-        <div class="notif-lbl">${t('pf_notif_meal')}</div>
-        <div class="notif-sub">${notifSubText('food')}</div>
-      </div>
-      <button class="toggle ${ns.food?.active?'on':''}" onclick="toggleNotif('food')" style="touch-action:manipulation"></button>
-    </div>
-    <div class="notif-row">
-      <div class="notif-row-tap" onclick="openNotifModal('water')" style="touch-action:manipulation">
-        <div class="notif-lbl">${t('pf_notif_water')}</div>
-        <div class="notif-sub">${notifSubText('water')}</div>
-      </div>
-      <button class="toggle ${ns.water?.active?'on':''}" onclick="toggleNotif('water')" style="touch-action:manipulation"></button>
-    </div>
-    <div class="notif-row">
-      <div class="notif-row-tap" onclick="openNotifModal('log')" style="touch-action:manipulation">
-        <div class="notif-lbl">${t('pf_notif_log')}</div>
-        <div class="notif-sub">${notifSubText('log')}</div>
-      </div>
-      <button class="toggle ${ns.log?.active?'on':''}" onclick="toggleNotif('log')" style="touch-action:manipulation"></button>
-    </div>
+    ${_nsub('food','meal', ru ? '🍽 Время покушать' : '🍽 Meal time')}
+    ${_nsub('water','water', ru ? '💧 Выпить воды' : '💧 Drink water')}
+    ${_nsub('log','log', ru ? '📏 Записать замеры' : '📏 Log measurements')}
+    ${_nsub('workout','workout', ru ? '💪 Напоминание о тренировке' : '💪 Workout reminder')}
+    ${_nsub('motivation','motivation', ru ? '🔥 Мотивация от Арни' : '🔥 Motivation from Arnie')}
     <div style="padding:12px 16px">
-      <button class="btn-notif-test" onclick="sendTestNotif()" style="touch-action:manipulation">${t('pf_notif_test')}</button>
+      <button class="btn-notif-test" onclick="sendTestNotif()" style="touch-action:manipulation">
+        ⚡ ${ru ? 'Отправить тестовое уведомление' : 'Send test notification'}
+      </button>
     </div>
   </div>`;
 }
@@ -3690,13 +3867,18 @@ function toggleFaq(i) {
 
 // ══ FAQ PAGE ══
 // ══ REMINDER MODALS ══
-let _remType = null;          // 'meal' | 'water' | 'log'
-let _remMealRows = [];        // [{label, time}]  (working copy for meal modal)
+let _remType = null;
+let _remMealRows = [];
 
 const REM_INTERVALS = [15, 20, 30, 45, 60, 90, 120];
+const ALL_DAYS_RU   = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+const ALL_DAYS_EN   = ['Mo','Tu','We','Th','Fr','Sa','Su'];
 
 function openNotifModal(type) {
   _remType = type;
+  // ensure notifSettings has entries for workout + motivation
+  if (!notifSettings.workout)    notifSettings.workout    = {active:false, time:'07:00', days:[0,1,2,3,4], utc_offset: getUtcOffset()};
+  if (!notifSettings.motivation) notifSettings.motivation = {active:false, time:'09:00', days:[0,1,2,3,4,5,6], utc_offset: getUtcOffset()};
   renderNotifModal();
   document.getElementById('rem-sheet').classList.add('on');
   document.getElementById('rem-overlay').classList.add('on');
@@ -3709,6 +3891,27 @@ function closeNotifModal() {
   document.getElementById('rem-sheet').classList.remove('on');
   document.getElementById('rem-overlay').classList.remove('on');
   _remType = null;
+}
+
+function _dayChips(selectedDays, id) {
+  const ru = lang !== 'en';
+  const names = ru ? ALL_DAYS_RU : ALL_DAYS_EN;
+  return `<div class="rem-chips" id="${id}">`
+    + names.map((n, i) => `<button class="rem-chip ${(selectedDays||[]).includes(i)?'on':''}" onclick="toggleDayChip('${id}',${i})">${n}</button>`).join('')
+    + `</div>`;
+}
+
+function toggleDayChip(groupId, dayIdx) {
+  const btn = document.querySelectorAll(`#${groupId} .rem-chip`)[dayIdx];
+  if (btn) btn.classList.toggle('on');
+  haptic('light');
+}
+
+function _getSelectedDays(groupId) {
+  const chips = document.querySelectorAll(`#${groupId} .rem-chip`);
+  const days = [];
+  chips.forEach((c, i) => { if (c.classList.contains('on')) days.push(i); });
+  return days;
 }
 
 function renderNotifModal() {
@@ -3726,12 +3929,42 @@ function renderNotifModal() {
     el.innerHTML = _mealModalBody(ru);
   } else if (type === 'water') {
     document.getElementById('rem-ttl').textContent = ru ? '💧 Напоминание о воде' : '💧 Water Reminder';
-    const ns = notifSettings.water;
-    el.innerHTML = _waterModalBody(ru, ns);
+    el.innerHTML = _waterModalBody(ru, notifSettings.water);
   } else if (type === 'log') {
     document.getElementById('rem-ttl').textContent = ru ? '📏 Замеры тела' : '📏 Body Measurements';
-    const ns = notifSettings.log;
-    el.innerHTML = _logModalBody(ru, ns);
+    el.innerHTML = _logModalBody(ru, notifSettings.log);
+  } else if (type === 'workout') {
+    document.getElementById('rem-ttl').textContent = ru ? '💪 Напоминание о тренировке' : '💪 Workout Reminder';
+    const ns = notifSettings.workout;
+    el.innerHTML = `
+      <div class="rem-sec-ttl">${ru ? 'Время напоминания' : 'Reminder time'}</div>
+      <input class="rem-time-in" id="workout-time" type="time" value="${ns.time || '07:00'}"
+        style="width:100%;font-size:22px;font-weight:800;text-align:center;padding:14px">
+      <div class="rem-sec-ttl" style="margin-top:8px">${ru ? 'Дни недели' : 'Days of week'}</div>
+      ${_dayChips(ns.days || [0,1,2,3,4], 'workout-days')}
+      <div class="rem-tz-row" style="margin-top:8px">
+        <span class="rem-tz-lbl">${ru ? 'Часовой пояс' : 'Timezone'} (UTC)</span>
+        <div class="rem-tz-wrap">
+          <input class="rem-tz-in" id="rem-tz" type="number" min="-12" max="14" step="0.5" value="${ns.utc_offset ?? getUtcOffset()}">
+          <span>${ru ? 'ч' : 'h'}</span>
+        </div>
+      </div>`;
+  } else if (type === 'motivation') {
+    document.getElementById('rem-ttl').textContent = ru ? '🔥 Мотивация от Арни' : '🔥 Motivation from Arnie';
+    const ns = notifSettings.motivation;
+    el.innerHTML = `
+      <div class="rem-sec-ttl">${ru ? 'Время напоминания' : 'Reminder time'}</div>
+      <input class="rem-time-in" id="motivation-time" type="time" value="${ns.time || '09:00'}"
+        style="width:100%;font-size:22px;font-weight:800;text-align:center;padding:14px">
+      <div class="rem-sec-ttl" style="margin-top:8px">${ru ? 'Дни недели' : 'Days of week'}</div>
+      ${_dayChips(ns.days || [0,1,2,3,4,5,6], 'motivation-days')}
+      <div class="rem-tz-row" style="margin-top:8px">
+        <span class="rem-tz-lbl">${ru ? 'Часовой пояс' : 'Timezone'} (UTC)</span>
+        <div class="rem-tz-wrap">
+          <input class="rem-tz-in" id="rem-tz" type="number" min="-12" max="14" step="0.5" value="${ns.utc_offset ?? getUtcOffset()}">
+          <span>${ru ? 'ч' : 'h'}</span>
+        </div>
+      </div>`;
   }
 }
 
@@ -3850,9 +4083,9 @@ function setNightMode(mode) {
 function saveNotifModal() {
   const ru = lang !== 'en';
   const tz = parseFloat(document.getElementById('rem-tz')?.value) || getUtcOffset();
+  const savedType = _remType;
 
   if (_remType === 'meal') {
-    // Collect current row values from DOM (user may have edited them)
     const rows = document.querySelectorAll('[id^="mrow-"]');
     const times = [], labels = [];
     rows.forEach((_, i) => {
@@ -3866,14 +4099,22 @@ function saveNotifModal() {
     const custom = parseInt(document.getElementById('custom-interval')?.value);
     const chip = REM_INTERVALS.find(v => document.getElementById(`chip-${v}`)?.classList.contains('on'));
     const interval = (custom > 0 ? custom : chip) || notifSettings.water.interval_min || 60;
-    // night_mode:true = quiet night; night_mode:false = night shift (send around the clock)
     const nightShiftOn = document.getElementById('night-shift-btn')?.classList.contains('on') ?? false;
-    const nightMode = !nightShiftOn;
-    notifSettings.water = {...notifSettings.water, interval_min: interval, night_mode: nightMode, utc_offset: tz, active: true};
+    notifSettings.water = {...notifSettings.water, interval_min: interval, night_mode: !nightShiftOn, utc_offset: tz, active: true};
 
   } else if (_remType === 'log') {
     const time = document.getElementById('log-time')?.value || '21:00';
     notifSettings.log = {...notifSettings.log, time, utc_offset: tz, active: true};
+
+  } else if (_remType === 'workout') {
+    const time = document.getElementById('workout-time')?.value || '07:00';
+    const days = _getSelectedDays('workout-days');
+    notifSettings.workout = {...notifSettings.workout, time, days, utc_offset: tz, active: true};
+
+  } else if (_remType === 'motivation') {
+    const time = document.getElementById('motivation-time')?.value || '09:00';
+    const days = _getSelectedDays('motivation-days');
+    notifSettings.motivation = {...notifSettings.motivation, time, days, utc_offset: tz, active: true};
   }
 
   localStorage.setItem('pk_notif', JSON.stringify(notifSettings));
@@ -3882,7 +4123,8 @@ function saveNotifModal() {
   const notifEl = document.getElementById('pf-notif-content');
   if (notifEl && document.getElementById('pf-notif-panel')?.classList.contains('on')) renderPfNotifContent(notifEl);
   if (curTab === 'home') renderHome();
-  saveReminderToBackend(_remType);
+  const typeMap = {meal:'meal', water:'water', log:'log', workout:'workout', motivation:'motivation'};
+  saveReminderToBackend(typeMap[savedType] || savedType);
   toast(ru ? 'Напоминание сохранено ✓' : 'Reminder saved ✓');
 }
 
@@ -3939,13 +4181,11 @@ function toggleFaqEntry(si, ii) {
 // ══ PWA ══
 let _pwaPrompt = null;
 
-// Register Service Worker
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js', { scope: '/' })
     .catch(e => console.warn('SW register failed', e));
 }
 
-// Capture the beforeinstallprompt event (Chrome/Android)
 window.addEventListener('beforeinstallprompt', e => {
   e.preventDefault();
   _pwaPrompt = e;
@@ -3953,18 +4193,21 @@ window.addEventListener('beforeinstallprompt', e => {
   if (btn) btn.style.display = '';
 });
 
-// When installed, hide the button
 window.addEventListener('appinstalled', () => {
   _pwaPrompt = null;
   const btn = document.getElementById('pwa-install-btn');
   if (btn) btn.style.display = 'none';
-  toast('P.A.R.K.E.R. добавлен на экран');
+  toast('P.A.R.K.E.R. добавлен на экран ✓');
 });
 
 function triggerPwaInstall() {
-  const ru = lang !== 'en';
+  // 1. Telegram API
+  if (tg?.addToHomeScreen) {
+    tg.addToHomeScreen();
+    return;
+  }
+  // 2. Android native prompt
   if (_pwaPrompt) {
-    // Chrome / Android — native install dialog
     _pwaPrompt.prompt();
     _pwaPrompt.userChoice.then(r => {
       if (r.outcome === 'accepted') {
@@ -3972,20 +4215,29 @@ function triggerPwaInstall() {
         document.getElementById('pwa-install-btn').style.display = 'none';
       }
     });
-  } else {
-    // iOS Safari — manual instructions
-    const msg = ru
-      ? 'На iPhone: нажми кнопку «Поделиться» в Safari, затем «На экран Домой»'
-      : 'On iPhone: tap the Share button in Safari, then «Add to Home Screen»';
-    toast(msg);
+    return;
   }
+  // 3. iOS — show step-by-step sheet
+  const isIos = /iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase());
+  if (isIos) {
+    document.getElementById('ios-install-overlay').classList.add('on');
+    document.getElementById('ios-install-sheet').classList.add('on');
+    return;
+  }
+  // 4. Fallback
+  toast(lang !== 'en'
+    ? 'Открой в Safari и нажми «Поделиться» → «На экран домой»'
+    : 'Open in Safari → Share → Add to Home Screen');
 }
 
-// On iOS, always show the install button with a hint
+function closeIosInstall() {
+  document.getElementById('ios-install-overlay').classList.remove('on');
+  document.getElementById('ios-install-sheet').classList.remove('on');
+}
+
 function _checkIosInstall() {
   const isIos = /iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase());
-  const isStandalone = window.matchMedia('(display-mode: standalone)').matches
-    || window.navigator.standalone === true;
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
   if (isIos && !isStandalone) {
     const btn = document.getElementById('pwa-install-btn');
     if (btn) {
@@ -3996,7 +4248,287 @@ function _checkIosInstall() {
   }
 }
 document.addEventListener('DOMContentLoaded', _checkIosInstall);
-// also run immediately in case DOMContentLoaded already fired
+
+// ══ 7-DAY CHALLENGE ══
+function _getChalState() {
+  return JSON.parse(localStorage.getItem('pk_challenge') || 'null');
+}
+function _saveChalState(s) {
+  localStorage.setItem('pk_challenge', JSON.stringify(s));
+}
+
+function _renderChalModal() {
+  const state = _getChalState();
+  const doneDays = state?.done || [];
+  const ru = lang !== 'en';
+  const daysRow = document.getElementById('chal-days-row');
+  const bar     = document.getElementById('chal-prog-bar');
+  const lbl     = document.getElementById('chal-prog-lbl');
+  if (!daysRow) return;
+  daysRow.innerHTML = Array.from({length:7}, (_,i) => {
+    const cls = doneDays.includes(i) ? 'done' : i === doneDays.length && state?.accepted ? 'today' : '';
+    return `<div class="chal-day-chip ${cls}">${doneDays.includes(i) ? '✓' : i+1}</div>`;
+  }).join('');
+  const pct = Math.round(doneDays.length / 7 * 100);
+  if (bar) bar.style.width = pct + '%';
+  if (lbl) lbl.textContent = ru
+    ? `${doneDays.length} из 7 дней выполнено`
+    : `${doneDays.length} of 7 days done`;
+}
+
+function showChallenge() {
+  _renderChalModal();
+  document.getElementById('chal-overlay').classList.add('on');
+}
+
+function acceptChallenge() {
+  hapticSuccess();
+  let state = _getChalState() || {};
+  state.accepted = true;
+  state.startDate = new Date().toISOString().slice(0,10);
+  state.done = state.done || [];
+  _saveChalState(state);
+  document.getElementById('chal-overlay').classList.remove('on');
+  toast(lang !== 'en' ? '🔥 Вызов принят! Удачи!' : '🔥 Challenge accepted! Go get it!');
+  if (curTab === 'home') renderHome();
+}
+
+function dismissChallenge() {
+  document.getElementById('chal-overlay').classList.remove('on');
+  // Show again in 3 days if not accepted
+  localStorage.setItem('pk_chal_dismissed', new Date().toISOString().slice(0,10));
+}
+
+function _checkChallengeToday() {
+  const state = _getChalState();
+  if (!state?.accepted) return;
+  const today = new Date().toISOString().slice(0,10);
+  if (state.done?.includes(state.done.length)) return; // already tracked
+  const todayLocale = todayKey();
+  const hasFood  = foodLogs.some(f => f.date === todayLocale);
+  const hasWo    = getWorkoutDone(todayLocale);
+  const waterMl  = parseInt(localStorage.getItem('pk_water_' + todayLocale) || '0');
+  const waterTgt = Math.round((profile?.weight_kg||70) * 33);
+  const hasWater = waterMl >= waterTgt * 0.7;
+  const dayIdx   = (state.done || []).length;
+  if (hasFood && (hasWo || true) && hasWater && dayIdx < 7) {
+    const lastMark = localStorage.getItem('pk_chal_last_mark');
+    if (lastMark !== today) {
+      localStorage.setItem('pk_chal_last_mark', today);
+      state.done = [...(state.done || []), dayIdx];
+      _saveChalState(state);
+      if (state.done.length === 7) {
+        toast(lang !== 'en'
+          ? '🏆 Челлендж завершён! 30 дней Pro начислено!'
+          : '🏆 Challenge complete! 30 days Pro granted!', 4000);
+        fetch('/api/notify/test', {method:'POST'}).catch(()=>{});
+      } else {
+        toast(lang !== 'en'
+          ? `🔥 День ${state.done.length}/7 засчитан!`
+          : `🔥 Day ${state.done.length}/7 counted!`);
+      }
+      if (curTab === 'home') renderHome();
+    }
+  }
+}
+
+function _buildChallengeCard() {
+  const state = _getChalState();
+  if (!state?.accepted) return '';
+  const ru = lang !== 'en';
+  const done = state.done?.length || 0;
+  const pct  = Math.round(done / 7 * 100);
+  return `<div class="chal-card" onclick="showChallenge()">
+    <div class="chal-card-hd">
+      <div class="chal-card-ttl">🔥 ${ru ? 'Вызов 7 дней' : '7-Day Challenge'}</div>
+      <div class="chal-card-badge">${done}/7</div>
+    </div>
+    <div class="chal-prog-bar-wrap"><div class="chal-prog-bar" style="width:${pct}%"></div></div>
+    <div style="font-size:12px;color:var(--text2);margin-top:6px">${ru ? `${pct}% выполнено · держи план!` : `${pct}% done · keep going!`}</div>
+  </div>`;
+}
+
+// ══ CALENDAR ══
+let _calYear  = new Date().getFullYear();
+let _calMonth = new Date().getMonth();
+
+function openCalPanel() {
+  _calYear  = new Date().getFullYear();
+  _calMonth = new Date().getMonth();
+  renderCalendar();
+  document.getElementById('cal-panel').classList.add('on');
+}
+
+function calPrevMonth() {
+  _calMonth--;
+  if (_calMonth < 0) { _calMonth = 11; _calYear--; }
+  renderCalendar();
+}
+function calNextMonth() {
+  _calMonth++;
+  if (_calMonth > 11) { _calMonth = 0; _calYear++; }
+  renderCalendar();
+}
+
+function renderCalendar() {
+  const ru        = lang !== 'en';
+  const today     = new Date();
+  const firstDay  = new Date(_calYear, _calMonth, 1);
+  const lastDay   = new Date(_calYear, _calMonth + 1, 0);
+  const monthNames = ru
+    ? ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь']
+    : ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const wdNames = ru ? ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'] : ['Mo','Tu','We','Th','Fr','Sa','Su'];
+
+  document.getElementById('cal-month-name').textContent = `${monthNames[_calMonth]} ${_calYear}`;
+  document.getElementById('cal-weekdays').innerHTML = wdNames.map(d => `<div class="cal-wd">${d}</div>`).join('');
+
+  // Monday-first offset
+  let startDow = firstDay.getDay(); // 0=Sun
+  startDow = (startDow + 6) % 7;   // 0=Mon
+
+  const cells = [];
+  for (let i = 0; i < startDow; i++) cells.push('<div class="cal-cell empty"></div>');
+
+  for (let d = 1; d <= lastDay.getDate(); d++) {
+    const date     = new Date(_calYear, _calMonth, d);
+    const isoKey   = date.toISOString().slice(0,10);
+    const locKey   = date.toLocaleDateString('ru-RU');
+    const isToday  = date.toDateString() === today.toDateString();
+    const isFuture = date > today;
+    const hasWo    = getWorkoutDone(locKey);
+    const hasFood  = foodLogs.some(f => f.date === locKey);
+    const dotCls   = hasWo && hasFood ? 'has-both' : hasWo ? 'has-wo' : hasFood ? 'has-food' : '';
+    cells.push(`<div class="cal-cell ${isToday?'today':''} ${isFuture?'future':''} ${dotCls}"
+      onclick="openCalDaySheet('${isoKey}','${locKey}')">
+      <div class="cal-cell-num">${d}</div>
+    </div>`);
+  }
+  document.getElementById('cal-grid').innerHTML = cells.join('');
+}
+
+function openCalDaySheet(isoDate, locDate) {
+  haptic('light');
+  const ru   = lang !== 'en';
+  const date = new Date(isoDate + 'T12:00:00');
+  const dayNamesRu = ['Воскресенье','Понедельник','Вторник','Среда','Четверг','Пятница','Суббота'];
+  const dayNamesEn = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const dayName = (ru ? dayNamesRu : dayNamesEn)[date.getDay()];
+  const dateStr = `${String(date.getDate()).padStart(2,'0')}.${String(date.getMonth()+1).padStart(2,'0')}.${date.getFullYear()}`;
+  document.getElementById('cal-day-ttl').textContent = `${dayName}, ${dateStr}`;
+
+  const dayFoodLogs = foodLogs.filter(f => f.date === locDate);
+  const dayTot  = dayFoodLogs.reduce((a,f) => ({cal:a.cal+(f.total?.calories||0), p:a.p+(f.total?.protein_g||0)}),{cal:0,p:0});
+  const waterMl = parseInt(localStorage.getItem('pk_water_' + locDate) || '0');
+  const woDone  = getWorkoutDone(locDate);
+  const dayNum  = ((date.getDay()+6)%7)+1;
+  const woContent = parseWorkoutDay(planData?.workout_plan||'', dayNum);
+  const woDayLine = woContent.split('\n').find(l=>l.trim()) || '';
+  const woName    = _extractWorkoutName(woDayLine) || (ru?'Тренировка':'Workout');
+  const isRest    = /отдых|rest/i.test(woDayLine);
+
+  document.getElementById('cal-day-body').innerHTML = `
+    <div style="display:flex;gap:10px;margin-bottom:14px">
+      <div style="flex:1;background:rgba(0,200,255,.07);border:1px solid rgba(0,200,255,.2);border-radius:12px;padding:12px;text-align:center">
+        <div style="font-size:20px;font-weight:800;color:var(--cyan)">${Math.round(dayTot.cal)}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:3px">${ru?'ккал':'kcal'}</div>
+      </div>
+      <div style="flex:1;background:rgba(139,92,246,.07);border:1px solid rgba(139,92,246,.2);border-radius:12px;padding:12px;text-align:center">
+        <div style="font-size:20px;font-weight:800;color:var(--violet)">${waterMl}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:3px">${ru?'мл воды':'ml water'}</div>
+      </div>
+      <div style="flex:1;background:${woDone?'rgba(34,197,94,.08)':'rgba(255,255,255,.04)'};border:1px solid ${woDone?'rgba(34,197,94,.25)':'var(--border)'};border-radius:12px;padding:12px;text-align:center">
+        <div style="font-size:22px">${woDone?'✅':isRest?'🛌':'💪'}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:3px">${ru?(woDone?'Готово':isRest?'Отдых':'Тренировка'):(woDone?'Done':isRest?'Rest':'Workout')}</div>
+      </div>
+    </div>
+    ${dayFoodLogs.length ? `
+      <div style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">🍽 ${ru?'Питание':'Food'}</div>
+      ${dayFoodLogs.map(f=>`<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px">
+        <span style="color:var(--text2)">${escHtml((f.text||f.description||'').slice(0,35))}</span>
+        <span style="font-weight:700;color:var(--cyan)">${Math.round(f.total?.calories||0)} ${ru?'ккал':'kcal'}</span>
+      </div>`).join('')}` : `<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px">${ru?'Данных нет':'No data logged'}</div>`}
+    ${planData?.workout_plan && !isRest ? `
+      <div style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin:14px 0 8px">💪 ${ru?'Тренировка':'Workout'}</div>
+      <div style="font-size:14px;font-weight:700;margin-bottom:6px">${escHtml(woName)}</div>
+      <div style="font-size:12px;color:var(--text2);line-height:1.7;white-space:pre-wrap">${escHtml(woContent.slice(0,400))}</div>` : ''}`;
+
+  document.getElementById('cal-day-sheet-overlay').classList.add('on');
+  document.getElementById('cal-day-sheet').classList.add('on');
+}
+
+function closeCalDaySheet() {
+  document.getElementById('cal-day-sheet-overlay').classList.remove('on');
+  document.getElementById('cal-day-sheet').classList.remove('on');
+}
+
+// ══ PHOTO IN CHAT ══
+let _chatImageB64 = null;
+let _chatMediaType = 'image/jpeg';
+
+document.getElementById('chat-photo-input').addEventListener('change', function() {
+  const file = this.files[0];
+  if (!file) return;
+  _chatMediaType = file.type || 'image/jpeg';
+  const reader = new FileReader();
+  reader.onload = e => {
+    const dataUrl = e.target.result;
+    _chatImageB64 = dataUrl.split(',')[1];
+    const preview = document.getElementById('chat-img-preview');
+    const wrap    = document.getElementById('chat-img-preview-wrap');
+    if (preview) preview.src = dataUrl;
+    if (wrap) wrap.style.display = 'flex';
+    haptic('light');
+  };
+  reader.readAsDataURL(file);
+  this.value = '';
+});
+
+function removeChatPhoto() {
+  _chatImageB64 = null;
+  const wrap = document.getElementById('chat-img-preview-wrap');
+  if (wrap) wrap.style.display = 'none';
+  const preview = document.getElementById('chat-img-preview');
+  if (preview) preview.src = '';
+}
+
+// Chat photo handled inside main sendChat via _chatImageB64 state
+
+// ══ AUTO-ADAPTATION ══
+function _checkAutoAdapt() {
+  if (!profile || !planData) return;
+  const lastAdapt = localStorage.getItem('pk_last_adapt');
+  if (lastAdapt) {
+    const daysSince = (Date.now() - new Date(lastAdapt).getTime()) / 86400000;
+    if (daysSince < 7) return;
+  } else {
+    const oldestLog = [...logs].sort((a,b) => a.date > b.date ? 1 : -1)[0];
+    if (!oldestLog) return;
+    const daysSince = (Date.now() - new Date(oldestLog.date.split('.').reverse().join('-')).getTime()) / 86400000;
+    if (daysSince < 7) return;
+  }
+  const ru = lang !== 'en';
+  if (chatHist.length > 0) {
+    const msg = ru
+      ? 'Смотрю на твои данные за неделю — давай разберём что идёт не так и скорректируем план 📊'
+      : "I'm looking at your weekly data — let's review what's going on and adjust your plan 📊";
+    chatHist.push({role:'assistant', content: msg});
+    persist();
+    localStorage.setItem('pk_last_adapt', new Date().toISOString().slice(0,10));
+  }
+}
+
+// ══ CHALLENGE ON FIRST LAUNCH ══
+function _maybeShowChallenge(isNew) {
+  const state = _getChalState();
+  if (state?.accepted) return;
+  const dismissed = localStorage.getItem('pk_chal_dismissed');
+  if (dismissed) {
+    const daysSince = (Date.now() - new Date(dismissed).getTime()) / 86400000;
+    if (daysSince < 3) return;
+  }
+  setTimeout(() => showChallenge(), isNew ? 2000 : 1000);
+}
 _checkIosInstall();
 
 // Update PWA button label based on current language

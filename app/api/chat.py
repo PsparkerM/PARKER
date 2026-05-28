@@ -62,9 +62,11 @@ class ChatMessage(BaseModel):
 
 
 class ChatRequest(BaseModel):
-    message: Annotated[str, Field(min_length=1, max_length=_MAX_MSG_LEN)]
-    history: list[ChatMessage] = Field(default=[], max_length=_MAX_HIST_LEN)
-    lang:    Optional[Literal["ru", "en"]] = "ru"
+    message:    Annotated[str, Field(min_length=1, max_length=_MAX_MSG_LEN)]
+    history:    list[ChatMessage] = Field(default=[], max_length=_MAX_HIST_LEN)
+    lang:       Optional[Literal["ru", "en"]] = "ru"
+    image_b64:  Optional[str] = Field(None, max_length=5_000_000)
+    media_type: Optional[str] = Field(None, max_length=30)
 
     model_config = {"extra": "ignore"}
 
@@ -80,7 +82,11 @@ async def chat(req: ChatRequest, tg_id: int = Depends(check_ai_quota)):
             except Exception:
                 pass
         history = [{"role": m.role, "content": m.content} for m in req.history]
-        reply   = await generate_chat_response(req.message, history, profile, lang=req.lang or "ru", logs=logs)
+        reply   = await generate_chat_response(
+            req.message, history, profile,
+            lang=req.lang or "ru", logs=logs,
+            image_b64=req.image_b64, media_type=req.media_type or "image/jpeg",
+        )
 
         clean_reply, new_macros = _parse_set_targets(reply)
 

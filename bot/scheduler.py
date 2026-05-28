@@ -120,6 +120,67 @@ def schedule_reminder(r: dict) -> None:
             replace_existing=True,
         )
 
+    elif rtype == "workout":
+        time_str = r.get("time", "07:00")
+        day_indices = r.get("days", [0, 1, 2, 3, 4])  # 0=Mon..6=Sun
+        # APScheduler day_of_week: 0=Mon in cron
+        try:
+            h, m = map(int, time_str.split(":"))
+            utc_h = (h - utc_offset) % 24
+        except (ValueError, AttributeError):
+            return
+
+        WORKOUT_MSGS = [
+            "💪 Время тренировки! Арни ждёт — не подводи себя. Открой план в P.A.R.K.E.R. и погнали! 🔥",
+            "🏋️ Напоминание о тренировке! Одно занятие сегодня — на шаг ближе к цели. Открой P.A.R.K.E.R. 💪",
+            "⚡ Тренировочный день! Тело не изменится без работы. Арни смотрит на твои данные — давай! 💪",
+        ]
+
+        for day_idx in day_indices:
+            sub_jid = f"{jid}_d{day_idx}"
+
+            async def workout_job(tg_id=tg_id, di=day_idx):
+                import random
+                await _send(tg_id, random.choice(WORKOUT_MSGS))
+
+            scheduler.add_job(
+                workout_job,
+                CronTrigger(day_of_week=day_idx, hour=utc_h, minute=m),
+                id=sub_jid,
+                replace_existing=True,
+            )
+
+    elif rtype == "motivation":
+        time_str = r.get("time", "09:00")
+        day_indices = r.get("days", list(range(7)))
+        try:
+            h, m = map(int, time_str.split(":"))
+            utc_h = (h - utc_offset) % 24
+        except (ValueError, AttributeError):
+            return
+
+        MOTIVATION_MSGS = [
+            "🔥 Арни говорит: «Не жди подходящего момента — создай его». Сегодня отличный день начать. Открой P.A.R.K.E.R.!",
+            "💪 Прогресс — это сумма маленьких шагов каждый день. Ты уже делаешь правильный выбор. Держи!",
+            "⚡ Дисциплина делает то, что мотивация не может. Арни в P.A.R.K.E.R. ждёт твоих данных за сегодня 📊",
+            "🎯 Один день — один шаг. Запиши еду, выпей воду, отметь тренировку. Арни следит за прогрессом!",
+            "🏆 Неважно насколько медленно ты движешься — главное не останавливаться. Открой P.A.R.K.E.R. 💪",
+        ]
+
+        for day_idx in day_indices:
+            sub_jid = f"{jid}_m{day_idx}"
+
+            async def motivation_job(tg_id=tg_id):
+                import random
+                await _send(tg_id, random.choice(MOTIVATION_MSGS))
+
+            scheduler.add_job(
+                motivation_job,
+                CronTrigger(day_of_week=day_idx, hour=utc_h, minute=m),
+                id=sub_jid,
+                replace_existing=True,
+            )
+
 
 def unschedule_reminder(reminder_id: str) -> None:
     _clear_jobs(_job_id(str(reminder_id)))

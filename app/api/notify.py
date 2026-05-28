@@ -2,16 +2,25 @@ import hmac
 import logging
 from typing import Annotated
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
+from app.api.deps import get_current_tg_id
 from bot.bot_instance import bot
 from bot.config import ADMIN_SECRET
 
 router = APIRouter()
 
 _MAX_TEXT = 4_096
+
+_TEST_MSG = (
+    "⚡ P.A.R.K.E.R. — тестовое напоминание!\n\n"
+    "💧 Выпей воды\n"
+    "🥗 Запиши приём пищи\n"
+    "⚖️ Взвешивание работает!\n\n"
+    "Напоминания настроены корректно ✓"
+)
 
 
 class NotifyRequest(BaseModel):
@@ -32,3 +41,14 @@ async def send_notification(body: NotifyRequest):
     except Exception as e:
         logging.warning("notify error tg_id=%s: %s", body.tg_id, e)
         return JSONResponse({"ok": False, "error": "Не удалось отправить сообщение"})
+
+
+@router.post("/api/notify/test")
+async def send_test_notification(tg_id: int = Depends(get_current_tg_id)):
+    """Any authenticated user can send themselves a test reminder."""
+    try:
+        await bot.send_message(chat_id=tg_id, text=_TEST_MSG)
+        return JSONResponse({"ok": True})
+    except Exception as e:
+        logging.warning("test notify error tg_id=%s: %s", tg_id, e)
+        return JSONResponse({"ok": False, "error": "Не удалось отправить — убедись что бот не заблокирован"})

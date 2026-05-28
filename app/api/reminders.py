@@ -17,7 +17,7 @@ _Label   = Annotated[str, Field(min_length=1, max_length=100)]
 
 
 class ReminderRequest(BaseModel):
-    type:         Literal["water", "meal", "log"]
+    type:         Literal["water", "meal", "log", "workout", "motivation"]
     label:        Optional[_Label]            = None
     time:         Optional[str]               = Field(None, max_length=5)
     times:        Optional[list[str]]         = Field(None, max_length=10)
