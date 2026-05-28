@@ -1883,10 +1883,14 @@ async function saveChatToServer() {
 }
 
 let _syncTimer = null;
+let _syncInFlight = false;
+let _syncDirty = false;
 function scheduleSyncLogs() {
+  _syncDirty = true;
   clearTimeout(_syncTimer);
-  _syncTimer = setTimeout(syncLogsToServer, 3000);
+  _syncTimer = setTimeout(syncLogsToServer, 1500);
 }
+window.addEventListener('online', () => { if (_syncDirty) syncLogsToServer(); });
 
 function _collectWaterEntries() {
   const entries = [];
@@ -1902,8 +1906,11 @@ function _collectWaterEntries() {
 
 async function syncLogsToServer() {
   const tgId = getTgId(); if (!tgId) return;
+  if (_syncInFlight) { _syncDirty = true; return; }
+  _syncInFlight = true;
+  _syncDirty = false;
   try {
-    await fetch('/api/logs', {
+    const r = await fetch('/api/logs', {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({
         tg_id: tgId,
@@ -1913,7 +1920,19 @@ async function syncLogsToServer() {
         water: _collectWaterEntries(),
       })
     });
-  } catch(e) { console.warn('syncLogs error', e); }
+    if (!r.ok) throw new Error('http ' + r.status);
+  } catch(e) {
+    console.warn('syncLogs error', e);
+    _syncDirty = true;
+    clearTimeout(_syncTimer);
+    _syncTimer = setTimeout(syncLogsToServer, 8000);
+  } finally {
+    _syncInFlight = false;
+    if (_syncDirty && navigator.onLine !== false) {
+      clearTimeout(_syncTimer);
+      _syncTimer = setTimeout(syncLogsToServer, 1500);
+    }
+  }
 }
 
 async function loadLogsFromServer() {
@@ -2238,7 +2257,10 @@ function renderHome() {
   const el = document.getElementById('home-content');
   if (!el) return;
   if (!profile||!planData) {
-    el.innerHTML='<div class="empty-state"><div class="empty-ico">⚡</div><div class="empty-txt">Загрузка данных...</div></div>';
+    el.innerHTML = `
+      <div class="skel-card"><div class="skel skel-circle" style="width:90px;height:90px;align-self:flex-start"></div><div class="skel skel-line lg"></div><div class="skel skel-line"></div><div class="skel skel-line sm"></div></div>
+      <div class="skel-card"><div class="skel skel-line lg"></div><div class="skel skel-line"></div></div>
+      <div class="skel-card"><div class="skel skel-line lg"></div><div class="skel skel-line"></div><div class="skel skel-line sm"></div></div>`;
     return;
   }
   const m = macrosOverride || planData?.macros||{};
@@ -2429,10 +2451,20 @@ function renderHome() {
 
 function addWater(ml) {
   const cur = getWater();
-  setWater(Math.max(0, cur+ml));
-  renderHome();
-  if (ml>0) toast(t('t_water', ml));
+  const next = Math.max(0, cur + ml);
+  setWater(next);
+  _updateWaterUI(next);
+  if (ml>0) { toast(t('t_water', ml)); haptic('light'); }
   scheduleSyncLogs();
+}
+
+function _updateWaterUI(ml) {
+  const info = document.getElementById('water-info');
+  const bar  = document.getElementById('water-bar');
+  if (!info || !bar) { renderHome(); return; }
+  const target = +(localStorage.getItem('pk_water_target')||2500);
+  info.textContent = `${ml} / ${target} мл`;
+  bar.style.width = Math.min(100, Math.round(ml*100/target)) + '%';
 }
 
 function togglePlan(id) {
