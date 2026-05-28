@@ -2226,7 +2226,7 @@ async function calcFood() {
   try {
     const r=await fetch('/api/food',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:txt})});
     const data=await r.json();
-    if(data.error){res.style.display='block';res.innerHTML=`<div style="color:var(--red);font-size:13px;margin-top:8px">${data.error}</div>`;return;}
+    if(data.error){res.style.display='block';res.innerHTML=`<div style="color:var(--red);font-size:13px;margin-top:8px">${escHtml(data.error)}</div>`;return;}
     showFoodResult(data,txt);
   } catch { res.style.display='block';res.innerHTML='<div style="color:var(--red);font-size:13px;margin-top:8px">Ошибка соединения</div>'; }
   finally { btn.textContent='Посчитать КБЖУ →'; btn.disabled=false; }
@@ -2326,7 +2326,7 @@ document.getElementById('photo-input').addEventListener('change',async function(
     const b64=await new Promise((ok,fail)=>{const r=new FileReader();r.onload=()=>ok(r.result.split(',')[1]);r.onerror=fail;r.readAsDataURL(file);});
     const resp=await fetch('/api/food/photo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image_b64:b64,media_type:file.type||'image/jpeg'})});
     const data=await resp.json();
-    if(data.error){if(res){res.style.display='block';res.innerHTML=`<div style="color:var(--red);font-size:13px;margin-top:8px">${data.error}</div>`;}return;}
+    if(data.error){if(res){res.style.display='block';res.innerHTML=`<div style="color:var(--red);font-size:13px;margin-top:8px">${escHtml(data.error)}</div>`;}return;}
     if(data.description&&document.getElementById('food-ta'))document.getElementById('food-ta').value=data.description;
     showFoodResult(data,data.description||'Фото');
   } catch{if(res){res.style.display='block';res.innerHTML='<div style="color:var(--red);font-size:13px;margin-top:8px">Ошибка</div>';}}

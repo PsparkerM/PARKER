@@ -10,7 +10,7 @@ from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
 
-from aiogram import Dispatcher
+from aiogram import BaseMiddleware, Dispatcher
 from aiogram.types import Update
 
 from bot.config import BOT_TOKEN, WEBAPP_URL, WEBHOOK_SECRET_TOKEN
@@ -37,7 +37,30 @@ logging.basicConfig(
 # Security events always at WARNING+ — ensure they're never filtered
 logging.getLogger("parker.security").setLevel(logging.WARNING)
 
+class MaintenanceMiddleware(BaseMiddleware):
+    async def __call__(self, handler, event: Update, data: dict):
+        from bot.config import MAINTENANCE_MODE, ADMIN_TG_IDS
+        if not MAINTENANCE_MODE:
+            return await handler(event, data)
+        user_id = None
+        if event.message and event.message.from_user:
+            user_id = event.message.from_user.id
+        elif event.callback_query and event.callback_query.from_user:
+            user_id = event.callback_query.from_user.id
+        if user_id in ADMIN_TG_IDS:
+            return await handler(event, data)
+        if event.message:
+            await event.message.answer(
+                "🔧 *P.A.R.K.E.R. — технические работы*\n\n"
+                "Бот временно недоступен — ведутся улучшения.\n"
+                "Скоро вернёмся! 💪",
+                parse_mode="Markdown",
+            )
+        return None
+
+
 dp = Dispatcher()
+dp.update.outer_middleware(MaintenanceMiddleware())
 dp.include_router(start.router)
 
 WEBHOOK_PATH = f"/webhook/{BOT_TOKEN}"
@@ -96,9 +119,10 @@ async def lifespan(app: FastAPI):
     asyncio.create_task(load_all_reminders())
 
     if not WEBHOOK_SECRET_TOKEN:
-        logging.warning(
-            "⚠️  WEBHOOK_SECRET_TOKEN не задан — входящие Telegram updates не проверяются по подписи. "
-            "Добавь WEBHOOK_SECRET_TOKEN в Railway Variables."
+        logging.error(
+            "🔴 SECURITY: WEBHOOK_SECRET_TOKEN не задан — Telegram webhook не защищён подписью. "
+            "Любой, кто знает URL webhook, может отправлять поддельные апдейты. "
+            "Добавь WEBHOOK_SECRET_TOKEN в Railway Variables → Settings → Variables."
         )
 
     if WEBAPP_URL:

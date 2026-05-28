@@ -1,9 +1,11 @@
+import asyncio
 import logging
+import re
 from typing import Optional, Annotated
 
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, AfterValidator
 
 from app.api.deps import get_current_tg_id
 from db.queries import get_user, save_user_logs, get_user_logs
@@ -11,7 +13,16 @@ from db.queries import get_user, save_user_logs, get_user_logs
 router = APIRouter()
 
 _MAX_ENTRIES = 1_000
-_DateStr     = Annotated[str, Field(max_length=20)]
+_DATE_RE = re.compile(r"^\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])$")
+
+
+def _validate_date(v: str) -> str:
+    if not _DATE_RE.match(v):
+        raise ValueError("Дата должна быть в формате YYYY-MM-DD")
+    return v
+
+
+_DateStr = Annotated[str, Field(max_length=10), AfterValidator(_validate_date)]
 
 
 class MacroTotals(BaseModel):
@@ -76,10 +87,10 @@ class LogsRequest(BaseModel):
 @router.post("/api/logs")
 async def save_logs(body: LogsRequest, tg_id: int = Depends(get_current_tg_id)):
     try:
-        user = get_user(tg_id)
+        user = await asyncio.to_thread(get_user, tg_id)
         if not user:
             return JSONResponse({"ok": False, "error": "Пользователь не найден"})
-        save_user_logs(user["id"], body.model_dump())
+        await asyncio.to_thread(save_user_logs, user["id"], body.model_dump())
         return JSONResponse({"ok": True})
     except Exception:
         logging.exception("save_logs error")
@@ -89,10 +100,10 @@ async def save_logs(body: LogsRequest, tg_id: int = Depends(get_current_tg_id)):
 @router.get("/api/logs")
 async def load_logs(tg_id: int = Depends(get_current_tg_id)):
     try:
-        user = get_user(tg_id)
+        user = await asyncio.to_thread(get_user, tg_id)
         if not user:
             return JSONResponse({"found": False})
-        data = get_user_logs(user["id"])
+        data = await asyncio.to_thread(get_user_logs, user["id"])
         return JSONResponse({"found": True, **data})
     except Exception:
         logging.exception("load_logs error")

@@ -85,26 +85,30 @@ async def get_current_tg_id(
 async def check_ai_quota(tg_id: int = Depends(get_current_tg_id)) -> int:
     """
     Dependency for AI endpoints.
-    Checks the user's daily Supabase-persisted quota and consumes one call.
+    Atomically increments the daily Supabase-persisted counter and checks quota.
     Raises 429 when exhausted.
-    """
-    from db.queries import get_user, get_ai_calls_today, increment_ai_calls
 
-    user = get_user(tg_id)
+    Uses a single atomic DB operation (migration 005) to avoid the read→check→write
+    race condition that previously allowed concurrent requests to exceed the limit.
+    """
+    import asyncio
+    from db.queries import get_user, atomic_increment_ai_calls
+
+    user = await asyncio.to_thread(get_user, tg_id)
     if not user:
         raise HTTPException(status_code=404, detail="Пользователь не найден")
 
     status = (user.get("status") or "free").lower()
     limit  = ai_daily_limit(status)
-    used   = get_ai_calls_today(user["id"])
 
-    if used >= limit:
-        log_security_event("AI_QUOTA_EXCEEDED", tg_id=tg_id, status=status, limit=limit, used=used)
+    new_count = await asyncio.to_thread(atomic_increment_ai_calls, user["id"])
+
+    if new_count > limit:
+        log_security_event("AI_QUOTA_EXCEEDED", tg_id=tg_id, status=status, limit=limit, used=new_count)
         raise HTTPException(
             status_code=429,
             detail=f"Дневной лимит AI исчерпан ({limit}/день). Обновится завтра в полночь.",
             headers={"Retry-After": "86400"},
         )
 
-    increment_ai_calls(user["id"])
     return tg_id

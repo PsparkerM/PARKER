@@ -14,5 +14,7 @@ WEBHOOK_SECRET_TOKEN:   str = os.getenv("WEBHOOK_SECRET_TOKEN", "")
 _raw = os.getenv("ADMIN_TG_IDS", "")
 ADMIN_TG_IDS: set[int] = {int(x.strip()) for x in _raw.split(",") if x.strip().isdigit()}
 
+MAINTENANCE_MODE: bool = os.getenv("MAINTENANCE_MODE", "").lower() in ("1", "true", "yes")
+
 if not BOT_TOKEN:
     raise ValueError("BOT_TOKEN не задан")

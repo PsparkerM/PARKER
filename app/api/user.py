@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from typing import Optional, Literal, Annotated
 
@@ -44,7 +45,7 @@ class ChatHistoryRequest(BaseModel):
 @router.get("/api/user")
 async def load_user(tg_id: int = Depends(get_current_tg_id)):
     try:
-        data = get_user_with_plans(tg_id)
+        data = await asyncio.to_thread(get_user_with_plans, tg_id)
         if not data:
             return JSONResponse({"found": False})
         if isinstance(data.get("profile"), dict):
@@ -61,7 +62,7 @@ async def update_user_data(body: UserUpdateRequest, tg_id: int = Depends(get_cur
         fields = body.model_dump(exclude_none=True)
         if not fields:
             return JSONResponse({"ok": False, "error": "Нет данных для обновления"})
-        ok = update_user_fields(tg_id, fields)
+        ok = await asyncio.to_thread(update_user_fields, tg_id, fields)
         return JSONResponse({"ok": ok})
     except Exception:
         logging.exception("update_user_data error")
@@ -71,11 +72,11 @@ async def update_user_data(body: UserUpdateRequest, tg_id: int = Depends(get_cur
 @router.post("/api/chat/history")
 async def save_chat_history(body: ChatHistoryRequest, tg_id: int = Depends(get_current_tg_id)):
     try:
-        user = get_user(tg_id)
+        user = await asyncio.to_thread(get_user, tg_id)
         if not user:
             return JSONResponse({"ok": False, "error": "Пользователь не найден"})
         history = [{"role": m.role, "content": m.content} for m in body.history]
-        upsert_chat_history(user["id"], history)
+        await asyncio.to_thread(upsert_chat_history, user["id"], history)
         return JSONResponse({"ok": True})
     except Exception:
         logging.exception("save_chat_history error")

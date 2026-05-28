@@ -273,6 +273,30 @@ def update_user_fields(tg_id: int, fields: dict) -> bool:
         return False
 
 
+def update_plan_macros(user_id: str, macros: dict) -> bool:
+    """Update the macros field of the latest nutrition plan for this user."""
+    db = get_client()
+    if not db or not macros:
+        return False
+    try:
+        result = (
+            db.table("plans")
+            .select("id")
+            .eq("user_id", user_id)
+            .eq("type", "nutrition")
+            .order("created_at", desc=True)
+            .limit(1)
+            .execute()
+        )
+        if not result.data:
+            return False
+        db.table("plans").update({"macros": macros}).eq("id", result.data[0]["id"]).execute()
+        return True
+    except Exception:
+        logging.exception("update_plan_macros error user_id=%s", user_id)
+        return False
+
+
 def set_user_status(tg_id: int, status: str) -> bool:
     db = get_client()
     if not db:
@@ -315,8 +339,33 @@ def get_user(tg_id: int) -> dict | None:
 
 # ── AI usage (Supabase-backed, persists across deploys) ────────────────────
 
+def atomic_increment_ai_calls(user_id: str) -> int:
+    """Atomically increments today's AI call counter and returns the new count.
+
+    Uses a PostgreSQL function (migration 005) so the increment is a single
+    atomic INSERT … ON CONFLICT DO UPDATE, eliminating the read-modify-write
+    race condition of the old approach.
+
+    Returns 0 on DB error so callers treat it as "quota not consumed" and can
+    still let the request through rather than silently block all AI calls.
+    """
+    from datetime import date
+    db = get_client()
+    if not db:
+        return 0
+    try:
+        result = db.rpc(
+            "increment_ai_calls",
+            {"p_user_id": user_id, "p_date": date.today().isoformat()},
+        ).execute()
+        return result.data if isinstance(result.data, int) else 0
+    except Exception:
+        logging.exception("atomic_increment_ai_calls error user_id=%s", user_id)
+        return 0
+
+
 def get_ai_calls_today(user_id: str) -> int:
-    """Returns the number of AI calls made today by this user."""
+    """Read-only quota check (non-mutating). Used only for display/info endpoints."""
     from datetime import date
     db = get_client()
     if not db:
@@ -333,33 +382,3 @@ def get_ai_calls_today(user_id: str) -> int:
         return result.data["call_count"] if result.data else 0
     except Exception:
         return 0
-
-
-def increment_ai_calls(user_id: str) -> None:
-    """Atomically increments today's AI call counter for the user."""
-    from datetime import date
-    db = get_client()
-    if not db:
-        return
-    today = date.today().isoformat()
-    try:
-        existing = (
-            db.table("ai_usage")
-            .select("id, call_count")
-            .eq("user_id", user_id)
-            .eq("used_date", today)
-            .single()
-            .execute()
-        )
-        if existing.data:
-            db.table("ai_usage").update({
-                "call_count": existing.data["call_count"] + 1
-            }).eq("id", existing.data["id"]).execute()
-        else:
-            db.table("ai_usage").insert({
-                "user_id":    user_id,
-                "used_date":  today,
-                "call_count": 1,
-            }).execute()
-    except Exception:
-        logging.exception("increment_ai_calls error user_id=%s", user_id)
