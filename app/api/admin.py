@@ -83,6 +83,38 @@ async def admin_user_detail(request: Request, tg_id: int):
     return JSONResponse({**data, "logs": logs_data or {}, "ai_calls_today": ai_calls})
 
 
+@router.post("/admin/broadcast")
+async def admin_broadcast(request: Request):
+    if not await _check_admin(request):
+        return JSONResponse({"error": "forbidden"}, status_code=403)
+    try:
+        payload = await request.json()
+    except Exception:
+        return JSONResponse({"error": "invalid json"}, status_code=400)
+    filter_val = payload.get("filter", "all").lower()
+    text = payload.get("text", "").strip()
+    if not text:
+        return JSONResponse({"error": "text required"}, status_code=400)
+    if filter_val not in ("all", "vip", "pro", "free"):
+        return JSONResponse({"error": "invalid filter"}, status_code=400)
+
+    from bot.bot_instance import bot
+    users = await asyncio.to_thread(get_all_users)
+    targets = [u for u in users if filter_val == "all" or _resolve_status(u) == filter_val]
+    sent = 0
+    for u in targets:
+        tg_id = u.get("tg_id")
+        if not tg_id:
+            continue
+        try:
+            await bot.send_message(chat_id=int(tg_id), text=text)
+            sent += 1
+            await asyncio.sleep(0.05)  # stay under Telegram rate limits
+        except Exception as e:
+            logging.warning("broadcast failed tg_id=%s: %s", tg_id, e)
+    return JSONResponse({"ok": True, "sent": sent, "total": len(targets)})
+
+
 @router.post("/admin/delete-user")
 async def admin_delete_user(request: Request):
     if not await _check_admin(request):
@@ -305,6 +337,7 @@ code.cpytg:hover{{background:rgba(125,211,252,.15)}}
     <option value="pro">💎 Pro</option>
     <option value="free">⚡ Free</option>
   </select>
+  <button class="btn" onclick="broadcastMsg()">📢 Рассылка</button>
   <a class="btn" href="#" onclick="window.open('/admin/users?'+AUTH,'_blank');return false">📥 JSON</a>
 </div>
 
@@ -478,6 +511,26 @@ async function sendMsg(tgId, name) {{
   }} catch(e) {{
     showToast('❌ Сетевая ошибка', false);
   }}
+}}
+
+async function broadcastMsg() {{
+  const filter = prompt('Кому отправить?\n\n"all" — всем\n"vip" — только VIP\n"pro" — только Pro\n"free" — только Free\n\nВведи фильтр:');
+  if (!filter) return;
+  const validFilters = ['all','vip','pro','free'];
+  if (!validFilters.includes(filter.toLowerCase().trim())) {{ showToast('❌ Неверный фильтр. Используй: all/vip/pro/free', false); return; }}
+  const text = prompt('Текст сообщения:');
+  if (!text || !text.trim()) return;
+  const secret = sessionStorage.getItem('adm_secret') || '';
+  showToast('⏳ Отправляю…');
+  try {{
+    const res = await fetch('/admin/broadcast?' + AUTH, {{
+      method: 'POST',
+      headers: {{'Content-Type':'application/json'}},
+      body: JSON.stringify({{filter: filter.toLowerCase().trim(), text: text.trim(), secret}})
+    }});
+    const d = await res.json();
+    d.ok ? showToast(`✅ Отправлено: ${{d.sent}} из ${{d.total}}`) : showToast('❌ ' + (d.error||'Ошибка'), false);
+  }} catch(e) {{ showToast('❌ Сетевая ошибка', false); }}
 }}
 
 async function delUser(tgId, name, modalId) {{

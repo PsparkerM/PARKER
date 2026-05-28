@@ -1479,27 +1479,39 @@ async function submitOnboarding() {
   const tgId = getTgId();
   if (tgId) onbData.tg_id = tgId;
   await _onbTyping('Понял всё! ⚡\n\nСоставляю персональный план питания на 7 дней и программу тренировок специально под тебя.\n\nЗаймёт пару секунд...');
-  _onbBottom(`<div style="display:flex;flex-direction:column;align-items:center;gap:12px;padding:16px 0">
+  const _genSteps = ['⚡ Считаю КБЖУ под твои параметры…','🍽 Арни составляет план питания на 7 дней…','💪 Генерирую программу тренировок…','🎯 Финальная настройка плана…','✨ Почти готово…'];
+  let _genIdx = 0;
+  _onbBottom(`<div style="display:flex;flex-direction:column;align-items:center;gap:14px;padding:16px 0">
     <div class="spin"></div>
-    <div style="font-size:13px;color:var(--text2);text-align:center">Питание на 7 дней + программа тренировок</div>
+    <div id="gen-step" style="font-size:13px;color:var(--text2);text-align:center;min-height:20px">${_genSteps[0]}</div>
+    <div style="width:200px;height:3px;background:rgba(255,255,255,.07);border-radius:2px;overflow:hidden"><div id="gen-bar" style="height:100%;width:5%;background:var(--cyan);border-radius:2px;transition:width 2s ease"></div></div>
   </div>`);
+  const _genTimer = setInterval(() => {
+    _genIdx = Math.min(_genIdx+1, _genSteps.length-1);
+    const el = document.getElementById('gen-step'); if(el) el.textContent = _genSteps[_genIdx];
+    const bar = document.getElementById('gen-bar'); if(bar) bar.style.width = Math.min(90, 5+_genIdx*22)+'%';
+  }, 4000);
   try {
     const r = await fetch('/api/profile', {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify(onbData)
     });
+    clearInterval(_genTimer);
     if (!r.ok) {
       let msg = `Ошибка сервера (${r.status})`;
       try { const e = await r.json(); msg = e.detail||e.error||msg; } catch {}
       throw new Error(msg);
     }
     const data = await r.json();
+    const bar = document.getElementById('gen-bar'); if(bar) bar.style.width='100%';
+    await new Promise(r=>setTimeout(r,400));
     planData = data; profile = {...onbData};
     chatHist = []; setWater(0);
     persist();
     launchApp(true);
   } catch(e) {
-    _onbBottom(`<div style="color:var(--red);text-align:center;font-size:14px;line-height:1.5;padding:8px 0">${escHtml(e.message||'Ошибка')}</div>
+    clearInterval(_genTimer);
+    _onbBottom(`<div style="color:var(--red);text-align:center;font-size:14px;line-height:1.5;padding:8px 0">${escHtml(e.message||'Ошибка сервера — попробуй ещё раз')}</div>
       <button class="onb-next" onclick="location.reload()">Попробовать снова</button>`);
   }
 }
@@ -2442,61 +2454,79 @@ document.getElementById('photo-input').addEventListener('change',async function(
 });
 
 // ══ PROGRESS ══
+let _progressPeriod = 30;
 function renderProgress() {
   const el=document.getElementById('progress-content');
-  const weightLogs=logs.filter(l=>l.weight).slice(-14);
+  const allWeightLogs=logs.filter(l=>l.weight);
+  const weightLogs=allWeightLogs.slice(-_progressPeriod);
   const calMap={};
   foodLogs.forEach(f=>{if(!calMap[f.date])calMap[f.date]=0;calMap[f.date]+=(f.total?.calories||0);});
-  const calLogs=Object.entries(calMap).slice(-7).map(([date,cal])=>({date,cal}));
+  const calLogs=Object.entries(calMap).sort().slice(-14).map(([date,cal])=>({date,cal}));
 
-  if(!weightLogs.length&&!calLogs.length){
+  if(!allWeightLogs.length&&!calLogs.length){
     el.innerHTML=`<div class="empty-state"><div class="empty-ico">📊</div>
       <div class="empty-txt">Начни вносить данные — здесь появятся графики</div>
       <button class="go-btn" onclick="goTab('tracker')">Перейти в трекер →</button></div>`;return;
   }
 
   const weightChart=(()=>{
-    if(weightLogs.length<2) return '<div style="color:var(--text3);font-size:13px;text-align:center;padding:16px">Нужно минимум 2 записи</div>';
+    if(weightLogs.length<2) return '<div style="color:var(--text3);font-size:13px;text-align:center;padding:16px">Нужно минимум 2 записи веса</div>';
     const vals=weightLogs.map(l=>l.weight);
-    const W=320,H=80,pad=10;
-    const minV=Math.min(...vals)-.5,maxV=Math.max(...vals)+.5;
+    const W=320,H=90,pad=10;
+    const minV=Math.min(...vals)-.3,maxV=Math.max(...vals)+.3;
     const x=i=>pad+(i/(vals.length-1))*(W-pad*2);
     const y=v=>H-pad-((v-minV)/(maxV-minV))*(H-pad*2);
     const pts=vals.map((v,i)=>`${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
-    const dots=vals.map((v,i)=>`<circle cx="${x(i).toFixed(1)}" cy="${y(v).toFixed(1)}" r="4" fill="var(--cyan)"/>`).join('');
+    const dots=vals.map((v,i)=>`<circle cx="${x(i).toFixed(1)}" cy="${y(v).toFixed(1)}" r="${i===vals.length-1?5:3}" fill="${i===vals.length-1?'var(--cyan)':'rgba(0,229,255,.6)'}" stroke="none"/>`).join('');
+    // Linear trend line
+    const n=vals.length, sx=vals.reduce((_,__,i)=>_+i,0), sy=vals.reduce((a,v)=>a+v,0);
+    const sxy=vals.reduce((a,v,i)=>a+i*v,0), sx2=vals.reduce((a,_,i)=>a+i*i,0);
+    const slope=(n*sxy-sx*sy)/(n*sx2-sx*sx||1);
+    const intercept=(sy-slope*sx)/n;
+    const tx0=x(0).toFixed(1), ty0=y(intercept).toFixed(1), tx1=x(n-1).toFixed(1), ty1=y(slope*(n-1)+intercept).toFixed(1);
     const delta=(vals[vals.length-1]-vals[0]).toFixed(1);
-    const dCls=parseFloat(delta)>0?'color:var(--red)':'color:var(--green)';
+    const goal=profile?.goal||'';
+    const dGood=(goal==='lose_weight'&&parseFloat(delta)<0)||(goal==='gain_muscle'&&parseFloat(delta)>0)||(goal==='maintain'&&Math.abs(parseFloat(delta))<0.5);
+    const dCls=parseFloat(delta)===0?'color:var(--text2)':dGood?'color:var(--green)':'color:var(--red)';
     return `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-      <div style="font-size:22px;font-weight:800">${vals[vals.length-1]} кг</div>
-      <div style="font-size:13px;font-weight:700;${dCls}">${parseFloat(delta)>0?'+':''}${delta} кг за период</div>
+      <div><div style="font-size:24px;font-weight:800">${vals[vals.length-1]} кг</div><div style="font-size:11px;color:var(--text3)">сейчас</div></div>
+      <div style="text-align:right"><div style="font-size:15px;font-weight:700;${dCls}">${parseFloat(delta)>0?'+':''}${delta} кг</div><div style="font-size:11px;color:var(--text3)">за ${weightLogs.length} записей</div></div>
     </div>
     <svg width="100%" viewBox="0 0 ${W} ${H}" style="overflow:visible">
       <defs><linearGradient id="wg" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="var(--cyan)" stop-opacity=".25"/><stop offset="100%" stop-color="var(--cyan)" stop-opacity="0"/>
+        <stop offset="0%" stop-color="var(--cyan)" stop-opacity=".2"/><stop offset="100%" stop-color="var(--cyan)" stop-opacity="0"/>
       </linearGradient></defs>
       <polygon points="${pts} ${x(vals.length-1).toFixed(1)},${H} ${pad},${H}" fill="url(#wg)"/>
-      <polyline points="${pts}" fill="none" stroke="var(--cyan)" stroke-width="2.5" stroke-linejoin="round"/>
+      <line x1="${tx0}" y1="${ty0}" x2="${tx1}" y2="${ty1}" stroke="rgba(255,255,255,.2)" stroke-width="1.5" stroke-dasharray="4,3"/>
+      <polyline points="${pts}" fill="none" stroke="var(--cyan)" stroke-width="2" stroke-linejoin="round"/>
       ${dots}
     </svg>
     <div style="display:flex;justify-content:space-between;margin-top:4px;font-size:10px;color:var(--text3)">
-      <span>${weightLogs[0].date}</span><span>${weightLogs[weightLogs.length-1].date}</span>
+      <span>${weightLogs[0].date.slice(5)}</span>
+      <span style="color:rgba(255,255,255,.3);font-size:10px">— тренд</span>
+      <span>${weightLogs[weightLogs.length-1].date.slice(5)}</span>
     </div>`;
   })();
 
   const calChart=(()=>{
-    if(!calLogs.length) return '<div style="color:var(--text3);font-size:13px;text-align:center;padding:16px">Нет данных</div>';
+    if(!calLogs.length) return '<div style="color:var(--text3);font-size:13px;text-align:center;padding:16px">Нет данных о питании</div>';
     const _effCal=(macrosOverride||planData?.macros||{}).calories||2000;
     const maxCal=Math.max(...calLogs.map(l=>l.cal),_effCal);
     const target=_effCal;
     const bars=calLogs.map(l=>{
       const p=Math.max(4,Math.round(l.cal/maxCal*100));
       const c=l.cal>target*1.1?'var(--red)':l.cal<target*0.7?'rgba(0,229,255,.4)':'var(--cyan)';
-      return `<div class="wb" style="height:${p}%;background:${c};opacity:${l.date===todayKey()?1:.7}"></div>`;
+      return `<div class="wb" style="height:${p}%;background:${c};opacity:${l.date===todayKey()?1:.7}" title="${l.date}: ${Math.round(l.cal)} ккал"></div>`;
     }).join('');
-    const labels=calLogs.map(l=>`<div class="wd-lbl ${l.date===todayKey()?'today':''}">${l.date.split('.').slice(0,2).join('.')}</div>`).join('');
-    return `<div class="week-bars">${bars}</div><div class="week-days">${labels}</div>
-      <div style="display:flex;gap:12px;margin-top:10px;font-size:11px">
-        <span style="color:var(--cyan)">● Норма</span><span style="color:rgba(0,229,255,.4)">● Мало</span><span style="color:var(--red)">● Превышение</span>
+    const labels=calLogs.map(l=>`<div class="wd-lbl ${l.date===todayKey()?'today':''}">${l.date.slice(5).replace('-','/')}</div>`).join('');
+    const avgCal=Math.round(calLogs.reduce((s,l)=>s+l.cal,0)/calLogs.length);
+    return `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:12px">
+      <span style="color:var(--text2)">Цель: <b>${target} ккал</b></span>
+      <span style="color:var(--text2)">Среднее: <b style="color:${Math.abs(avgCal-target)<target*0.1?'var(--green)':'var(--text1)'}">${avgCal} ккал</b></span>
+    </div>
+    <div class="week-bars">${bars}</div><div class="week-days">${labels}</div>
+      <div style="display:flex;gap:12px;margin-top:8px;font-size:11px">
+        <span style="color:var(--cyan)">● В норме</span><span style="color:rgba(0,229,255,.4)">● Мало</span><span style="color:var(--red)">● Превышение</span>
       </div>`;
   })();
 
@@ -2534,13 +2564,18 @@ function renderProgress() {
       <div class="adapt-result" id="adapt-result" style="display:none"></div>
     </div>
     <div class="chart-card">
-      <div class="chart-hd"><div class="chart-ttl">⚖️ Динамика веса</div><div class="chart-period">14 дней</div></div>
+      <div class="chart-hd">
+        <div class="chart-ttl">⚖️ Динамика веса</div>
+        <div style="display:flex;gap:4px">
+          ${[14,30,90].map(p=>`<button onclick="_progressPeriod=${p};renderProgress()" style="padding:3px 8px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid rgba(255,255,255,.12);background:${_progressPeriod===p?'rgba(0,229,255,.15)':'rgba(255,255,255,.04)'};color:${_progressPeriod===p?'var(--cyan)':'var(--text3)'}">${p}д</button>`).join('')}
+        </div>
+      </div>
       ${weightChart}
     </div>
     ${weightLogs.length?`<div class="chart-card" style="margin-top:0">
       <div class="chart-hd"><div class="chart-ttl">📋 История веса</div></div>${wlogRows}</div>`:''}
     <div class="chart-card">
-      <div class="chart-hd"><div class="chart-ttl">🔥 Калории / день</div><div class="chart-period">7 дней</div></div>
+      <div class="chart-hd"><div class="chart-ttl">🔥 Калории / день</div><div class="chart-period">14 дней</div></div>
       ${calChart}
     </div>
     ${measTable}`;
@@ -3718,9 +3753,17 @@ function updatePwaLabel() {
 (async function boot() {
   if (profile && planData) {
     launchApp(false);
-    // Background sync — picks up server-side changes (badge, status, plan updates)
+    // Background sync — picks up server-side changes (badge, status, plan updates, chat history)
     tryLoadFromServer().then(loaded => {
-      if (loaded && curTab === 'home') renderHome();
+      if (!loaded) return;
+      if (curTab === 'home') renderHome();
+      // Re-render chat if server returned more history than localStorage had
+      if (curTab === 'chat') initChat(false);
+      else {
+        // Silently update chat history so it's ready when user opens chat tab
+        const el = document.getElementById('chat-msgs');
+        if (el && chatHist.length > 0) initChat(false);
+      }
     });
   } else {
     const loaded = await tryLoadFromServer();
