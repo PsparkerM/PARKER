@@ -76,10 +76,26 @@ class MeasLogEntry(BaseModel):
     model_config = {"extra": "ignore"}
 
 
+class WaterEntry(BaseModel):
+    date: _DateStr
+    ml:   int = Field(ge=0, le=10_000)
+
+    model_config = {"extra": "ignore"}
+
+
+class StepsEntry(BaseModel):
+    date:  _DateStr
+    steps: int = Field(ge=0, le=100_000)
+
+    model_config = {"extra": "ignore"}
+
+
 class LogsRequest(BaseModel):
     food:        list[FoodLogEntry]    = Field(default=[], max_length=_MAX_ENTRIES)
     weight_logs: list[WeightLogEntry]  = Field(default=[], max_length=_MAX_ENTRIES)
     meas_logs:   list[MeasLogEntry]    = Field(default=[], max_length=_MAX_ENTRIES)
+    water:       list[WaterEntry]      = Field(default=[], max_length=365)
+    steps:       list[StepsEntry]      = Field(default=[], max_length=365)
 
     model_config = {"extra": "ignore"}
 

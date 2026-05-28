@@ -349,6 +349,28 @@ def update_last_seen(tg_id: int) -> None:
         logging.exception("update_last_seen error")
 
 
+def delete_user(tg_id: int) -> bool:
+    db = get_client()
+    if not db:
+        return False
+    try:
+        user_res = db.table("users").select("id").eq("tg_id", tg_id).single().execute()
+        if not user_res.data:
+            return True
+        uid = user_res.data["id"]
+        db.table("plans").delete().eq("user_id", uid).execute()
+        db.table("reminders").delete().eq("user_id", uid).execute()
+        try:
+            db.table("ai_usage").delete().eq("user_id", uid).execute()
+        except Exception:
+            pass
+        db.table("users").delete().eq("tg_id", tg_id).execute()
+        return True
+    except Exception:
+        logging.exception("delete_user error tg_id=%s", tg_id)
+        return False
+
+
 # ── AI usage (Supabase-backed, persists across deploys) ────────────────────
 
 def atomic_increment_ai_calls(user_id: str) -> int:

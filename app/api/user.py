@@ -7,7 +7,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from app.api.deps import get_current_tg_id
-from db.queries import get_user_with_plans, upsert_chat_history, get_user, update_user_fields
+from db.queries import get_user_with_plans, upsert_chat_history, get_user, update_user_fields, delete_user
 
 router = APIRouter()
 
@@ -67,6 +67,16 @@ async def update_user_data(body: UserUpdateRequest, tg_id: int = Depends(get_cur
     except Exception:
         logging.exception("update_user_data error")
         return JSONResponse({"ok": False, "error": "Не удалось обновить профиль"})
+
+
+@router.delete("/api/user")
+async def delete_user_account(tg_id: int = Depends(get_current_tg_id)):
+    try:
+        ok = await asyncio.to_thread(delete_user, tg_id)
+        return JSONResponse({"ok": ok})
+    except Exception:
+        logging.exception("delete_user_account error")
+        return JSONResponse({"ok": False, "error": "Не удалось удалить аккаунт"})
 
 
 @router.post("/api/chat/history")
