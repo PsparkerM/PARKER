@@ -154,10 +154,54 @@ async def admin_set_status(request: Request):
     return JSONResponse({"ok": ok})
 
 
+_LOGIN_PAGE = """<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>P.A.R.K.E.R. Admin — Вход</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#07070f;color:#e8e8f0;
+     display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
+.card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:20px;
+      padding:40px 36px;width:100%;max-width:380px;text-align:center}
+h1{color:#f5c518;font-size:26px;font-weight:900;letter-spacing:2px;margin-bottom:6px}
+.sub{color:#6b6b88;font-size:13px;margin-bottom:32px}
+input{width:100%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.13);
+      border-radius:10px;color:#e8e8f0;padding:13px 16px;font-size:15px;outline:none;
+      letter-spacing:2px;text-align:center}
+input:focus{border-color:rgba(245,197,24,.5);background:rgba(255,255,255,.1)}
+button{width:100%;margin-top:14px;padding:13px;border-radius:10px;
+       border:1px solid rgba(245,197,24,.4);background:rgba(245,197,24,.1);
+       color:#f5c518;font-size:15px;font-weight:700;cursor:pointer;letter-spacing:.5px;transition:all .2s}
+button:hover{background:rgba(245,197,24,.2);border-color:rgba(245,197,24,.7)}
+.err{color:#f87171;font-size:13px;margin-top:10px;min-height:18px}
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>⚡ PARKER</h1>
+  <div class="sub">Admin Panel · Введи пароль для входа</div>
+  <input type="password" id="pwd" placeholder="Admin Secret" autofocus
+         onkeydown="if(event.key==='Enter')login()">
+  <button onclick="login()">Войти →</button>
+  <div class="err" id="err"></div>
+</div>
+<script>
+function login() {
+  const pwd = document.getElementById('pwd').value.trim();
+  if (!pwd) return;
+  window.location.href = '/admin?secret=' + encodeURIComponent(pwd);
+}
+</script>
+</body></html>"""
+
+
 @router.get("/admin", response_class=HTMLResponse)
 async def admin_panel(request: Request):
     if not await _check_admin(request):
-        return HTMLResponse("<h2>403 Forbidden</h2>", status_code=403)
+        return HTMLResponse(_LOGIN_PAGE, status_code=200)
 
     users = await asyncio.to_thread(get_all_users)
 
