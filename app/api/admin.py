@@ -303,6 +303,65 @@ async def admin_panel(request: Request):
           </div>
         </div>"""
 
+    users_for_js = json.dumps([
+        {"tg_id": u.get("tg_id"), "status": _resolve_status(u)} for u in users
+    ])
+
+    _bc_modal = """<div class="modal" id="bc-modal" onclick="closeModal(this)">
+  <div class="mbox" onclick="event.stopPropagation()">
+    <div class="mhdr">
+      <span>📢 Рассылка</span>
+      <button class="mclose" onclick="document.getElementById('bc-modal').classList.remove('open')">✕</button>
+    </div>
+    <div style="padding:20px">
+      <div style="margin-bottom:18px">
+        <span class="alabel">Кому отправить</span>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px" id="bc-filter">
+          <button class="rbtn on" data-val="all" onclick="bcSetFilter(this)">👥 Всем</button>
+          <button class="rbtn" data-val="vip" onclick="bcSetFilter(this)">👑 VIP</button>
+          <button class="rbtn" data-val="pro" onclick="bcSetFilter(this)">💎 Pro</button>
+          <button class="rbtn" data-val="free" onclick="bcSetFilter(this)">⚡ Free</button>
+        </div>
+      </div>
+      <div style="margin-bottom:18px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <span class="alabel" style="margin-bottom:0">Текст сообщения</span>
+          <span id="bc-chars" style="color:#6b6b88;font-size:11px">0 / 4096</span>
+        </div>
+        <textarea class="tadm" id="bc-text" rows="6" placeholder="Введи текст рассылки..."></textarea>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px">
+        <span id="bc-count" style="color:#6b6b88;font-size:13px">Получателей: 0</span>
+        <button class="abtn" id="bc-send" onclick="executeBroadcast()">Отправить 📢</button>
+      </div>
+    </div>
+  </div>
+</div>"""
+
+    _msg_modal = """<div class="modal" id="msg-modal" onclick="closeModal(this)">
+  <div class="mbox" onclick="event.stopPropagation()">
+    <div class="mhdr">
+      <span id="msg-title">✉️ Написать</span>
+      <button class="mclose" onclick="document.getElementById('msg-modal').classList.remove('open')">✕</button>
+    </div>
+    <div style="padding:20px">
+      <div id="msg-profile" style="background:rgba(255,255,255,.04);border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:13px;color:#9ca3af"></div>
+      <div style="margin-bottom:16px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <span class="alabel" style="margin-bottom:0">Сообщение</span>
+          <span id="msg-chars" style="color:#6b6b88;font-size:11px">0 / 4096</span>
+        </div>
+        <textarea class="tadm" id="msg-text" rows="5" placeholder="Введи текст..."></textarea>
+      </div>
+      <div style="display:flex;justify-content:flex-end">
+        <button class="abtn" onclick="executeMsg()">Отправить ✉️</button>
+      </div>
+    </div>
+  </div>
+</div>"""
+
+    modals = _bc_modal + _msg_modal + modals
+
     html = f"""<!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -360,6 +419,15 @@ code.cpytg:hover{{background:rgba(125,211,252,.15)}}
 .mfooter{{padding:16px 20px;border-top:1px solid rgba(255,255,255,.07);display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:#0f0f1a;border-radius:0 0 18px 18px;position:sticky;bottom:0}}
 .toast{{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1e1e2e;border:1px solid rgba(245,197,24,.3);color:#f5c518;padding:10px 20px;border-radius:10px;font-size:13px;font-weight:600;z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none}}
 .toast.show{{opacity:1}}
+textarea.tadm{{width:100%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:10px;color:#e8e8f0;padding:12px 14px;font-size:14px;resize:vertical;outline:none;font-family:inherit;line-height:1.5;margin-top:4px}}
+textarea.tadm:focus{{border-color:rgba(245,197,24,.5);background:rgba(255,255,255,.1)}}
+.rbtn{{padding:8px 16px;border-radius:8px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);color:#9ca3af;font-size:13px;cursor:pointer;transition:all .2s;font-weight:500}}
+.rbtn:hover{{background:rgba(255,255,255,.1);color:#e8e8f0}}
+.rbtn.on{{background:rgba(245,197,24,.15);border-color:rgba(245,197,24,.4);color:#f5c518;font-weight:700}}
+.abtn{{padding:11px 22px;border-radius:10px;border:1px solid rgba(245,197,24,.5);background:rgba(245,197,24,.12);color:#f5c518;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;white-space:nowrap}}
+.abtn:hover{{background:rgba(245,197,24,.25)}}
+.abtn:disabled{{opacity:.4;cursor:default}}
+.alabel{{color:#6b6b88;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;display:block}}
 </style>
 </head>
 <body>
@@ -383,7 +451,7 @@ code.cpytg:hover{{background:rgba(125,211,252,.15)}}
     <option value="pro">💎 Pro</option>
     <option value="free">⚡ Free</option>
   </select>
-  <button class="btn" onclick="broadcastMsg()">📢 Рассылка</button>
+  <button class="btn" onclick="openBroadcast()">📢 Рассылка</button>
   <a class="btn" href="#" onclick="window.open('/admin/users?'+AUTH,'_blank');return false">📥 JSON</a>
 </div>
 
@@ -420,6 +488,7 @@ code.cpytg:hover{{background:rgba(125,211,252,.15)}}
   }}
 }})();
 const AUTH = 'secret=' + encodeURIComponent(sessionStorage.getItem('adm_secret') || '');
+const _allUsers = {users_for_js};
 
 function showToast(msg, ok=true) {{
   const t = document.getElementById('toast');
@@ -542,41 +611,102 @@ async function setStatus(tgId, status, btn) {{
   }}
 }}
 
-async function sendMsg(tgId, name) {{
-  const text = prompt('Сообщение для ' + name + ' (TG ID: ' + tgId + '):');
-  if (!text || !text.trim()) return;
+// ── Direct message modal ────────────────────────────────────────────────────
+let _msgTgId = null;
+function sendMsg(tgId, name) {{
+  _msgTgId = tgId;
+  document.getElementById('msg-title').textContent = '✉️ → ' + name;
+  document.getElementById('msg-profile').textContent = 'TG ID: ' + tgId + ' · ' + name;
+  const ta = document.getElementById('msg-text');
+  ta.value = '';
+  document.getElementById('msg-chars').textContent = '0 / 4096';
+  ta.oninput = () => document.getElementById('msg-chars').textContent = ta.value.length + ' / 4096';
+  document.getElementById('msg-modal').classList.add('open');
+  setTimeout(() => ta.focus(), 100);
+}}
+
+async function executeMsg() {{
+  const text = document.getElementById('msg-text').value.trim();
+  if (!text) {{ showToast('❌ Введи текст сообщения', false); return; }}
   const secret = sessionStorage.getItem('adm_secret') || '';
   try {{
     const res = await fetch('/api/notify', {{
       method: 'POST',
       headers: {{'Content-Type':'application/json'}},
-      body: JSON.stringify({{secret, tg_id: parseInt(tgId), text: text.trim()}})
+      body: JSON.stringify({{secret, tg_id: parseInt(_msgTgId), text}})
     }});
     const d = await res.json();
-    d.ok ? showToast('✅ Сообщение отправлено') : showToast('❌ ' + (d.error||'Ошибка'), false);
+    if (d.ok) {{
+      showToast('✅ Сообщение отправлено');
+      document.getElementById('msg-modal').classList.remove('open');
+    }} else {{
+      showToast('❌ ' + (d.error || 'Ошибка'), false);
+    }}
   }} catch(e) {{
     showToast('❌ Сетевая ошибка', false);
   }}
 }}
 
-async function broadcastMsg() {{
-  const filter = prompt('Кому отправить?\n\n"all" — всем\n"vip" — только VIP\n"pro" — только Pro\n"free" — только Free\n\nВведи фильтр:');
-  if (!filter) return;
-  const validFilters = ['all','vip','pro','free'];
-  if (!validFilters.includes(filter.toLowerCase().trim())) {{ showToast('❌ Неверный фильтр. Используй: all/vip/pro/free', false); return; }}
-  const text = prompt('Текст сообщения:');
-  if (!text || !text.trim()) return;
-  const secret = sessionStorage.getItem('adm_secret') || '';
-  showToast('⏳ Отправляю…');
+// ── Broadcast modal ─────────────────────────────────────────────────────────
+let _bcFilter = 'all';
+
+function openBroadcast() {{
+  _bcFilter = 'all';
+  document.querySelectorAll('#bc-filter .rbtn').forEach(b => b.classList.toggle('on', b.dataset.val === 'all'));
+  const ta = document.getElementById('bc-text');
+  ta.value = '';
+  document.getElementById('bc-chars').textContent = '0 / 4096';
+  ta.oninput = () => {{
+    document.getElementById('bc-chars').textContent = ta.value.length + ' / 4096';
+  }};
+  _bcUpdateCount();
+  const btn = document.getElementById('bc-send');
+  btn.disabled = false;
+  btn.textContent = 'Отправить 📢';
+  document.getElementById('bc-modal').classList.add('open');
+  setTimeout(() => ta.focus(), 100);
+}}
+
+function bcSetFilter(btn) {{
+  _bcFilter = btn.dataset.val;
+  document.querySelectorAll('#bc-filter .rbtn').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  _bcUpdateCount();
+}}
+
+function _bcUpdateCount() {{
+  const count = _bcFilter === 'all'
+    ? _allUsers.length
+    : _allUsers.filter(u => u.status === _bcFilter).length;
+  document.getElementById('bc-count').textContent = 'Получателей: ' + count;
+}}
+
+async function executeBroadcast() {{
+  const text = document.getElementById('bc-text').value.trim();
+  if (!text) {{ showToast('❌ Введи текст сообщения', false); return; }}
+  const btn = document.getElementById('bc-send');
+  btn.disabled = true;
+  btn.textContent = '⏳ Отправляю...';
   try {{
     const res = await fetch('/admin/broadcast?' + AUTH, {{
       method: 'POST',
       headers: {{'Content-Type':'application/json'}},
-      body: JSON.stringify({{filter: filter.toLowerCase().trim(), text: text.trim(), secret}})
+      body: JSON.stringify({{filter: _bcFilter, text}})
     }});
     const d = await res.json();
-    d.ok ? showToast(`✅ Отправлено: ${{d.sent}} из ${{d.total}}`) : showToast('❌ ' + (d.error||'Ошибка'), false);
-  }} catch(e) {{ showToast('❌ Сетевая ошибка', false); }}
+    btn.disabled = false;
+    btn.textContent = 'Отправить 📢';
+    if (d.ok) {{
+      showToast(`✅ Отправлено: ${{d.sent}} из ${{d.total}}`);
+      document.getElementById('bc-modal').classList.remove('open');
+    }} else {{
+      showToast('❌ ' + (d.error || 'Ошибка'), false);
+    }}
+  }} catch(e) {{
+    btn.disabled = false;
+    btn.textContent = 'Отправить 📢';
+    showToast('❌ Сетевая ошибка', false);
+  }}
 }}
 
 async function delUser(tgId, name, modalId) {{
