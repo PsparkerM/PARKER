@@ -215,11 +215,13 @@ async def admin_panel(request: Request):
             </div>
             <div id="detail-{modal_id}" style="padding:0 20px 4px"></div>
             <div class="mfooter">
-              <button class="sbtn" onclick="loadDetail('{tg_id_disp}','{modal_id}')">📊 Логи & Планы</button>
-              <span style="color:#6b6b88;font-size:12px;margin-left:auto">Статус:</span>
-              <button class="sbtn {'sact' if status=='free' else ''}" onclick="setStatus('{tg_id_disp}','free',this)">⚡ Free</button>
-              <button class="sbtn {'sact' if status=='pro' else ''}" onclick="setStatus('{tg_id_disp}','pro',this)">💎 Pro</button>
-              <button class="sbtn {'sact' if status=='vip' else ''}" onclick="setStatus('{tg_id_disp}','vip',this)">👑 VIP</button>
+              <button class="sbtn" onclick="loadDetail('{tg_id_disp}','{modal_id}')">📊 Данные</button>
+              <button class="sbtn" style="color:#7dd3fc;border-color:rgba(125,211,252,.3)" onclick="sendMsg('{tg_id_disp}','{name}')">✉️ Написать</button>
+              <button class="sbtn" style="color:#f87171;border-color:rgba(248,113,113,.3)" onclick="delUser('{tg_id_disp}','{name}','{modal_id}')">🗑 Удалить</button>
+              <span style="color:#6b6b88;font-size:11px;margin-left:auto">Статус:</span>
+              <button class="sbtn {'sact' if status=='free' else ''}" onclick="setStatus('{tg_id_disp}','free',this)">⚡</button>
+              <button class="sbtn {'sact' if status=='pro' else ''}" onclick="setStatus('{tg_id_disp}','pro',this)">💎</button>
+              <button class="sbtn {'sact' if status=='vip' else ''}" onclick="setStatus('{tg_id_disp}','vip',this)">👑</button>
             </div>
           </div>
         </div>"""
@@ -310,17 +312,16 @@ code.cpytg:hover{{background:rgba(125,211,252,.15)}}
 <table id="tbl">
   <thead><tr>
     <th>TG ID</th>
-    <th>UUID</th>
     <th>Имя</th>
     <th>Статус</th>
     <th>Цель</th>
-    <th>Пол</th>
     <th>Возраст</th>
     <th>Вес / Рост</th>
     <th>Регистрация</th>
+    <th>Последний вход</th>
     <th>Действие</th>
   </tr></thead>
-  <tbody id="tbody">{rows if rows else '<tr><td colspan="10" style="text-align:center;padding:30px;color:#6b6b88">Нет пользователей</td></tr>'}</tbody>
+  <tbody id="tbody">{rows if rows else '<tr><td colspan="9" style="text-align:center;padding:30px;color:#6b6b88">Нет пользователей</td></tr>'}</tbody>
 </table>
 </div>
 
@@ -387,6 +388,13 @@ async function loadDetail(tgId, modalId) {{
 
     let html = '<div style="border-top:1px solid rgba(255,255,255,.07);margin-top:8px;padding-top:12px">';
 
+    // AI quota
+    const aiCalls = d.ai_calls_today ?? 0;
+    const aiMax = 50;
+    const aiPct = Math.min(100, Math.round(aiCalls/aiMax*100));
+    const aiColor = aiCalls >= aiMax ? '#f87171' : aiCalls >= aiMax*0.7 ? '#fbbf24' : '#34d399';
+    html += `<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px"><span style="color:#6b6b88;font-weight:600;text-transform:uppercase;letter-spacing:.4px">🤖 AI звонков сегодня</span><span style="color:${{aiColor}};font-weight:700">${{aiCalls}} / ${{aiMax}}</span></div><div style="height:4px;background:rgba(255,255,255,.06);border-radius:2px"><div style="height:100%;width:${{aiPct}}%;background:${{aiColor}};border-radius:2px;transition:width .4s"></div></div></div>`;
+
     // Plans
     if (d.macros && d.macros.calories) {{
       html += '<div style="color:#f5c518;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">📋 КБЖУ</div>';
@@ -452,6 +460,45 @@ async function setStatus(tgId, status, btn) {{
     btn.classList.add('sact');
   }} else {{
     showToast('❌ Ошибка: ' + (data.error||'unknown'), false);
+  }}
+}}
+
+async function sendMsg(tgId, name) {{
+  const text = prompt('Сообщение для ' + name + ' (TG ID: ' + tgId + '):');
+  if (!text || !text.trim()) return;
+  const secret = sessionStorage.getItem('adm_secret') || '';
+  try {{
+    const res = await fetch('/api/notify', {{
+      method: 'POST',
+      headers: {{'Content-Type':'application/json'}},
+      body: JSON.stringify({{secret, tg_id: parseInt(tgId), text: text.trim()}})
+    }});
+    const d = await res.json();
+    d.ok ? showToast('✅ Сообщение отправлено') : showToast('❌ ' + (d.error||'Ошибка'), false);
+  }} catch(e) {{
+    showToast('❌ Сетевая ошибка', false);
+  }}
+}}
+
+async function delUser(tgId, name, modalId) {{
+  if (!confirm('Удалить пользователя ' + name + ' (TG ID: ' + tgId + ')?\n\nВСЕ данные будут удалены безвозвратно.')) return;
+  try {{
+    const res = await fetch('/admin/delete-user?' + AUTH, {{
+      method: 'POST',
+      headers: {{'Content-Type':'application/json'}},
+      body: JSON.stringify({{tg_id: parseInt(tgId)}})
+    }});
+    const d = await res.json();
+    if (d.ok) {{
+      showToast('✅ Пользователь удалён');
+      document.getElementById(modalId)?.classList.remove('open');
+      const rows = document.querySelectorAll('#tbody tr');
+      rows.forEach(r => {{ if (r.textContent.includes(tgId)) r.remove(); }});
+    }} else {{
+      showToast('❌ ' + (d.error||'Ошибка удаления'), false);
+    }}
+  }} catch(e) {{
+    showToast('❌ Сетевая ошибка', false);
   }}
 }}
 

@@ -1531,6 +1531,28 @@ function scheduleSyncLogs() {
   _syncTimer = setTimeout(syncLogsToServer, 3000);
 }
 
+function _collectWaterEntries() {
+  const entries = [];
+  for (let i = 0; i < 30; i++) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const key = d.toISOString().slice(0,10);
+    const ml = parseInt(localStorage.getItem('pk_water_' + key) || '0');
+    if (ml > 0) entries.push({date: key, ml});
+  }
+  return entries;
+}
+
+function _collectStepsEntries() {
+  const entries = [];
+  for (let i = 0; i < 30; i++) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const key = d.toISOString().slice(0,10);
+    const steps = parseInt(localStorage.getItem('pk_steps_' + key) || '0');
+    if (steps > 0) entries.push({date: key, steps});
+  }
+  return entries;
+}
+
 async function syncLogsToServer() {
   const tgId = getTgId(); if (!tgId) return;
   try {
@@ -1541,6 +1563,8 @@ async function syncLogsToServer() {
         food: foodLogs.slice(-500),
         weight_logs: logs.slice(-365),
         meas_logs: measLogs.slice(-365),
+        water: _collectWaterEntries(),
+        steps: _collectStepsEntries(),
       })
     });
   } catch {}
@@ -1559,6 +1583,10 @@ async function loadLogsFromServer() {
       logs = data.weight_logs;
     if (Array.isArray(data.meas_logs) && data.meas_logs.length > measLogs.length)
       measLogs = data.meas_logs;
+    if (Array.isArray(data.water))
+      data.water.forEach(e => { if (e.date && e.ml > 0) localStorage.setItem('pk_water_' + e.date, String(e.ml)); });
+    if (Array.isArray(data.steps))
+      data.steps.forEach(e => { if (e.date && e.steps > 0) localStorage.setItem('pk_steps_' + e.date, String(e.steps)); });
     persist();
     if (curTab === 'home') renderHome();
     if (curTab === 'tracker') renderTracker();
@@ -2083,6 +2111,7 @@ function addWater(ml) {
   setWater(Math.max(0, cur+ml));
   renderHome();
   if (ml>0) toast(t('t_water', ml));
+  scheduleSyncLogs();
 }
 
 function togglePlan(id) {
@@ -2540,8 +2569,11 @@ function renderProfile() {
 
 function openAdminPanel() {
   if (getTgId() != 6135518022) return;
-  // Admin access requires ADMIN_SECRET — open the base URL and enter secret manually
-  const url = location.origin + '/admin';
+  const stored = sessionStorage.getItem('adm_secret');
+  const secret = stored || prompt('Admin пароль (ADMIN_SECRET):');
+  if (!secret) return;
+  sessionStorage.setItem('adm_secret', secret);
+  const url = location.origin + '/admin?secret=' + encodeURIComponent(secret);
   if (tg?.openLink) tg.openLink(url);
   else window.open(url, '_blank');
 }
@@ -2550,7 +2582,14 @@ function confirmReset() {
   if(tg?.showConfirm) tg.showConfirm(t('pf_reset_q'),ok=>{if(ok)doReset();});
   else if(confirm(t('pf_reset_q'))) doReset();
 }
-function doReset() { localStorage.clear(); location.reload(); }
+async function doReset() {
+  const tgId = getTgId();
+  if (tgId) {
+    try { await fetch('/api/user?tg_id=' + tgId, {method:'DELETE'}); } catch(e) {}
+  }
+  localStorage.clear();
+  location.reload();
+}
 
 // ══ QUICK EDIT ══
 let _qeCb=null;
