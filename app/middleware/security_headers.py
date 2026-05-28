@@ -22,6 +22,8 @@ _CSP_APP = (
     "font-src 'self' https://fonts.gstatic.com; "
     "img-src 'self' data: blob: https:; "
     "connect-src 'self'; "
+    "worker-src 'self'; "
+    "manifest-src 'self'; "
     "frame-ancestors 'self' https://telegram.org https://web.telegram.org; "
     "base-uri 'self'; "
     "form-action 'self';"

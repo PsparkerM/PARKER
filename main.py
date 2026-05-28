@@ -213,6 +213,29 @@ async def serve_miniapp():
         return HTMLResponse(f.read())
 
 
+@app.get("/manifest.json")
+async def serve_manifest():
+    with open("app/static/manifest.json", encoding="utf-8") as f:
+        return Response(
+            content=f.read(),
+            media_type="application/manifest+json",
+            headers={"Cache-Control": "public, max-age=86400"},
+        )
+
+
+@app.get("/sw.js")
+async def serve_sw():
+    with open("app/static/sw.js", encoding="utf-8") as f:
+        return Response(
+            content=f.read(),
+            media_type="application/javascript",
+            headers={
+                "Cache-Control": "no-cache",
+                "Service-Worker-Allowed": "/",
+            },
+        )
+
+
 @app.get("/health")
 async def health():
     return {"status": "ok", "bot": "P.A.R.K.E.R."}
