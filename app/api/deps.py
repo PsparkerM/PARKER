@@ -7,6 +7,7 @@ from bot.config import BOT_TOKEN
 from bot.utils.telegram_auth import verify_telegram_init_data
 from app.middleware.rate_limit import ai_daily_limit, ip_limiter, user_limiter
 from app.middleware.access_log import log_security_event
+from db.queries import update_last_seen, get_user, atomic_increment_ai_calls
 
 _MAX_AGE         = 86_400  # 24 h — Telegram's recommended maximum
 _AUTH_FAIL_LIMIT = 5       # bad-auth attempts per IP per minute
@@ -80,7 +81,6 @@ async def get_current_tg_id(
             headers={"Retry-After": "60"},
         )
 
-    from db.queries import update_last_seen
     asyncio.create_task(asyncio.to_thread(update_last_seen, tg_id))
 
     return tg_id
@@ -95,9 +95,6 @@ async def check_ai_quota(tg_id: int = Depends(get_current_tg_id)) -> int:
     Uses a single atomic DB operation (migration 005) to avoid the read→check→write
     race condition that previously allowed concurrent requests to exceed the limit.
     """
-    import asyncio
-    from db.queries import get_user, atomic_increment_ai_calls
-
     user = await asyncio.to_thread(get_user, tg_id)
     if not user:
         raise HTTPException(status_code=404, detail="Пользователь не найден")

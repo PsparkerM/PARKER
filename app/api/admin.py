@@ -223,6 +223,7 @@ async def admin_panel(request: Request):
         goal_raw = u.get("goal", "")
         goal = GOAL_MAP.get(goal_raw, _html.escape(str(goal_raw)) if goal_raw else "—")
         name = _html.escape(str(u.get("name") or "—"))
+        name_js = _html.escape(json.dumps(str(u.get("name") or "—")))
         gender_raw = u.get("gender", "")
         gender = "♀ Жен" if gender_raw == "female" else ("♂ Муж" if gender_raw == "male" else "—")
         tg_id_val = str(u.get("tg_id", ""))
@@ -292,9 +293,9 @@ async def admin_panel(request: Request):
             </div>
             <div id="detail-{modal_id}" style="padding:0 20px 4px"></div>
             <div class="mfooter">
-              <button class="sbtn" onclick="loadDetail('{tg_id_disp}','{modal_id}')">📊 Данные</button>
-              <button class="sbtn" style="color:#7dd3fc;border-color:rgba(125,211,252,.3)" onclick="sendMsg('{tg_id_disp}','{name}')">✉️ Написать</button>
-              <button class="sbtn" style="color:#f87171;border-color:rgba(248,113,113,.3)" onclick="delUser('{tg_id_disp}','{name}','{modal_id}')">🗑 Удалить</button>
+              <button class="sbtn" onclick="loadDetail('{tg_id_disp}','{modal_id}',this)">📊 Данные</button>
+              <button class="sbtn" style="color:#7dd3fc;border-color:rgba(125,211,252,.3)" onclick="sendMsg('{tg_id_disp}',{name_js})">✉️ Написать</button>
+              <button class="sbtn" style="color:#f87171;border-color:rgba(248,113,113,.3)" onclick="delUser('{tg_id_disp}',{name_js},'{modal_id}')">🗑 Удалить</button>
               <span style="color:#6b6b88;font-size:11px;margin-left:auto">Статус:</span>
               <button class="sbtn {'sact' if status=='free' else ''}" onclick="setStatus('{tg_id_disp}','free',this)">⚡</button>
               <button class="sbtn {'sact' if status=='pro' else ''}" onclick="setStatus('{tg_id_disp}','pro',this)">💎</button>
@@ -489,6 +490,9 @@ textarea.tadm:focus{{border-color:rgba(245,197,24,.5);background:rgba(255,255,25
 }})();
 const AUTH = 'secret=' + encodeURIComponent(sessionStorage.getItem('adm_secret') || '');
 const _allUsers = {users_for_js};
+if (!sessionStorage.getItem('adm_secret')) {{
+  document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:#07070f;color:#f87171;font-size:18px;font-weight:700">⚠️ Сессия истекла — <a href="/admin" style="color:#f5c518;margin-left:8px">войти заново</a></div>';
+}}
 
 function showToast(msg, ok=true) {{
   const t = document.getElementById('toast');
@@ -500,7 +504,11 @@ function showToast(msg, ok=true) {{
 }}
 
 function copyText(text) {{
-  navigator.clipboard.writeText(text).then(() => showToast('Скопировано: ' + text));
+  if (navigator.clipboard) {{
+    navigator.clipboard.writeText(text).then(() => showToast('Скопировано: ' + text)).catch(() => showToast('❌ Не удалось скопировать', false));
+  }} else {{
+    showToast('Clipboard недоступен', false);
+  }}
 }}
 
 function copyTg(e, tg) {{
@@ -520,10 +528,11 @@ document.addEventListener('keydown', e => {{
   if(e.key === 'Escape') document.querySelectorAll('.modal.open').forEach(m => m.classList.remove('open'));
 }});
 
-async function loadDetail(tgId, modalId) {{
+async function loadDetail(tgId, modalId, btn) {{
   const el = document.getElementById('detail-' + modalId);
   if (!el) return;
-  el.innerHTML = '<div style="color:#6b6b88;padding:12px 0;font-size:13px">Загрузка...</div>';
+  if (btn) {{ btn.disabled = true; btn.textContent = '⏳'; }}
+  el.innerHTML = '<div style="color:#6b6b88;padding:12px 0;font-size:13px">⏳ Загрузка данных...</div>';
   try {{
     const res = await fetch('/admin/user-detail?tg_id=' + tgId + '&' + AUTH);
     const d = await res.json();
@@ -591,23 +600,41 @@ async function loadDetail(tgId, modalId) {{
     html += '</div>';
     el.innerHTML = html;
   }} catch(e) {{
-    el.innerHTML = '<div style="color:#f87171;padding:12px 0;font-size:12px">Ошибка загрузки</div>';
+    el.innerHTML = '<div style="color:#f87171;padding:12px 0;font-size:12px">❌ Ошибка загрузки: ' + e.message + '</div>';
+  }} finally {{
+    if (btn) {{ btn.disabled = false; btn.textContent = '📊 Данные'; }}
   }}
 }}
 
 async function setStatus(tgId, status, btn) {{
-  const res = await fetch('/admin/set-status?' + AUTH, {{
-    method: 'POST',
-    headers: {{'Content-Type':'application/json'}},
-    body: JSON.stringify({{tg_id: parseInt(tgId), status}})
-  }});
-  const data = await res.json();
-  if(data.ok) {{
-    showToast('✅ Статус обновлён → ' + status);
-    btn.closest('.sbtn-group, .mfooter').querySelectorAll('.sbtn').forEach(b => b.classList.remove('sact'));
-    btn.classList.add('sact');
-  }} else {{
-    showToast('❌ Ошибка: ' + (data.error||'unknown'), false);
+  const orig = btn.textContent;
+  btn.disabled = true;
+  btn.style.opacity = '0.5';
+  try {{
+    const res = await fetch('/admin/set-status?' + AUTH, {{
+      method: 'POST',
+      headers: {{'Content-Type':'application/json'}},
+      body: JSON.stringify({{tg_id: parseInt(tgId), status}})
+    }});
+    const text = await res.text();
+    let data;
+    try {{ data = JSON.parse(text); }} catch(e) {{
+      showToast('❌ Сервер вернул не JSON (возможно, истекла сессия)', false);
+      return;
+    }}
+    if (data.ok) {{
+      showToast('✅ Статус → ' + status);
+      const group = btn.closest('.sbtn-group') || btn.closest('.mfooter');
+      if (group) group.querySelectorAll('.sbtn[onclick*="setStatus"]').forEach(b => b.classList.remove('sact'));
+      btn.classList.add('sact');
+    }} else {{
+      showToast('❌ ' + (data.error || 'Ошибка'), false);
+    }}
+  }} catch(e) {{
+    showToast('❌ Сетевая ошибка: ' + e.message, false);
+  }} finally {{
+    btn.disabled = false;
+    btn.style.opacity = '';
   }}
 }}
 
@@ -721,8 +748,7 @@ async function delUser(tgId, name, modalId) {{
     if (d.ok) {{
       showToast('✅ Пользователь удалён');
       document.getElementById(modalId)?.classList.remove('open');
-      const rows = document.querySelectorAll('#tbody tr');
-      rows.forEach(r => {{ if (r.textContent.includes(tgId)) r.remove(); }});
+      setTimeout(() => location.href = '/admin?' + AUTH, 800);
     }} else {{
       showToast('❌ ' + (d.error||'Ошибка удаления'), false);
     }}
