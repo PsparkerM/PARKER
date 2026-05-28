@@ -17,6 +17,7 @@ from bot.config import BOT_TOKEN, WEBAPP_URL, WEBHOOK_SECRET_TOKEN
 from bot.bot_instance import bot
 from bot.handlers import start
 from bot.handlers.start import set_bot_commands
+from bot.handlers import payment as payment_handler
 from app.api.profile import router as profile_router
 from app.api.chat import router as chat_router
 from app.api.food import router as food_router
@@ -62,6 +63,7 @@ class MaintenanceMiddleware(BaseMiddleware):
 dp = Dispatcher()
 dp.update.outer_middleware(MaintenanceMiddleware())
 dp.include_router(start.router)
+dp.include_router(payment_handler.router)
 
 WEBHOOK_PATH = f"/webhook/{BOT_TOKEN}"
 

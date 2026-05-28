@@ -1,4 +1,5 @@
 import asyncio
+from datetime import datetime, timezone, timedelta
 
 from aiogram import Router, F
 from aiogram.types import (
@@ -17,8 +18,8 @@ APP_BTN = lambda: InlineKeyboardMarkup(inline_keyboard=[[
 ]]) if WEBAPP_URL else None
 
 
-def _start_text(name: str, vip: bool) -> str:
-    badge = " 👑" if vip else ""
+def _start_text(name: str, status: str) -> str:
+    badge = " 👑" if status == "vip" else (" ⭐ Pro" if status == "pro" else "")
     return (
         f"Привет, *{name}*!{badge}\n\n"
         "Я — *P.A.R.K.E.R.*\n"
@@ -34,15 +35,13 @@ def _start_text(name: str, vip: bool) -> str:
 
 @router.message(CommandStart())
 async def cmd_start(message: Message) -> None:
-    name = message.from_user.first_name or "друг"
+    name  = message.from_user.first_name or "друг"
     tg_id = message.from_user.id
-    user = get_user(tg_id)
-    vip  = (user or {}).get("status") == "vip"
+    user  = await asyncio.to_thread(get_user, tg_id)
+    status = (user or {}).get("status", "free")
 
-    # track last_seen only for registered users (column exists after migration 006)
     if user:
-        import asyncio
-        asyncio.create_task(asyncio.to_thread(update_last_seen, tg_id))
+        asyncio.ensure_future(asyncio.to_thread(update_last_seen, tg_id))
 
     # notify admins when a brand-new user hits /start for the first time (no profile yet)
     if not user and ADMIN_TG_IDS:
@@ -62,7 +61,7 @@ async def cmd_start(message: Message) -> None:
                 pass
 
     await message.answer(
-        _start_text(name, vip),
+        _start_text(name, status),
         reply_markup=APP_BTN(),
         parse_mode="Markdown"
     )
@@ -76,6 +75,7 @@ async def cmd_help(message: Message) -> None:
         "/start — открыть приложение\n"
         "/план — мой план питания и тренировок\n"
         "/прогресс — статистика и динамика\n"
+        "/подписка — Pro-подписка (50 AI/день)\n"
         "/рестарт — начать заново\n"
         "/помощь — эта справка\n\n"
         "💬 Или просто открой приложение — Арни всегда на месте."
@@ -86,7 +86,7 @@ async def cmd_help(message: Message) -> None:
 @router.message(Command("plan", "план"))
 @router.message(F.text.lower().in_({"план", "/план", "питание", "тренировки"}))
 async def cmd_plan(message: Message) -> None:
-    user = get_user(message.from_user.id)
+    user = await asyncio.to_thread(get_user, message.from_user.id)
     if not user:
         await message.answer(
             "📝 Профиль не найден.\nЗаполни анкету в приложении — займёт 1 минуту.",
@@ -103,7 +103,7 @@ async def cmd_plan(message: Message) -> None:
 @router.message(Command("progress", "прогресс"))
 @router.message(F.text.lower().in_({"прогресс", "/прогресс", "статистика", "вес"}))
 async def cmd_progress(message: Message) -> None:
-    user = get_user(message.from_user.id)
+    user = await asyncio.to_thread(get_user, message.from_user.id)
     if not user:
         await message.answer("Профиль не найден. Начни с /start", reply_markup=APP_BTN())
         return
@@ -183,12 +183,11 @@ async def cmd_stats(message: Message) -> None:
     if message.from_user.id not in ADMIN_TG_IDS:
         return
 
-    users = get_all_users()
+    users = await asyncio.to_thread(get_all_users)
     if not users:
         await message.answer("Нет пользователей.")
         return
 
-    from datetime import datetime, timezone, timedelta
     now = datetime.now(timezone.utc)
     week_ago = (now - timedelta(days=7)).isoformat()
     day_ago  = (now - timedelta(days=1)).isoformat()
@@ -200,7 +199,6 @@ async def cmd_stats(message: Message) -> None:
     new_week = sum(1 for u in users if (u.get("created_at") or "") >= week_ago)
     active_day = sum(1 for u in users if (u.get("last_seen") or "") >= day_ago)
 
-    # last 5 registered
     recent = sorted(users, key=lambda u: u.get("created_at") or "", reverse=True)[:5]
     recent_lines = []
     for u in recent:
@@ -209,7 +207,6 @@ async def cmd_stats(message: Message) -> None:
         dt  = (u.get("created_at") or "")[:10]
         recent_lines.append(f"• {nm} (`{tid}`) — {dt}")
 
-    # last 5 seen
     seen = [u for u in users if u.get("last_seen")]
     seen_sorted = sorted(seen, key=lambda u: u.get("last_seen") or "", reverse=True)[:5]
     seen_lines = []
@@ -222,7 +219,7 @@ async def cmd_stats(message: Message) -> None:
     text = (
         "📊 *P.A.R.K.E.R. — Статистика*\n\n"
         f"👥 Всего пользователей: *{total}*\n"
-        f"👑 VIP: *{vip_cnt}*  |  💎 Pro: *{pro_cnt}*  |  ⚡ Free: *{free_cnt}*\n"
+        f"👑 VIP: *{vip_cnt}*  |  ⭐ Pro: *{pro_cnt}*  |  ⚡ Free: *{free_cnt}*\n"
         f"📅 За 7 дней: *{new_week}*\n"
         f"🟢 Активны за 24 ч: *{active_day}*\n\n"
         "🕐 *Последние регистрации:*\n" + "\n".join(recent_lines or ["нет данных"])
@@ -238,7 +235,7 @@ async def cmd_users(message: Message) -> None:
     if message.from_user.id not in ADMIN_TG_IDS:
         return
 
-    users = get_all_users()
+    users = await asyncio.to_thread(get_all_users)
     if not users:
         await message.answer("Нет пользователей.")
         return
@@ -246,7 +243,7 @@ async def cmd_users(message: Message) -> None:
     lines = []
     for u in users:
         status = u.get("status") or "free"
-        badge  = "👑" if status == "vip" else ("💎" if status == "pro" else "⚡")
+        badge  = "👑" if status == "vip" else ("⭐" if status == "pro" else "⚡")
         nm     = u.get("name") or "—"
         tid    = u.get("tg_id", "—")
         goal   = GOAL_MAP.get(u.get("goal", ""), "—")
@@ -260,7 +257,6 @@ async def cmd_users(message: Message) -> None:
             f"   Последний вход: {ls}"
         )
 
-    # split into chunks ≤4096 chars
     chunks = []
     current = "👥 *Все пользователи P.A.R.K.E.R.:*\n\n"
     for line in lines:
@@ -280,6 +276,7 @@ async def set_bot_commands(bot) -> None:
         BotCommand(command="start",     description="Открыть P.A.R.K.E.R."),
         BotCommand(command="plan",      description="Мой план питания и тренировок"),
         BotCommand(command="progress",  description="Мой прогресс"),
+        BotCommand(command="subscribe", description="Pro-подписка — 50 AI/день"),
         BotCommand(command="restart",   description="Начать заново"),
         BotCommand(command="help",      description="Справка"),
         BotCommand(command="stats",     description="[Admin] Статистика пользователей"),

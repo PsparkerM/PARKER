@@ -125,6 +125,14 @@ def unschedule_reminder(reminder_id: str) -> None:
     _clear_jobs(_job_id(str(reminder_id)))
 
 
+async def _expire_subscriptions_job() -> None:
+    """Daily job: expire overdue subscriptions and downgrade status to free."""
+    from db.queries import expire_old_subscriptions
+    count = expire_old_subscriptions()
+    if count:
+        logger.info("Subscription expiry: %d subscription(s) expired", count)
+
+
 async def load_all_reminders() -> None:
     from db.queries import get_all_active_reminders
     reminders = get_all_active_reminders()
@@ -134,3 +142,12 @@ async def load_all_reminders() -> None:
         except Exception as e:
             logger.warning("Failed to schedule reminder %s: %s", r.get("id"), e)
     logger.info("Scheduler: loaded %d reminders", len(reminders))
+
+    # System job: check for expired subscriptions every day at 00:05 UTC
+    scheduler.add_job(
+        _expire_subscriptions_job,
+        CronTrigger(hour=0, minute=5),
+        id="expire_subscriptions",
+        replace_existing=True,
+    )
+    logger.info("Scheduler: subscription expiry job registered")

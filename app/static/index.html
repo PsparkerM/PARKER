@@ -4,20 +4,32 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>P.A.R.K.E.R.</title>
+<!-- PWA -->
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#00E5FF">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="PARKER">
+<link rel="apple-touch-icon" href="/static/icon-apple.png">
+<meta name="msapplication-TileColor" content="#000000">
+<meta name="msapplication-TileImage" content="/static/icon-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
 :root {
-  --bg:#000000;--bg2:#090909;--bg3:#0f0f0f;
-  --surface:rgba(255,255,255,0.04);--surface2:rgba(255,255,255,0.07);
-  --border:rgba(0,229,255,0.15);--border2:rgba(0,229,255,0.28);
-  --card:rgba(26,26,26,0.85);--card2:rgba(32,32,32,0.9);
+  --bg:#000008;--bg2:#07070f;--bg3:#0d0d1c;
+  --surface:rgba(0,229,255,0.03);--surface2:rgba(0,229,255,0.06);
+  --border:rgba(0,229,255,0.18);--border2:rgba(0,229,255,0.38);
+  --card:rgba(8,8,22,0.92);--card2:rgba(14,14,30,0.95);
   --cyan:#00E5FF;--cyan2:#00b8cc;
+  --purple:#BD00FF;--purple2:#7B2FFF;
+  --neon-green:#00FF88;
   --gold:var(--cyan);--gold2:var(--cyan2);
-  --blue:var(--cyan);--green:var(--cyan);
+  --blue:var(--cyan);--green:var(--neon-green);
   --red:#ff3355;--orange:#ff7a00;
-  --text:#e8e8f0;--text2:#8888aa;--text3:#4a4a6a;
-  --radius:18px;--radius-sm:12px;--nav-h:80px;--hdr-h:58px;
+  --text:#e8e8fc;--text2:#8888cc;--text3:#505085;
+  --radius:16px;--radius-sm:10px;--nav-h:80px;--hdr-h:58px;
 }
 /* dark-glass backdrop for all cards */
 .ring-card,.water-card,.step-card,.plan-card,.meal-sched-card,

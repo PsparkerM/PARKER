@@ -1,5 +1,6 @@
 import json
 import logging
+from datetime import datetime, timezone, timedelta
 from db.client import get_client
 
 
@@ -213,7 +214,6 @@ def delete_reminder(reminder_id: str) -> bool:
 
 
 def save_user_logs(user_id: str, logs_data: dict) -> None:
-    import json
     db = get_client()
     if not db:
         return
@@ -235,7 +235,6 @@ def save_user_logs(user_id: str, logs_data: dict) -> None:
 
 
 def get_user_logs(user_id: str) -> dict:
-    import json
     db = get_client()
     if not db:
         return {}
@@ -339,7 +338,6 @@ def get_user(tg_id: int) -> dict | None:
 
 
 def update_last_seen(tg_id: int) -> None:
-    from datetime import datetime, timezone
     db = get_client()
     if not db:
         return
@@ -395,4 +393,74 @@ def get_ai_calls_today(user_id: str) -> int:
         )
         return result.data["call_count"] if result.data else 0
     except Exception:
+        return 0
+
+
+# ── Subscriptions ──────────────────────────────────────────────────────────
+
+def get_subscription(user_id: str) -> dict | None:
+    db = get_client()
+    if not db:
+        return None
+    try:
+        result = (
+            db.table("subscriptions")
+            .select("*")
+            .eq("user_id", user_id)
+            .single()
+            .execute()
+        )
+        return result.data
+    except Exception:
+        return None
+
+
+def upsert_subscription(user_id: str, plan: str, charge_id: str, expires_at: datetime) -> dict | None:
+    db = get_client()
+    if not db:
+        return None
+    try:
+        payload = {
+            "user_id":            user_id,
+            "plan":               plan,
+            "status":             "active",
+            "telegram_charge_id": charge_id,
+            "starts_at":          datetime.now(timezone.utc).isoformat(),
+            "expires_at":         expires_at.isoformat(),
+        }
+        result = (
+            db.table("subscriptions")
+            .upsert(payload, on_conflict="user_id")
+            .execute()
+        )
+        return result.data[0] if result.data else None
+    except Exception:
+        logging.exception("upsert_subscription error user_id=%s", user_id)
+        return None
+
+
+def expire_old_subscriptions() -> int:
+    """Mark expired active subscriptions and downgrade user status to free.
+    Returns count of expired subscriptions."""
+    db = get_client()
+    if not db:
+        return 0
+    try:
+        now = datetime.now(timezone.utc).isoformat()
+        expired = (
+            db.table("subscriptions")
+            .select("user_id")
+            .eq("status", "active")
+            .lt("expires_at", now)
+            .execute()
+        )
+        count = 0
+        for row in (expired.data or []):
+            uid = row["user_id"]
+            db.table("subscriptions").update({"status": "expired"}).eq("user_id", uid).execute()
+            db.table("users").update({"status": "free"}).eq("id", uid).execute()
+            count += 1
+        return count
+    except Exception:
+        logging.exception("expire_old_subscriptions error")
         return 0
