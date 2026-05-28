@@ -212,7 +212,8 @@ async def admin_panel(request: Request):
 
     from datetime import datetime, timezone, timedelta
     week_ago = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
-    new_week = sum(1 for u in users if (u.get("created_at") or "") >= week_ago)
+    new_week    = sum(1 for u in users if (u.get("created_at") or "") >= week_ago)
+    active_week = sum(1 for u in users if (u.get("last_seen")  or "") >= week_ago)
 
     rows = ""
     modals = ""
@@ -370,7 +371,8 @@ code.cpytg:hover{{background:rgba(125,211,252,.15)}}
   <div class="sc"><div class="sv">{vip_count}</div><div class="sl">👑 VIP</div></div>
   <div class="sc cpro"><div class="sv">{pro_count}</div><div class="sl">💎 Pro</div></div>
   <div class="sc cfree"><div class="sv">{free_count}</div><div class="sl">⚡ Free</div></div>
-  <div class="sc cnew"><div class="sv">{new_week}</div><div class="sl">За 7 дней</div></div>
+  <div class="sc cnew"><div class="sv">{active_week}</div><div class="sl">Активны 7д</div></div>
+  <div class="sc" style="border-color:rgba(125,211,252,.2)"><div class="sv" style="color:#7dd3fc">{new_week}</div><div class="sl">Новых 7д</div></div>
 </div>
 
 <div class="toolbar">

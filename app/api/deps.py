@@ -1,3 +1,4 @@
+import asyncio
 import json
 import time
 from fastapi import Depends, Header, HTTPException, Request
@@ -78,6 +79,9 @@ async def get_current_tg_id(
             detail="Слишком много запросов — подожди немного.",
             headers={"Retry-After": "60"},
         )
+
+    from db.queries import update_last_seen
+    asyncio.create_task(asyncio.to_thread(update_last_seen, tg_id))
 
     return tg_id
 
