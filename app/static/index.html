@@ -2595,12 +2595,30 @@ async function sendChat() {
   scrollBottom(el);
   const typ=document.createElement('div'); typ.className='typing';
   typ.innerHTML='<span></span><span></span><span></span>'; el.appendChild(typ); scrollBottom(el);
+
+  let assistDiv=null, assistBub=null, accum='';
+  const ensureAssist=()=>{
+    if (assistDiv) return;
+    typ.remove();
+    assistDiv=document.createElement('div'); assistDiv.className='msg p';
+    assistDiv.innerHTML=`<div class="msender">${escHtml('Арни')}</div>`;
+    assistBub=document.createElement('div'); assistBub.className='mbub'; assistBub.textContent='';
+    assistDiv.appendChild(assistBub); el.appendChild(assistDiv);
+  };
+
   try {
     const body={message:msg,history:sanitizeHist(chatHist),lang};
     if(hasImg){body.image_b64=imgB64;body.media_type=mtype;}
-    const r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-    const data=await r.json(); typ.remove();
+    const ctrl=new AbortController();
+    const watchdog=setTimeout(()=>ctrl.abort(), 30000);
+    const r=await fetch('/api/chat/stream',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Accept':'text/event-stream'},
+      body:JSON.stringify(body),
+      signal:ctrl.signal,
+    });
     if (r.status===429) {
+      clearTimeout(watchdog); typ.remove();
       const isPro = profile?.status==='pro'||profile?.status==='vip';
       const limitMsg = isPro
         ? '<div class="chat-quota-msg"><div class="chat-quota-title">⏳ Дневной лимит AI</div><div class="chat-quota-body">50 запросов в день исчерпаны. Обновится в полночь по UTC.</div></div>'
@@ -2608,30 +2626,71 @@ async function sendChat() {
       const d=document.createElement('div'); d.className='msg p'; d.innerHTML=limitMsg; el.appendChild(d);
       btn.disabled=false; scrollBottom(el); return;
     }
-    const rawReply=data.reply||'Не удалось получить ответ.';
-    const tagMatch=rawReply.match(/\{\{SET_TARGETS:([^}]+)\}\}/);
-    const reply=rawReply.replace(/\s*\{\{SET_TARGETS:[^}]+\}\}\s*/g,'').trim();
-    if(tagMatch){
-      const p={};
-      tagMatch[1].split(',').forEach(part=>{const[k,v]=part.split('=');if(k&&v)p[k.trim()]=parseInt(v.trim());});
-      if(p.calories&&p.calories>500){
-        const base=macrosOverride||planData?.macros||{};
-        macrosOverride={
-          calories:p.calories,
-          protein_g:p.protein||base.protein_g||Math.round(p.calories*0.3/4),
-          fat_g:p.fat||base.fat_g||Math.round(p.calories*0.25/9),
-          carb_g:p.carbs||base.carb_g||Math.round(p.calories*0.45/4),
-        };
-        persist();
-        if(curTab==='home')renderHome();
-        toast(`Цели обновлены: ${p.calories} ккал`);
-        updateTargetsSubLabel();
+    if (!r.ok || !r.body) throw new Error('http '+r.status);
+
+    const reader=r.body.getReader();
+    const dec=new TextDecoder();
+    let buf='', finalReply=null, macrosUpdated=null, errorMsg=null;
+
+    while (true) {
+      const {done,value}=await reader.read();
+      if (done) break;
+      buf += dec.decode(value, {stream:true});
+      const parts=buf.split('\n\n');
+      buf=parts.pop();
+      for (const part of parts) {
+        const line=part.trim();
+        if (!line.startsWith('data:')) continue;
+        const payload=line.slice(5).trim();
+        if (!payload) continue;
+        let ev; try { ev=JSON.parse(payload); } catch { continue; }
+        if (ev.chunk) {
+          accum += ev.chunk;
+          ensureAssist();
+          assistBub.textContent = accum;
+          scrollBottom(el);
+        } else if (ev.done) {
+          finalReply = ev.reply;
+          macrosUpdated = ev.macros_updated;
+        } else if (ev.error) {
+          errorMsg = ev.error;
+        }
       }
     }
-    addMsg(el,'p',reply,'Арни');
-    chatHist.push({role:'user',content:msg}); chatHist.push({role:'assistant',content:reply});
+    clearTimeout(watchdog);
+
+    if (errorMsg) {
+      typ.remove();
+      if (assistDiv) assistDiv.remove();
+      addMsg(el,'p',errorMsg,'Арни');
+      btn.disabled=false; scrollBottom(el); return;
+    }
+    const reply = (finalReply ?? accum ?? '').trim() || t('chat_fail');
+    ensureAssist();
+    assistBub.textContent = reply;
+
+    if (macrosUpdated && macrosUpdated.calories && macrosUpdated.calories>500) {
+      const base=macrosOverride||planData?.macros||{};
+      macrosOverride={
+        calories:macrosUpdated.calories,
+        protein_g:macrosUpdated.protein_g||base.protein_g||Math.round(macrosUpdated.calories*0.3/4),
+        fat_g:macrosUpdated.fat_g||base.fat_g||Math.round(macrosUpdated.calories*0.25/9),
+        carb_g:macrosUpdated.carb_g||base.carb_g||Math.round(macrosUpdated.calories*0.45/4),
+      };
+      persist();
+      if(curTab==='home')renderHome();
+      toast(`Цели обновлены: ${macrosUpdated.calories} ккал`);
+      updateTargetsSubLabel();
+    }
+
+    chatHist.push({role:'user',content:msg});
+    chatHist.push({role:'assistant',content:reply});
     persist(); saveChatToServer();
-  } catch { typ.remove(); addMsg(el,'p',t('chat_fail')); }
+  } catch {
+    typ.remove();
+    if (assistDiv) assistDiv.remove();
+    addMsg(el,'p',t('chat_fail'));
+  }
   btn.disabled=false; scrollBottom(el);
 }
 

@@ -320,6 +320,124 @@ _CHAT_VISION_HINT = """\
 Отвечай конкретно и в своём стиле — без воды.\
 """
 
+def _build_chat_payload(
+    message: str,
+    history: list,
+    profile: dict,
+    lang: str,
+    logs: dict | None,
+    image_b64: str | None,
+    media_type: str,
+    chat_summary: str | None = None,
+):
+    """Shared payload builder for chat (non-stream + stream)."""
+    static_text = ARNI_STATIC_EN if lang == "en" else ARNI_STATIC
+    if image_b64:
+        static_text = static_text + "\n" + _CHAT_VISION_HINT
+    dynamic_text = (
+        f"ПРОФИЛЬ ПОЛЬЗОВАТЕЛЯ:\n{_build_profile_block(profile)}\n\n"
+        f"ЗАПРЕТЫ ПО ЗДОРОВЬЮ (АБСОЛЮТНЫЕ):\n{_build_health_rules(profile)}"
+    )
+    if logs:
+        ctx = _build_logs_context(logs)
+        if ctx:
+            dynamic_text += f"\n\nАКТУАЛЬНЫЕ ДАННЫЕ (используй при ответе):\n{ctx}"
+    if chat_summary:
+        dynamic_text += f"\n\nРЕЗЮМЕ ПРЕДЫДУЩИХ РАЗГОВОРОВ (помни этот контекст):\n{chat_summary}"
+    system = [
+        _cached(static_text),
+        {"type": "text", "text": dynamic_text},
+    ]
+    safe_hist = _sanitize_history(history)
+    if safe_hist and safe_hist[-1]["role"] == "user":
+        safe_hist = safe_hist[:-1]
+
+    if image_b64:
+        user_content = [
+            {"type": "image", "source": {"type": "base64", "media_type": media_type, "data": image_b64}},
+            {"type": "text", "text": message or "Что на фото?"},
+        ]
+    else:
+        user_content = message
+
+    messages = safe_hist[-18:] + [{"role": "user", "content": user_content}]
+    return system, messages
+
+
+async def summarize_chat_history(messages: list, lang: str = "ru") -> str:
+    """Compress old conversation turns into a dense factual recap (≤ ~150 words)."""
+    if not ANTHROPIC_API_KEY or not messages:
+        return ""
+    try:
+        client = _get_client()
+        convo = "\n".join(
+            f"{m.get('role','?').upper()}: {str(m.get('content',''))[:600]}"
+            for m in messages if m.get("role") and m.get("content")
+        )
+        if not convo:
+            return ""
+        prompt_ru = (
+            "Сожми этот диалог пользователя с Арни в плотную фактологическую сводку (до 150 слов). "
+            "Сохрани имена, цели, веса, проблемы, договорённости, привычки. Без воды и приветствий. "
+            "Пиши в третьем лице ('пользователь сказал', 'договорились').\n\n" + convo
+        )
+        prompt_en = (
+            "Compress this conversation into a dense factual recap (≤150 words). "
+            "Keep names, goals, weights, issues, decisions, habits. No fluff.\n\n" + convo
+        )
+        msg = await client.messages.create(
+            model=MODEL,
+            max_tokens=400,
+            messages=[{"role": "user", "content": prompt_en if lang == "en" else prompt_ru}],
+        )
+        return _strip_markdown(msg.content[0].text).strip()
+    except Exception as e:
+        logger.warning("summarize_chat_history failed: %s", e)
+        return ""
+
+
+async def stream_chat_response(
+    message: str,
+    history: list,
+    profile: dict,
+    lang: str = "ru",
+    logs: dict = None,
+    image_b64: str | None = None,
+    media_type: str = "image/jpeg",
+    chat_summary: str | None = None,
+):
+    """Yield (event_type, payload) tuples — 'chunk'/'done'/'error'."""
+    if not ANTHROPIC_API_KEY:
+        yield ("error", "Arnie unavailable — API key not set." if lang == "en" else "Арни недоступен — API ключ не задан.")
+        return
+    try:
+        client = _get_client()
+        system, messages = _build_chat_payload(message, history, profile, lang, logs, image_b64, media_type, chat_summary)
+        full = []
+        async with client.messages.stream(
+            model=MODEL,
+            max_tokens=1200,
+            system=system,
+            messages=messages,
+        ) as stream:
+            async for chunk in stream.text_stream:
+                if not chunk:
+                    continue
+                full.append(chunk)
+                yield ("chunk", chunk)
+        yield ("done", _strip_markdown("".join(full)))
+    except anthropic.AuthenticationError:
+        logger.error("Anthropic auth error in stream")
+        yield ("error", "Arnie unavailable — API key issue." if lang == "en" else "Арни недоступен — проблема с API ключом.")
+    except anthropic.RateLimitError:
+        yield ("error", "Too many requests — wait a minute." if lang == "en" else "Слишком много запросов — подожди минуту.")
+    except anthropic.APITimeoutError:
+        yield ("error", "Arnie is slow — try again." if lang == "en" else "Арни думает дольше обычного — попробуй ещё раз.")
+    except Exception as e:
+        logger.exception("stream_chat_response failed: %s", e)
+        yield ("error", "Arnie is unavailable." if lang == "en" else "Арни временно недоступен.")
+
+
 async def generate_chat_response(
     message: str,
     history: list,
@@ -328,39 +446,13 @@ async def generate_chat_response(
     logs: dict = None,
     image_b64: str | None = None,
     media_type: str = "image/jpeg",
+    chat_summary: str | None = None,
 ) -> str:
     if not ANTHROPIC_API_KEY:
         return "Arnie is temporarily unavailable — API key not set." if lang == "en" else "Арни временно недоступен — API ключ не задан."
     try:
         client = _get_client()
-        static_text = ARNI_STATIC_EN if lang == "en" else ARNI_STATIC
-        if image_b64:
-            static_text = static_text + "\n" + _CHAT_VISION_HINT
-        dynamic_text = (
-            f"ПРОФИЛЬ ПОЛЬЗОВАТЕЛЯ:\n{_build_profile_block(profile)}\n\n"
-            f"ЗАПРЕТЫ ПО ЗДОРОВЬЮ (АБСОЛЮТНЫЕ):\n{_build_health_rules(profile)}"
-        )
-        if logs:
-            ctx = _build_logs_context(logs)
-            if ctx:
-                dynamic_text += f"\n\nАКТУАЛЬНЫЕ ДАННЫЕ (используй при ответе):\n{ctx}"
-        system = [
-            _cached(static_text),
-            {"type": "text", "text": dynamic_text},
-        ]
-        safe_hist = _sanitize_history(history)
-        if safe_hist and safe_hist[-1]["role"] == "user":
-            safe_hist = safe_hist[:-1]
-
-        if image_b64:
-            user_content = [
-                {"type": "image", "source": {"type": "base64", "media_type": media_type, "data": image_b64}},
-                {"type": "text", "text": message or "Что на фото?"},
-            ]
-        else:
-            user_content = message
-
-        messages = safe_hist[-18:] + [{"role": "user", "content": user_content}]
+        system, messages = _build_chat_payload(message, history, profile, lang, logs, image_b64, media_type, chat_summary)
         msg = await client.messages.create(
             model=MODEL,
             max_tokens=1200,

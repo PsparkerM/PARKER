@@ -93,6 +93,51 @@ def get_chat_history(user_id: str) -> list:
         return []
 
 
+def get_chat_summary(user_id: str) -> dict | None:
+    """Return {summary: str, covered_count: int} or None if no summary stored yet."""
+    db = get_client()
+    if not db:
+        return None
+    try:
+        result = (
+            db.table("plans")
+            .select("content,macros")
+            .eq("user_id", user_id)
+            .eq("type", "chat_summary")
+            .execute()
+        )
+        if not result.data:
+            return None
+        row = result.data[0]
+        return {
+            "summary": row.get("content") or "",
+            "covered_count": int((row.get("macros") or {}).get("covered_count") or 0),
+        }
+    except Exception:
+        return None
+
+
+def upsert_chat_summary(user_id: str, summary: str, covered_count: int) -> None:
+    db = get_client()
+    if not db:
+        return
+    try:
+        existing = (
+            db.table("plans")
+            .select("id")
+            .eq("user_id", user_id)
+            .eq("type", "chat_summary")
+            .execute()
+        )
+        payload = {"content": summary, "macros": {"covered_count": covered_count}}
+        if existing.data:
+            db.table("plans").update(payload).eq("id", existing.data[0]["id"]).execute()
+        else:
+            db.table("plans").insert({"user_id": user_id, "type": "chat_summary", **payload}).execute()
+    except Exception:
+        logging.exception("upsert_chat_summary error")
+
+
 def get_user_with_plans(tg_id: int) -> dict | None:
     db = get_client()
     if not db:
