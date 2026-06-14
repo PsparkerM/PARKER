@@ -1,6 +1,7 @@
 import asyncio
 import json
 import time
+from datetime import date as _date
 from fastapi import Depends, Header, HTTPException, Request
 
 from bot.config import BOT_TOKEN
@@ -12,6 +13,35 @@ from db.queries import update_last_seen, get_user, atomic_increment_ai_calls
 _MAX_AGE         = 86_400  # 24 h — Telegram's recommended maximum
 _AUTH_FAIL_LIMIT = 5       # bad-auth attempts per IP per minute
 _API_RATE_LIMIT  = 100     # authenticated requests per user per minute
+
+# In-memory fallback AI-counter, used ONLY when the DB-backed atomic counter is
+# unavailable (returns 0). Prevents a DB outage from turning into unlimited
+# (costly) AI usage. Per-process, resets daily. Not shared across instances —
+# but a conservative per-process cap beats fail-open.
+_fallback_ai_counter: dict[int, tuple[str, int]] = {}
+
+
+def _fallback_increment_ai(tg_id: int) -> int:
+    today = _date.today().isoformat()
+    day, cnt = _fallback_ai_counter.get(tg_id, (today, 0))
+    if day != today:
+        cnt = 0
+    cnt += 1
+    _fallback_ai_counter[tg_id] = (today, cnt)
+    return cnt
+
+
+# Strong refs to fire-and-forget tasks. asyncio.create_task() alone does NOT keep
+# a reference — without this the task can be GC'd mid-execution and silently vanish.
+_bg_tasks: set[asyncio.Task] = set()
+
+
+def spawn_bg(coro) -> asyncio.Task:
+    """Fire-and-forget a coroutine while holding a strong reference until it finishes."""
+    task = asyncio.create_task(coro)
+    _bg_tasks.add(task)
+    task.add_done_callback(_bg_tasks.discard)
+    return task
 
 
 def get_client_ip(request: Request) -> str:
@@ -81,7 +111,7 @@ async def get_current_tg_id(
             headers={"Retry-After": "60"},
         )
 
-    asyncio.create_task(asyncio.to_thread(update_last_seen, tg_id))
+    spawn_bg(asyncio.to_thread(update_last_seen, tg_id))
 
     return tg_id
 
@@ -103,6 +133,11 @@ async def check_ai_quota(tg_id: int = Depends(get_current_tg_id)) -> int:
     limit  = ai_daily_limit(status)
 
     new_count = await asyncio.to_thread(atomic_increment_ai_calls, user["id"])
+
+    # DB counter unavailable (0 = error/not configured) → fail-safe to an
+    # in-memory cap instead of fail-open (which would allow unlimited AI spend).
+    if new_count <= 0:
+        new_count = _fallback_increment_ai(tg_id)
 
     if new_count > limit:
         log_security_event("AI_QUOTA_EXCEEDED", tg_id=tg_id, status=status, limit=limit, used=new_count)

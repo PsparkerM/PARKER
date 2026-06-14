@@ -1430,6 +1430,8 @@ let macrosOverride= JSON.parse(localStorage.getItem('pk_macros_override') || 'nu
 function todayKey() { return new Date().toLocaleDateString('ru-RU'); }
 function getWater() { return parseInt(localStorage.getItem('pk_water_'+todayKey())||'0'); }
 function setWater(v) { localStorage.setItem('pk_water_'+todayKey(), String(v)); }
+// Единая норма воды (мл): вес × 33, дефолт 70 кг. Используется везде, чтобы UI не рассинхронивался.
+function getWaterTarget() { return Math.round((profile?.weight_kg||70) * 33); }
 
 function persist() {
   try {
@@ -1591,6 +1593,11 @@ function autoResize(el) {
 }
 
 function scrollBottom(el) { setTimeout(() => { el.scrollTop = el.scrollHeight; }, 50); }
+// Синхронный скролл без таймера — для стриминга. Тащит вниз только если юзер уже у низа,
+// чтобы не дёргать его при чтении истории вверх. Без setTimeout — не плодит таймеры на каждый чанк.
+function scrollBottomIfNear(el) {
+  if (el.scrollHeight - el.scrollTop - el.clientHeight < 120) el.scrollTop = el.scrollHeight;
+}
 
 function calcStreak() {
   const days = new Set([...foodLogs.map(f=>f.date), ...logs.filter(l=>l.weight).map(l=>l.date)]);
@@ -1861,14 +1868,16 @@ async function _refetchAll(force = false) {
   }
 }
 
+function _onVisibleRefetch() {
+  if (document.visibilityState === 'visible') _refetchAll(true);
+}
+
 function _startMultiDeviceSync() {
   if (_multiSyncTimer) clearInterval(_multiSyncTimer);
-  _multiSyncTimer = setInterval(() => {
-    if (document.visibilityState === 'visible') _refetchAll(true);
-  }, 30_000);
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') _refetchAll(true);
-  });
+  _multiSyncTimer = setInterval(_onVisibleRefetch, 30_000);
+  // remove-before-add: иначе повторный вызов стакает листенеры → дубль-фетчи
+  document.removeEventListener('visibilitychange', _onVisibleRefetch);
+  document.addEventListener('visibilitychange', _onVisibleRefetch);
 }
 
 // ══ SERVER SYNC ══
@@ -2032,7 +2041,9 @@ async function loadLogsFromServer(force = false) {
 // ══ NAVIGATION ══
 const TAB_SCREENS = {progress:'sc-progress',chat:'sc-chat',home:'sc-home',tracker:'sc-tracker',profile:'sc-profile'};
 const TAB_TITLES  = {progress:'Прогресс',chat:'Тренер Арни',home:'',tracker:'Трекер',profile:'Профиль'};
-let curTab = 'home';
+// null до первого goTab(): иначе стартовый goTab('home') в launchApp() выходит
+// по guard'у `curTab === name` и Главная не рендерится до перехода на другую вкладку.
+let curTab = null;
 
 function goTab(name) {
   if (curTab === name) return;
@@ -2141,8 +2152,7 @@ function _buildWeekProgressCard() {
     const hasFood = foodLogs.some(f => f.date === key);
     const hasWo   = getWorkoutDone(key);
     const waterMl = parseInt(localStorage.getItem('pk_water_' + key) || '0');
-    const waterTarget = Math.round((profile?.weight_kg||70) * 33);
-    const hasWater = waterMl >= waterTarget * 0.7;
+    const hasWater = waterMl >= getWaterTarget() * 0.7;
     const score = (hasFood ? 1 : 0) + (hasWo ? 1 : 0) + (hasWater ? 1 : 0);
     const barH = Math.max(4, Math.round((score / 3) * 40));
     const barBg = score === 3 ? 'var(--emerald)' : score === 2 ? 'var(--cyan)' : score === 1 ? 'rgba(139,92,246,.5)' : 'rgba(255,255,255,.06)';
@@ -2258,6 +2268,14 @@ function _parseWeeklyWorkout(plan) {
   return result;
 }
 
+// Сегодня по плану день отдыха? (для челленджа: тренировка ИЛИ отдых засчитываются)
+function _isRestDayToday() {
+  if (!planData?.workout_plan) return false;
+  const todayNum = ((new Date().getDay()+6)%7)+1;
+  const day = _parseWeeklyWorkout(planData.workout_plan).find(d => d.num === todayNum);
+  return !!day?.isRest;
+}
+
 function openWorkoutSheet(dayNum, dayName) {
   const content = parseWorkoutDay(planData?.workout_plan||'', dayNum);
   const body = document.getElementById('wo-body');
@@ -2345,7 +2363,7 @@ function renderHome() {
   const ringColor = calPct >= 100 ? 'var(--red)' : 'url(#calGrad)';
 
   const water = getWater();
-  const waterTarget = Math.round((profile?.weight_kg||70) * 33);
+  const waterTarget = getWaterTarget();
   const wPct = Math.min(100, Math.round(water/waterTarget*100));
 
   const dayNum = ((new Date().getDay()+6)%7)+1;
@@ -2528,7 +2546,7 @@ function _updateWaterUI(ml) {
   const info = document.getElementById('water-info');
   const bar  = document.getElementById('water-bar');
   if (!info || !bar) { renderHome(); return; }
-  const target = +(localStorage.getItem('pk_water_target')||2500);
+  const target = getWaterTarget();
   info.textContent = `${ml} / ${target} мл`;
   bar.style.width = Math.min(100, Math.round(ml*100/target)) + '%';
 }
@@ -2648,7 +2666,7 @@ async function sendChat() {
           accum += ev.chunk;
           ensureAssist();
           assistBub.textContent = accum;
-          scrollBottom(el);
+          scrollBottomIfNear(el);
         } else if (ev.done) {
           finalReply = ev.reply;
           macrosUpdated = ev.macros_updated;
@@ -3636,7 +3654,6 @@ function setLang(l) {
   localStorage.setItem('pk_lang', l);
   document.getElementById('lang-ru').classList.toggle('on', l==='ru');
   document.getElementById('lang-en').classList.toggle('on', l==='en');
-  renderFaq();
   if (document.getElementById('faq-page').classList.contains('on')) renderFaqPage();
   const tabs = {progress:t('progress'),chat:t('chat_tab'),home:t('home_tab'),tracker:t('tracker_tab'),profile:t('profile_tab')};
   document.querySelectorAll('.ntab').forEach(btn => {
@@ -3656,7 +3673,6 @@ function openSettings() {
   document.getElementById('lang-ru').classList.toggle('on', lang==='ru');
   document.getElementById('lang-en').classList.toggle('on', lang==='en');
   updateTargetsSubLabel();
-  renderFaq();
 }
 
 function closeSettings() {
@@ -3997,24 +4013,6 @@ function renderDailyPanel() {
   el.innerHTML = nutritionSection + workoutSection;
 }
 
-function renderFaq() {
-  const list = document.getElementById('faq-list'); if (!list) return;
-  const items = t('faq') || [];
-  list.innerHTML = items.map((item, i) => `
-    <div class="faq-item" id="faq-${i}">
-      <div class="faq-q" onclick="toggleFaq(${i})">
-        <span>${item.q}</span>
-        <span class="faq-arrow">›</span>
-      </div>
-      <div class="faq-a">${item.a}</div>
-    </div>`).join('');
-}
-
-function toggleFaq(i) {
-  document.getElementById(`faq-${i}`)?.classList.toggle('open');
-}
-
-// ══ FAQ PAGE ══
 // ══ REMINDER MODALS ══
 let _remType = null;
 let _remMealRows = [];
@@ -4452,32 +4450,29 @@ function _checkChallengeToday() {
   const state = _getChalState();
   if (!state?.accepted) return;
   const today = new Date().toISOString().slice(0,10);
-  if (state.done?.includes(state.done.length)) return; // already tracked
+  // Уже отметили сегодняшний день — выходим (защита от двойного засчёта за один день)
+  if (localStorage.getItem('pk_chal_last_mark') === today) return;
   const todayLocale = todayKey();
   const hasFood  = foodLogs.some(f => f.date === todayLocale);
-  const hasWo    = getWorkoutDone(todayLocale);
+  // Тренировка засчитана, если отмечена ИЛИ по плану сегодня день отдыха
+  const hasWo    = getWorkoutDone(todayLocale) || _isRestDayToday();
   const waterMl  = parseInt(localStorage.getItem('pk_water_' + todayLocale) || '0');
-  const waterTgt = Math.round((profile?.weight_kg||70) * 33);
-  const hasWater = waterMl >= waterTgt * 0.7;
+  const hasWater = waterMl >= getWaterTarget() * 0.7;
   const dayIdx   = (state.done || []).length;
-  if (hasFood && (hasWo || true) && hasWater && dayIdx < 7) {
-    const lastMark = localStorage.getItem('pk_chal_last_mark');
-    if (lastMark !== today) {
-      localStorage.setItem('pk_chal_last_mark', today);
-      state.done = [...(state.done || []), dayIdx];
-      _saveChalState(state);
-      if (state.done.length === 7) {
-        toast(lang !== 'en'
-          ? '🏆 Челлендж завершён! 30 дней Pro начислено!'
-          : '🏆 Challenge complete! 30 days Pro granted!', 4000);
-        fetch('/api/notify/test', {method:'POST'}).catch(()=>{});
-      } else {
-        toast(lang !== 'en'
-          ? `🔥 День ${state.done.length}/7 засчитан!`
-          : `🔥 Day ${state.done.length}/7 counted!`);
-      }
-      if (curTab === 'home') renderHome();
+  if (hasFood && hasWo && hasWater && dayIdx < 7) {
+    localStorage.setItem('pk_chal_last_mark', today);
+    state.done = [...(state.done || []), dayIdx];
+    _saveChalState(state);
+    if (state.done.length === 7) {
+      toast(lang !== 'en'
+        ? '🏆 Челлендж завершён! Напиши /подписка в боте — начислим 30 дней Pro 🎁'
+        : '🏆 Challenge complete! Send /subscribe in the bot to claim 30 days Pro 🎁', 4500);
+    } else {
+      toast(lang !== 'en'
+        ? `🔥 День ${state.done.length}/7 засчитан!`
+        : `🔥 Day ${state.done.length}/7 counted!`);
     }
+    if (curTab === 'home') renderHome();
   }
 }
 

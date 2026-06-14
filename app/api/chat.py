@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
-from app.api.deps import check_ai_quota
+from app.api.deps import check_ai_quota, spawn_bg
 from bot.services.ai_service import generate_chat_response, stream_chat_response, summarize_chat_history
 from db.queries import (
     get_user, update_plan_macros, get_user_logs,
@@ -141,7 +141,7 @@ async def chat(req: ChatRequest, tg_id: int = Depends(check_ai_quota)):
                 {"role": "user", "content": req.message},
                 {"role": "assistant", "content": clean_reply},
             ]
-            asyncio.create_task(_maybe_refresh_summary(uid, full_hist, req.lang or "ru"))
+            spawn_bg(_maybe_refresh_summary(uid, full_hist, req.lang or "ru"))
 
         response: dict = {"reply": clean_reply}
         if new_macros:
@@ -197,7 +197,7 @@ async def chat_stream(req: ChatRequest, tg_id: int = Depends(check_ai_quota)):
                             {"role": "user", "content": req.message},
                             {"role": "assistant", "content": clean_reply},
                         ]
-                        asyncio.create_task(_maybe_refresh_summary(uid, full_hist, lang))
+                        spawn_bg(_maybe_refresh_summary(uid, full_hist, lang))
                     done = {"done": True, "reply": clean_reply}
                     if new_macros:
                         done["macros_updated"] = new_macros

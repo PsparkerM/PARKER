@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException, Depends, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
-from app.api.deps import check_ai_quota, get_current_tg_id, get_client_ip
+from app.api.deps import check_ai_quota, get_current_tg_id, get_client_ip, spawn_bg
 from app.middleware.rate_limit import ip_limiter
 from bot.utils.calculators import compute_macros_for_profile
 from bot.services.ai_service import generate_nutrition_plan, generate_workout_plan
@@ -107,7 +107,7 @@ async def create_profile(
             _asyncio.to_thread(save_plan, uid, "workout", workout_plan, {}),
         )
         if is_new:
-            _asyncio.create_task(_notify_admins_new_user(tg_id, data, macros))
+            spawn_bg(_notify_admins_new_user(tg_id, data, macros))
 
     return JSONResponse({
         "macros":         macros,

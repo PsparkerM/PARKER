@@ -62,7 +62,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         # MutableHeaders has no pop() — use del with KeyError guard
         try:
             del response.headers["server"]
-        except (KeyError, Exception):
+        except KeyError:
             pass
 
         return response

@@ -114,11 +114,13 @@ async def _test_ai_on_startup():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # AI test + reminders scheduler запускаем в фоне
-    asyncio.create_task(_test_ai_on_startup())
+    # AI test + reminders scheduler запускаем в фоне.
+    # spawn_bg держит ссылку — иначе задача может быть собрана GC посреди выполнения.
+    from app.api.deps import spawn_bg
+    spawn_bg(_test_ai_on_startup())
     from bot.scheduler import scheduler, load_all_reminders
     scheduler.start()
-    asyncio.create_task(load_all_reminders())
+    spawn_bg(load_all_reminders())
 
     if not WEBHOOK_SECRET_TOKEN:
         logging.error(
@@ -215,10 +217,16 @@ async def telegram_webhook(request: Request):
     return {"ok": True}
 
 
+_INDEX_HTML: str | None = None  # cached once — процесс рестартует на каждый деплой
+
+
 @app.get("/")
 async def serve_miniapp():
-    with open("app/static/index.html", encoding="utf-8") as f:
-        return HTMLResponse(f.read())
+    global _INDEX_HTML
+    if _INDEX_HTML is None:
+        with open("app/static/index.html", encoding="utf-8") as f:
+            _INDEX_HTML = f.read()
+    return HTMLResponse(_INDEX_HTML)
 
 
 @app.get("/manifest.json")

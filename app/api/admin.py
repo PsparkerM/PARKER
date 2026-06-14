@@ -42,7 +42,9 @@ async def _check_admin(request: Request) -> bool:
         return False
     if not ADMIN_SECRET:
         return False
-    secret = request.query_params.get("secret", "")
+    # Заголовок предпочтительнее query-string (последний оседает в логах прокси).
+    # Query оставлен для полностраничных навигаций (логин-ссылка, открытие JSON в новой вкладке).
+    secret = request.headers.get("x-admin-secret") or request.query_params.get("secret", "")
     ok = bool(secret) and hmac.compare_digest(secret, ADMIN_SECRET)
     if not ok:
         log_security_event("ADMIN_AUTH_FAILURE", ip=ip, path=str(request.url.path))
@@ -489,6 +491,8 @@ textarea.tadm:focus{{border-color:rgba(245,197,24,.5);background:rgba(255,255,25
   }}
 }})();
 const AUTH = 'secret=' + encodeURIComponent(sessionStorage.getItem('adm_secret') || '');
+// Для fetch — секрет в заголовке (не оседает в логах прокси, в отличие от query-string)
+const ADM_HDR = {{'X-Admin-Secret': sessionStorage.getItem('adm_secret') || ''}};
 const _allUsers = {users_for_js};
 if (!sessionStorage.getItem('adm_secret')) {{
   document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:#07070f;color:#f87171;font-size:18px;font-weight:700">⚠️ Сессия истекла — <a href="/admin" style="color:#f5c518;margin-left:8px">войти заново</a></div>';
@@ -534,7 +538,7 @@ async function loadDetail(tgId, modalId, btn) {{
   if (btn) {{ btn.disabled = true; btn.textContent = '⏳'; }}
   el.innerHTML = '<div style="color:#6b6b88;padding:12px 0;font-size:13px">⏳ Загрузка данных...</div>';
   try {{
-    const res = await fetch('/admin/user-detail?tg_id=' + tgId + '&' + AUTH);
+    const res = await fetch('/admin/user-detail?tg_id=' + tgId, {{ headers: ADM_HDR }});
     const d = await res.json();
     if (d.error) {{ el.innerHTML = '<div style="color:#f87171;padding:12px 0">Ошибка: ' + d.error + '</div>'; return; }}
 
@@ -611,9 +615,9 @@ async function setStatus(tgId, status, btn) {{
   btn.disabled = true;
   btn.style.opacity = '0.5';
   try {{
-    const res = await fetch('/admin/set-status?' + AUTH, {{
+    const res = await fetch('/admin/set-status', {{
       method: 'POST',
-      headers: {{'Content-Type':'application/json'}},
+      headers: {{'Content-Type':'application/json', ...ADM_HDR}},
       body: JSON.stringify({{tg_id: parseInt(tgId), status}})
     }});
     const text = await res.text();
@@ -715,9 +719,9 @@ async function executeBroadcast() {{
   btn.disabled = true;
   btn.textContent = '⏳ Отправляю...';
   try {{
-    const res = await fetch('/admin/broadcast?' + AUTH, {{
+    const res = await fetch('/admin/broadcast', {{
       method: 'POST',
-      headers: {{'Content-Type':'application/json'}},
+      headers: {{'Content-Type':'application/json', ...ADM_HDR}},
       body: JSON.stringify({{filter: _bcFilter, text}})
     }});
     const d = await res.json();
@@ -739,9 +743,9 @@ async function executeBroadcast() {{
 async function delUser(tgId, name, modalId) {{
   if (!confirm('Удалить пользователя ' + name + ' (TG ID: ' + tgId + ')?\n\nВСЕ данные будут удалены безвозвратно.')) return;
   try {{
-    const res = await fetch('/admin/delete-user?' + AUTH, {{
+    const res = await fetch('/admin/delete-user', {{
       method: 'POST',
-      headers: {{'Content-Type':'application/json'}},
+      headers: {{'Content-Type':'application/json', ...ADM_HDR}},
       body: JSON.stringify({{tg_id: parseInt(tgId)}})
     }});
     const d = await res.json();

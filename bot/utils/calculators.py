@@ -49,7 +49,17 @@ def calculate_tdee(bmr: float, schedule: str) -> float:
     return bmr * ACTIVITY_MULTIPLIERS.get(schedule, 1.375)
 
 
-def calculate_macros(tdee: float, goal: str) -> dict:
+# Минимально безопасный суточный калораж — чтобы дефицит не уводил в опасную зону.
+# Стандартные клинические нижние границы для самостоятельного питания.
+CALORIE_FLOOR = {"male": 1500, "female": 1200}
+
+# Минимум белка на кг массы тела (сохранение мышц, особенно в дефиците).
+PROTEIN_PER_KG = 1.8
+
+
+def calculate_macros(tdee: float, goal: str,
+                     weight_kg: float | None = None,
+                     gender: str = "male") -> dict:
     adjustments = {
         "lose_weight":   (-400, 0.35, 0.25, 0.40),
         "gain_muscle":   (+300, 0.30, 0.25, 0.45),
@@ -58,21 +68,40 @@ def calculate_macros(tdee: float, goal: str) -> dict:
     }
     delta, p_ratio, f_ratio, c_ratio = adjustments.get(goal, (0, 0.25, 0.30, 0.45))
     calories = tdee + delta
+
+    # 1) Не опускаемся ниже безопасного минимума калорий.
+    floor = CALORIE_FLOOR.get(gender, 1200)
+    if calories < floor:
+        calories = floor
+
+    # 2) Белок: берём максимум из доли калоража и 1.8 г/кг массы тела.
+    protein_g = calories * p_ratio / 4
+    if weight_kg:
+        protein_g = max(protein_g, PROTEIN_PER_KG * weight_kg)
+
+    fat_g = calories * f_ratio / 9
+
+    # 3) Углеводы — остаток калорий после белка и жира (чтобы сумма сходилась
+    #    с калоражом даже после поднятия белка по массе тела).
+    carb_g = max(0.0, (calories - protein_g * 4 - fat_g * 9) / 4)
+
     return {
-        "calories":  int(calories),
-        "protein_g": int(calories * p_ratio / 4),
-        "fat_g":     int(calories * f_ratio / 9),
-        "carb_g":    int(calories * c_ratio / 4),
+        "calories":  int(round(calories)),
+        "protein_g": int(round(protein_g)),
+        "fat_g":     int(round(fat_g)),
+        "carb_g":    int(round(carb_g)),
     }
 
 
 def compute_macros_for_profile(data: dict) -> dict:
+    weight_kg = float(data["weight_kg"])
+    gender = data["gender"]
     bmr = calculate_bmr(
-        gender=data["gender"],
+        gender=gender,
         age=int(data["age"]),
         height_cm=int(data["height_cm"]),
-        weight_kg=float(data["weight_kg"]),
+        weight_kg=weight_kg,
         body_fat_pct=data.get("body_fat_pct"),
     )
     tdee = calculate_tdee(bmr, data["schedule"])
-    return calculate_macros(tdee, data["goal"])
+    return calculate_macros(tdee, data["goal"], weight_kg=weight_kg, gender=gender)

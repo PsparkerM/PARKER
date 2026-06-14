@@ -521,13 +521,13 @@ def expire_old_subscriptions() -> int:
             .lt("expires_at", now)
             .execute()
         )
-        count = 0
-        for row in (expired.data or []):
-            uid = row["user_id"]
-            db.table("subscriptions").update({"status": "expired"}).eq("user_id", uid).execute()
-            db.table("users").update({"status": "free"}).eq("id", uid).execute()
-            count += 1
-        return count
+        uids = [row["user_id"] for row in (expired.data or [])]
+        if not uids:
+            return 0
+        # batch: два запроса вместо 2×N в цикле
+        db.table("subscriptions").update({"status": "expired"}).in_("user_id", uids).execute()
+        db.table("users").update({"status": "free"}).in_("id", uids).execute()
+        return len(uids)
     except Exception:
         logging.exception("expire_old_subscriptions error")
         return 0
