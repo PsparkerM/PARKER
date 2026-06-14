@@ -3545,7 +3545,43 @@ function renderProfile() {
 
 function openProUpgrade() {
   haptic('medium');
-  toast(lang==='en' ? 'Type /subscribe in the bot' : 'Напиши /подписка в боте P.A.R.K.E.R.');
+  const ru = lang !== 'en';
+  // Нативный выбор плана через Telegram popup → openInvoice (оплата Stars в самом приложении)
+  if (tg?.showPopup && tg?.openInvoice) {
+    tg.showPopup({
+      title: ru?'P.A.R.K.E.R. Pro':'P.A.R.K.E.R. Pro',
+      message: ru?'50 AI-запросов в день, чат с Арни без лимитов, адаптация плана.\n\nВыбери период:'
+                 :'50 AI requests/day, unlimited Arnie chat, plan adaptation.\n\nChoose a period:',
+      buttons: [
+        {id:'monthly', type:'default', text:ru?'Месяц — 299 ⭐':'Month — 299 ⭐'},
+        {id:'annual',  type:'default', text:ru?'Год — 2990 ⭐':'Year — 2990 ⭐'},
+        {id:'cancel',  type:'cancel'},
+      ],
+    }, (id) => { if (id==='monthly'||id==='annual') _buyPro(id); });
+  } else {
+    toast(ru ? 'Напиши /подписка в боте P.A.R.K.E.R.' : 'Type /subscribe in the bot');
+  }
+}
+
+async function _buyPro(plan) {
+  const ru = lang !== 'en';
+  toast(ru?'Готовлю счёт…':'Preparing invoice…');
+  try {
+    const r = await fetch('/api/subscribe/invoice', {
+      method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({plan})
+    });
+    const data = await r.json();
+    if (!data.url) { toast(ru?'Не удалось создать счёт':'Failed to create invoice'); return; }
+    tg.openInvoice(data.url, (status) => {
+      if (status === 'paid') {
+        hapticSuccess();
+        toast(ru?'🎉 Pro активирован! Спасибо!':'🎉 Pro activated! Thank you!', 4000);
+        setTimeout(() => tryLoadFromServer(true).then(()=>{ if(curTab==='profile') renderProfile(); }), 1500);
+      } else if (status === 'failed') {
+        toast(ru?'Оплата не прошла':'Payment failed');
+      }
+    });
+  } catch { toast(ru?'Ошибка соединения':'Connection error'); }
 }
 
 function openAdminPanel() {
