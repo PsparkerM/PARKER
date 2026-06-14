@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>P.A.R.K.E.R. · Конструктор-аннотатор</title>
+<style>
+  :root{--bg:#07070f;--surface:#11111c;--surface2:#181826;--border:rgba(255,255,255,.08);
+    --text:#e8e8f0;--text2:#9aa;--cyan:#00c8ff;--gold:#f5c518;--red:#f87171;--green:#34d399}
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
+    font-family:'Space Grotesk',-apple-system,system-ui,sans-serif}
+  #bar{position:fixed;top:0;left:0;right:0;height:54px;z-index:50;display:flex;align-items:center;
+    gap:8px;padding:0 14px;background:rgba(10,10,20,.92);backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--border)}
+  #bar .brand{font-weight:800;letter-spacing:.5px;font-size:14px;color:var(--gold);white-space:nowrap}
+  #bar .brand small{color:var(--text2);font-weight:500;margin-left:6px}
+  .btn{border:1px solid var(--border);background:var(--surface2);color:var(--text);
+    border-radius:9px;padding:7px 11px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;
+    transition:all .12s;font-family:inherit}
+  .btn:hover{border-color:rgba(255,255,255,.2)}
+  .btn:active{transform:scale(.95)}
+  .btn.on{background:var(--cyan);color:#001018;border-color:var(--cyan)}
+  .btn.gold{background:var(--gold);color:#1a1400;border-color:var(--gold)}
+  .btn.ghost{background:transparent}
+  .sep{width:1px;height:24px;background:var(--border);margin:0 4px}
+  .spacer{flex:1}
+  #wrap{display:flex;height:100%;padding-top:54px}
+  #stage{flex:1;display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:28px 20px 60px}
+  #phone{position:relative;width:390px;flex:0 0 auto}
+  #phone .label{text-align:center;font-size:11px;color:var(--text2);margin-bottom:8px;letter-spacing:.5px}
+  iframe{width:390px;height:844px;border:none;border-radius:30px;background:#000;
+    box-shadow:0 0 0 10px #1a1a26,0 20px 60px rgba(0,0,0,.6);display:block}
+  #side{width:320px;flex:0 0 auto;border-left:1px solid var(--border);background:var(--surface);
+    display:flex;flex-direction:column;overflow:hidden}
+  #side h3{margin:0;padding:14px 16px;font-size:13px;letter-spacing:.5px;border-bottom:1px solid var(--border);
+    display:flex;align-items:center;gap:8px}
+  #side h3 .count{background:var(--cyan);color:#001018;border-radius:20px;padding:1px 9px;font-size:11px;font-weight:800}
+  #notes{flex:1;overflow:auto;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+  .note{background:var(--surface2);border:1px solid var(--border);border-radius:11px;padding:10px 11px;font-size:12px}
+  .note .nh{display:flex;align-items:center;gap:7px;margin-bottom:5px}
+  .note .num{background:var(--gold);color:#1a1400;border-radius:20px;min-width:20px;height:20px;
+    display:flex;align-items:center;justify-content:center;font-weight:800;font-size:11px;flex:0 0 auto}
+  .note .scr{color:var(--cyan);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px}
+  .note .del{margin-left:auto;cursor:pointer;color:var(--text2);font-size:14px;line-height:1}
+  .note .del:hover{color:var(--red)}
+  .note .txt{color:var(--text);line-height:1.45;white-space:pre-wrap;word-break:break-word}
+  .note .meta{color:var(--text2);font-size:10px;margin-top:6px;font-family:ui-monospace,monospace;
+    word-break:break-all;opacity:.7}
+  .note .mv{color:var(--green);font-size:11px;margin-top:4px;font-weight:600}
+  #empty{color:var(--text2);font-size:12px;text-align:center;padding:30px 16px;line-height:1.6}
+  /* pins overlay (parent, над iframe) */
+  .pin{position:fixed;z-index:40;transform:translate(-50%,-50%);width:24px;height:24px;border-radius:50%;
+    background:var(--gold);color:#1a1400;font-weight:800;font-size:12px;display:flex;align-items:center;
+    justify-content:center;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.5),0 0 0 3px rgba(245,197,24,.25);
+    pointer-events:auto;user-select:none}
+  .pin:hover{transform:translate(-50%,-50%) scale(1.18)}
+  /* comment popup */
+  #pop{position:fixed;z-index:60;width:300px;background:var(--surface2);border:1px solid rgba(245,197,24,.4);
+    border-radius:14px;padding:13px;box-shadow:0 14px 50px rgba(0,0,0,.6);display:none}
+  #pop .pt{font-size:11px;color:var(--gold);font-weight:700;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px}
+  #pop .ptarget{font-size:11px;color:var(--text2);margin-bottom:8px;font-family:ui-monospace,monospace;
+    background:var(--surface);border-radius:7px;padding:6px 8px;word-break:break-all;max-height:60px;overflow:auto}
+  #pop textarea{width:100%;height:84px;background:var(--surface);border:1px solid var(--border);border-radius:9px;
+    color:var(--text);padding:9px;font-size:13px;font-family:inherit;resize:vertical;outline:none}
+  #pop textarea:focus{border-color:rgba(0,200,255,.5)}
+  #pop .row{display:flex;gap:8px;margin-top:9px}
+  #hint{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);z-index:45;background:rgba(20,20,32,.95);
+    border:1px solid var(--border);border-radius:20px;padding:8px 16px;font-size:12px;color:var(--text2);
+    display:none;align-items:center;gap:8px;pointer-events:none}
+  #hint b{color:var(--gold)}
+  #toast{position:fixed;top:64px;left:50%;transform:translateX(-50%);z-index:70;background:var(--surface2);
+    border:1px solid var(--green);color:var(--green);border-radius:10px;padding:9px 16px;font-size:13px;font-weight:600;
+    opacity:0;transition:opacity .2s;pointer-events:none}
+  #toast.show{opacity:1}
+  @media(max-width:1000px){#side{display:none}}
+</style>
+</head>
+<body>
+<div id="bar">
+  <div class="brand">⚙️ J.A.R.V.I.S. <small>конструктор-аннотатор</small></div>
+  <div class="sep"></div>
+  <button class="btn on" id="m-view"  data-mode="view">👁 Просмотр</button>
+  <button class="btn"     id="m-note"  data-mode="note">📌 Комментарий</button>
+  <button class="btn"     id="m-move"  data-mode="move">✋ Двигать</button>
+  <div class="sep"></div>
+  <span style="font-size:11px;color:var(--text2)">Экран:</span>
+  <button class="btn ghost nav" data-tab="home">🏠</button>
+  <button class="btn ghost nav" data-tab="tracker">📊</button>
+  <button class="btn ghost nav" data-tab="progress">📈</button>
+  <button class="btn ghost nav" data-tab="chat">💬</button>
+  <button class="btn ghost nav" data-tab="profile">👤</button>
+  <div class="spacer"></div>
+  <button class="btn" id="reload">↻ Перезагрузить</button>
+  <button class="btn" id="copy">📋 Копировать</button>
+  <button class="btn gold" id="export">⬇ Экспорт .md</button>
+</div>
+
+<div id="wrap">
+  <div id="stage">
+    <div id="phone">
+      <div class="label">iPhone · 390×844 · тестовые данные (моки)</div>
+      <iframe id="app" title="P.A.R.K.E.R."></iframe>
+    </div>
+  </div>
+  <div id="side">
+    <h3>📝 Заметки <span class="count" id="cnt">0</span></h3>
+    <div id="notes"></div>
+  </div>
+</div>
+
+<div id="pop">
+  <div class="pt" id="pop-title">Что исправить?</div>
+  <div class="ptarget" id="pop-target"></div>
+  <textarea id="pop-text" placeholder="Например: сдвинуть выше, шрифт мелкий, поменять цвет, убрать отступ…"></textarea>
+  <div class="row">
+    <button class="btn gold" id="pop-save" style="flex:1">Сохранить</button>
+    <button class="btn" id="pop-cancel">Отмена</button>
+  </div>
+</div>
+
+<div id="hint"></div>
+<div id="toast"></div>
+
+<script>
+// ════════════════════ МОК, который вживляется в iframe ════════════════════
+// Выполняется ВНУТРИ iframe ДО скрипта приложения. Без backtick'ов внутри —
+// чтобы не конфликтовать с template-строкой родителя. Закрывающий тег экранирован.
+const MOCK = '<script>(function(){\n' +
+'  var TODAY = new Date().toLocaleDateString("ru-RU");\n' +
+'  try{ localStorage.setItem("pk_chal_dismissed", new Date().toISOString().slice(0,10)); localStorage.setItem("pk_lang","ru"); }catch(e){}\n' +
+'  var uid = 1199979214;\n' +
+'  var userObj = {id:uid, first_name:"Лера", last_name:"", username:"lera", language_code:"ru"};\n' +
+'  var initData = "user=" + encodeURIComponent(JSON.stringify(userObj)) + "&auth_date=1700000000&hash=mockhash";\n' +
+'  function noop(){return undefined;}\n' +
+'  function chain(){return btn;}\n' +
+'  var btn = {show:chain,hide:chain,enable:chain,disable:chain,setText:chain,onClick:chain,offClick:chain,setParams:chain,showProgress:chain,hideProgress:chain,isVisible:false};\n' +
+'  window.Telegram = { WebApp: {\n' +
+'    initData: initData,\n' +
+'    initDataUnsafe: { user: userObj, auth_date: 1700000000, hash: "mockhash" },\n' +
+'    version:"7.0", platform:"ios", colorScheme:"dark", themeParams:{bg_color:"#07070f"},\n' +
+'    viewportHeight:844, viewportStableHeight:844, isExpanded:true,\n' +
+'    ready:noop, expand:noop, close:noop, enableClosingConfirmation:noop, disableClosingConfirmation:noop,\n' +
+'    disableVerticalSwipes:noop, enableVerticalSwipes:noop, requestFullscreen:noop, exitFullscreen:noop,\n' +
+'    openLink:noop, openTelegramLink:noop, addToHomeScreen:noop, shareToStory:noop,\n' +
+'    showConfirm:function(m,cb){ if(cb) cb(true); }, showAlert:function(m,cb){ if(cb) cb(); },\n' +
+'    showPopup:function(p,cb){ if(cb) cb(); }, setHeaderColor:noop, setBackgroundColor:noop,\n' +
+'    onEvent:noop, offEvent:noop, sendData:noop,\n' +
+'    MainButton:btn, BackButton:btn, SettingsButton:btn,\n' +
+'    HapticFeedback:{ impactOccurred:noop, notificationOccurred:noop, selectionChanged:noop },\n' +
+'    CloudStorage:{ getItem:function(k,cb){cb&&cb(null,null);}, setItem:function(k,v,cb){cb&&cb(null,true);}, removeItem:noop, getKeys:function(cb){cb&&cb(null,[]);} }\n' +
+'  }};\n' +
+'  // ── мок API ──\n' +
+'  var USER = { found:true,\n' +
+'    profile:{ tg_id:uid, name:"Лера", gender:"female", age:29, height_cm:168, weight_kg:64,\n' +
+'      goal:"lose_weight", status:"pro", badge:null, birthday:"1996-04-12", avatar:"🦊" },\n' +
+'    macros:{ calories:1800, protein_g:140, fat_g:55, carb_g:170 },\n' +
+'    nutrition_plan:"🍽 ПЛАН ПИТАНИЯ (1800 ккал)\\n\\nЗавтрак: овсянка на воде + ягоды + яйцо\\nОбед: куриная грудка 150г + гречка + овощи\\nПерекус: творог 5% 150г + орехи\\nУжин: запечённая рыба + салат\\n\\nВода: 2 л/день. Дисклеймер: проконсультируйтесь с врачом.",\n' +
+'    workout_plan:"💪 ТРЕНИРОВКИ (3 дня/нед)\\n\\nПн: низ тела — приседания, выпады, ягодичный мост\\nСр: верх — отжимания, тяга гантелей, планка\\nПт: кардио + кор — 30 мин ходьба, скручивания\\n\\nРазминка обязательна.",\n' +
+'    chat_history:[ {role:"assistant", content:"Привет, Лера! Я Арни, твой тренер 💪 Чем поможем сегодня?"} ] };\n' +
+'  var LOGS = { found:true,\n' +
+'    food:[ {date:TODAY, text:"Овсянка с ягодами", total:{calories:320,protein_g:12,fat_g:6,carb_g:54}},\n' +
+'           {date:TODAY, text:"Куриная грудка с гречкой", total:{calories:480,protein_g:45,fat_g:9,carb_g:52}} ],\n' +
+'    weight_logs:[ {date:"2026-06-01",weight:66}, {date:"2026-06-07",weight:65.4}, {date:"2026-06-14",weight:64} ],\n' +
+'    meas_logs:[ {date:"2026-06-01",waist:74,chest:90,hips:98}, {date:"2026-06-14",waist:72,chest:90,hips:97} ],\n' +
+'    water:[ {date:"2026-06-14", ml:1200} ] };\n' +
+'  function J(obj){ return new Response(JSON.stringify(obj), {status:200, headers:{"Content-Type":"application/json"}}); }\n' +
+'  function sse(){ var enc=new TextEncoder(); var parts=["Конечно! ","Сегодня ты ","отлично идёшь ","по плану 🔥 ","Так держать!"];\n' +
+'    return new Response(new ReadableStream({ start:function(c){ var i=0; (function push(){\n' +
+'      if(i<parts.length){ c.enqueue(enc.encode("data: "+JSON.stringify({chunk:parts[i]})+"\\n\\n")); i++; setTimeout(push,120); }\n' +
+'      else { c.enqueue(enc.encode("data: "+JSON.stringify({done:true,reply:parts.join("")})+"\\n\\n")); c.close(); } })();\n' +
+'    }}), {status:200, headers:{"Content-Type":"text/event-stream"}}); }\n' +
+'  var realFetch = window.fetch.bind(window);\n' +
+'  window.fetch = function(input, init){\n' +
+'    var url = (typeof input === "string") ? input : (input && input.url) || "";\n' +
+'    if(url.indexOf("/api") === -1) return realFetch(input, init);\n' +
+'    if(url.indexOf("/api/user") === 0 || url.indexOf("/api/user?") === 0) return Promise.resolve(J(USER));\n' +
+'    if(url.indexOf("/api/logs") === 0) return Promise.resolve(J(LOGS));\n' +
+'    if(url.indexOf("/api/chat/stream") === 0) return Promise.resolve(sse());\n' +
+'    if(url.indexOf("/api/chat/history") === 0) return Promise.resolve(J({ok:true}));\n' +
+'    if(url.indexOf("/api/food") === 0) return Promise.resolve(J({calories:250,protein_g:20,fat_g:8,carb_g:24,items:[{name:"Тестовый продукт",calories:250}],total:{calories:250,protein_g:20,fat_g:8,carb_g:24}}));\n' +
+'    if(url.indexOf("/api/reminders") === 0) return Promise.resolve(J({reminders:[]}));\n' +
+'    if(url.indexOf("/api/adapt") === 0) return Promise.resolve(J({ok:true, macros:USER.macros, nutrition_plan:USER.nutrition_plan, workout_plan:USER.workout_plan}));\n' +
+'    return Promise.resolve(J({ok:true}));\n' +
+'  };\n' +
+'})();<\/' + 'script>';
+
+// ════════════════════ Сборка iframe с моками ════════════════════
+const iframe = document.getElementById('app');
+async function buildApp(){
+  let html;
+  try {
+    const resp = await fetch('../app/static/index.html');
+    if(!resp.ok) throw new Error('HTTP '+resp.status);
+    html = await resp.text();
+  } catch(e){
+    document.getElementById('stage').innerHTML =
+      '<div style="max-width:520px;color:#f87171;font-size:14px;line-height:1.7;padding:40px">'+
+      '⚠️ Не удалось загрузить <b>../app/static/index.html</b>.<br><br>'+
+      'Открой этот файл через локальный сервер, не как file://. Самый простой способ — в терминале из корня проекта:<br>'+
+      '<code style="display:block;background:#181826;padding:10px;border-radius:8px;margin:10px 0;color:#34d399">'+
+      'python3 -m http.server 5500</code>'+
+      'и открой <b>http://localhost:5500/devtools/review.html</b><br><br>'+
+      '<span style="color:#9aa">Ошибка: '+e.message+'</span></div>';
+    return;
+  }
+  // вырезаем настоящий Telegram SDK (перезатёр бы мок) и вживляем мок первым в <head>
+  html = html.replace(/<script[^>]*telegram-web-app\.js[^>]*><\/script>/i, '');
+  html = html.replace(/<head([^>]*)>/i, (m)=> m + MOCK);
+  iframe.srcdoc = html;
+}
+
+// ════════════════════ Аннотации ════════════════════
+const KEY = 'parker_review_notes';
+let notes = [];
+try { notes = JSON.parse(localStorage.getItem(KEY) || '[]'); } catch(e){ notes = []; }
+let mode = 'view';
+let nextId = notes.reduce((m,n)=>Math.max(m, n.id), 0) + 1;
+let pending = null; // {el, screen, selector, snippet, tag, move, popX, popY}
+
+const idoc = ()=> iframe.contentDocument;
+function save(){ localStorage.setItem(KEY, JSON.stringify(notes)); }
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),1600); }
+
+function cssPath(el){
+  if(!el || el.nodeType!==1) return '';
+  if(el.id) return '#'+CSS.escape(el.id);
+  const parts=[];
+  let cur=el;
+  while(cur && cur.nodeType===1 && cur.tagName!=='BODY' && cur.tagName!=='HTML'){
+    let sel=cur.tagName.toLowerCase();
+    if(cur.id){ parts.unshift('#'+CSS.escape(cur.id)); break; }
+    if(cur.classList && cur.classList.length){
+      sel += '.' + Array.from(cur.classList).slice(0,3).map(c=>CSS.escape(c)).join('.');
+    }
+    const p=cur.parentElement;
+    if(p){
+      const sibs=Array.from(p.children).filter(c=>c.tagName===cur.tagName);
+      if(sibs.length>1) sel += ':nth-of-type('+(sibs.indexOf(cur)+1)+')';
+    }
+    parts.unshift(sel);
+    cur=cur.parentElement;
+  }
+  return parts.join(' > ');
+}
+
+function describe(el){
+  const screenEl = el.closest('[id^="sc-"]');
+  const screen = screenEl ? screenEl.id.replace('sc-','') : (curScreen()||'');
+  const snippet = (el.textContent||'').trim().replace(/\s+/g,' ').slice(0,70);
+  let tag = el.tagName.toLowerCase();
+  if(el.id) tag += '#'+el.id;
+  else if(typeof el.className==='string' && el.className.trim())
+    tag += '.'+el.className.trim().split(/\s+/).slice(0,2).join('.');
+  return { screen, snippet, tag, selector: cssPath(el) };
+}
+function curScreen(){
+  try{ const t=iframe.contentWindow.curTab; return t||''; }catch(e){ return ''; }
+}
+
+// popup
+const pop=document.getElementById('pop'), popText=document.getElementById('pop-text'),
+      popTarget=document.getElementById('pop-target'), popTitle=document.getElementById('pop-title');
+function openPopup(info, screenX, screenY){
+  pending = info;
+  popTitle.textContent = info.move ? ('✋ Сдвиг '+info.move.dx+', '+info.move.dy+' px — что сделать?') : 'Что исправить?';
+  popTarget.textContent = '['+(info.screen||'?')+'] '+info.tag + (info.snippet ? '  «'+info.snippet+'»' : '');
+  popText.value = info.move ? ('Сдвинуть на '+info.move.dx+'px по X, '+info.move.dy+'px по Y. ') : '';
+  let x=Math.min(screenX, window.innerWidth-320), y=Math.min(screenY, window.innerHeight-200);
+  x=Math.max(10,x); y=Math.max(60,y);
+  pop.style.left=x+'px'; pop.style.top=y+'px'; pop.style.display='block';
+  setTimeout(()=>popText.focus(),30);
+}
+function closePopup(){ pop.style.display='none'; pending=null; }
+document.getElementById('pop-cancel').onclick=closePopup;
+document.getElementById('pop-save').onclick=()=>{
+  if(!pending) return;
+  const text=popText.value.trim();
+  if(!text){ popText.focus(); return; }
+  notes.push({ id:nextId++, selector:pending.selector, screen:pending.screen,
+    snippet:pending.snippet, tag:pending.tag, move:pending.move||null, text });
+  save(); renderNotes(); closePopup(); toast('Заметка добавлена');
+};
+popText.addEventListener('keydown',e=>{ if((e.metaKey||e.ctrlKey)&&e.key==='Enter') document.getElementById('pop-save').click(); if(e.key==='Escape') closePopup(); });
+
+// notes panel
+function renderNotes(){
+  document.getElementById('cnt').textContent=notes.length;
+  const box=document.getElementById('notes');
+  if(!notes.length){ box.innerHTML='<div id="empty">Пока пусто.<br>Включи <b>📌 Комментарий</b> и кликни по любому элементу в превью — напиши что поправить.</div>'; return; }
+  box.innerHTML='';
+  notes.forEach((n,i)=>{
+    const d=document.createElement('div'); d.className='note';
+    d.innerHTML='<div class="nh"><span class="num">'+(i+1)+'</span>'+
+      '<span class="scr">'+(n.screen||'—')+'</span>'+
+      '<span class="del" title="Удалить">✕</span></div>'+
+      '<div class="txt"></div>'+
+      (n.move?'<div class="mv">✋ сдвиг '+n.move.dx+', '+n.move.dy+' px</div>':'')+
+      '<div class="meta">'+escapeHtml(n.tag)+(n.snippet?'  «'+escapeHtml(n.snippet)+'»':'')+'</div>';
+    d.querySelector('.txt').textContent=n.text;
+    d.querySelector('.del').onclick=()=>{ notes=notes.filter(x=>x.id!==n.id); save(); renderNotes(); };
+    d.onmouseenter=()=>flash(n);
+    box.appendChild(d);
+  });
+}
+function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function flash(n){
+  try{ const el=idoc().querySelector(n.selector); if(el){ el.style.outline='2px solid #f5c518'; el.style.outlineOffset='2px';
+    setTimeout(()=>{ el.style.outline=''; el.style.outlineOffset=''; },900); el.scrollIntoView({block:'center',behavior:'smooth'}); } }catch(e){}
+}
+
+// pins overlay (живут в родителе, позиционируются по элементам каждый кадр)
+function repositionPins(){
+  const layer=document.getElementById('wrap');
+  const ir=iframe.getBoundingClientRect();
+  notes.forEach((n,i)=>{
+    let pin=document.getElementById('pin-'+n.id);
+    if(!pin){
+      pin=document.createElement('div'); pin.className='pin'; pin.id='pin-'+n.id;
+      pin.onclick=()=>flash(n);
+      document.body.appendChild(pin);
+    }
+    pin.textContent=(i+1);
+    let el=null; try{ el=idoc().querySelector(n.selector); }catch(e){}
+    if(el && el.getClientRects().length){
+      const r=el.getBoundingClientRect();
+      const x=ir.left+r.left, y=ir.top+r.top;
+      // скрываем пины, уехавшие за рамку телефона
+      if(y<54 || y>window.innerHeight || x<ir.left-12 || x>ir.right+12){ pin.style.display='none'; }
+      else { pin.style.display='flex'; pin.style.left=x+'px'; pin.style.top=y+'px'; }
+    } else { pin.style.display='none'; }
+  });
+  // убрать осиротевшие пины
+  document.querySelectorAll('.pin').forEach(p=>{
+    const id=+p.id.replace('pin-',''); if(!notes.some(n=>n.id===id)) p.remove();
+  });
+}
+function loop(){ repositionPins(); requestAnimationFrame(loop); }
+requestAnimationFrame(loop);
+
+// ════════════════════ Режимы и клики в iframe ════════════════════
+function setMode(m){
+  mode=m;
+  document.querySelectorAll('#bar .btn[data-mode]').forEach(b=>b.classList.toggle('on', b.dataset.mode===m));
+  const hint=document.getElementById('hint');
+  if(m==='note'){ hint.style.display='flex'; hint.innerHTML='📌 <b>Режим комментария</b> — кликни по элементу, чтобы оставить заметку'; }
+  else if(m==='move'){ hint.style.display='flex'; hint.innerHTML='✋ <b>Режим «двигать»</b> — перетащи элемент мышкой, отпусти и опиши задумку'; }
+  else { hint.style.display='none'; }
+  try{ idoc().body.style.cursor = (m==='view')?'':'crosshair'; }catch(e){}
+}
+document.querySelectorAll('#bar .btn[data-mode]').forEach(b=> b.onclick=()=>setMode(b.dataset.mode));
+
+document.querySelectorAll('#bar .nav').forEach(b=> b.onclick=()=>{
+  try{ iframe.contentWindow.goTab(b.dataset.tab); toast('Экран: '+b.dataset.tab); }
+  catch(e){ toast('Экран ещё грузится…'); }
+});
+
+function onClick(e){
+  if(mode!=='note') return;
+  e.preventDefault(); e.stopPropagation();
+  const info=describe(e.target);
+  const ir=iframe.getBoundingClientRect();
+  openPopup(info, ir.left + e.clientX + 14, ir.top + e.clientY);
+}
+let drag=null;
+function onDown(e){
+  if(mode!=='move') return;
+  e.preventDefault(); e.stopPropagation();
+  const el=e.target; const win=iframe.contentWindow;
+  const sx=e.clientX, sy=e.clientY; const prev=el.style.transform; const prevOut=el.style.outline;
+  function mv(ev){ const dx=ev.clientX-sx, dy=ev.clientY-sy;
+    el.style.transform='translate('+dx+'px,'+dy+'px)'; el.style.outline='2px dashed #f5c518'; el.style.position=el.style.position||''; }
+  function up(ev){ win.removeEventListener('mousemove',mv,true); win.removeEventListener('mouseup',up,true);
+    const dx=Math.round(ev.clientX-sx), dy=Math.round(ev.clientY-sy);
+    if(Math.abs(dx)<3 && Math.abs(dy)<3){ el.style.transform=prev; el.style.outline=prevOut; return; }
+    const info=describe(el); info.move={dx,dy};
+    const ir=iframe.getBoundingClientRect();
+    openPopup(info, ir.left + ev.clientX + 14, ir.top + ev.clientY);
+  }
+  win.addEventListener('mousemove',mv,true); win.addEventListener('mouseup',up,true);
+}
+
+iframe.addEventListener('load', ()=>{
+  try{
+    const d=idoc();
+    d.addEventListener('click', onClick, true);
+    d.addEventListener('mousedown', onDown, true);
+    d.body.style.cursor = (mode==='view')?'':'crosshair';
+  }catch(e){ console.warn('iframe hook failed', e); }
+  renderNotes();
+  // deep-link: ?screen=progress|tracker|chat|profile|home — авто-переход после загрузки
+  const want = new URLSearchParams(location.search).get('screen');
+  if(want){ setTimeout(()=>{ try{ iframe.contentWindow.goTab(want); }catch(e){} }, 700); }
+});
+
+// ════════════════════ Экспорт ════════════════════
+function buildMarkdown(){
+  const stamp=new Date().toLocaleString('ru-RU');
+  let md='# P.A.R.K.E.R. — заметки по правкам\n\n';
+  md+='_Сгенерировано конструктором-аннотатором · '+stamp+' · всего: '+notes.length+'_\n\n';
+  if(!notes.length){ md+='_Пока пусто._\n'; return md; }
+  const byScreen={};
+  notes.forEach(n=>{ const s=n.screen||'без экрана'; (byScreen[s]=byScreen[s]||[]).push(n); });
+  let i=1;
+  Object.keys(byScreen).forEach(s=>{
+    md+='## Экран: `'+s+'`\n\n';
+    byScreen[s].forEach(n=>{
+      md+=i+'. **'+n.text.replace(/\n/g,' ')+'**\n';
+      if(n.move) md+='   - ✋ сдвиг: '+n.move.dx+'px X, '+n.move.dy+'px Y\n';
+      if(n.snippet) md+='   - элемент: «'+n.snippet+'»\n';
+      md+='   - `'+n.tag+'`\n';
+      md+='   - селектор: `'+n.selector+'`\n\n';
+      i++;
+    });
+  });
+  return md;
+}
+document.getElementById('export').onclick=()=>{
+  const md=buildMarkdown();
+  const blob=new Blob([md],{type:'text/markdown'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='parker-review-notes.md'; a.click(); URL.revokeObjectURL(a.href);
+  toast('Скачано: parker-review-notes.md');
+};
+document.getElementById('copy').onclick=async()=>{
+  try{ await navigator.clipboard.writeText(buildMarkdown()); toast('Скопировано — вставь мне в чат'); }
+  catch(e){ toast('Не вышло скопировать'); }
+};
+document.getElementById('reload').onclick=()=>buildApp();
+
+renderNotes();
+buildApp();
+</script>
+</body>
+</html>

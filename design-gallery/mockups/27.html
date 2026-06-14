@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390, initial-scale=1">
+<title>27 — Minimal Mono Dark</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#121212; --text:#FFFFFF; --muted:#5C5C5C; --dim:#8A8A8A;
+    --acid:#A3FF12; --line:#222222;
+    --font:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-font-smoothing:antialiased;}
+  html,body{width:390px;height:844px;}
+  body{background:var(--bg);font-family:var(--font);color:var(--text);overflow:hidden;display:flex;flex-direction:column;}
+  .status{display:flex;justify-content:space-between;align-items:center;padding:14px 26px 6px;font-size:13px;font-weight:600;color:var(--dim);}
+  .status .ic{font-size:12px;}
+  .scroll{flex:1;overflow:hidden;padding:14px 26px 0;}
+  .head{display:flex;justify-content:space-between;align-items:flex-start;margin:18px 0 44px;}
+  .head .lbl{font-size:11px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;font-weight:600;}
+  .head h1{font-size:24px;font-weight:700;letter-spacing:-.5px;margin-top:8px;}
+  .head p{font-size:12px;color:var(--muted);margin-top:4px;font-weight:500;}
+  .avatar{width:40px;height:40px;border-radius:50%;border:1px solid var(--line);color:var(--dim);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:15px;}
+  /* hero — giant number */
+  .hero{margin-bottom:46px;}
+  .hero .top{font-size:11px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;font-weight:600;margin-bottom:10px;}
+  .hero .big{font-size:84px;font-weight:800;letter-spacing:-4px;line-height:.85;}
+  .hero .big .of{color:var(--muted);font-size:30px;font-weight:600;letter-spacing:-1px;}
+  .hero .rem{display:flex;align-items:baseline;gap:8px;margin-top:18px;}
+  .hero .rem .dot{width:8px;height:8px;border-radius:50%;background:var(--acid);}
+  .hero .rem b{font-size:15px;font-weight:700;color:var(--acid);}
+  .hero .rem span{font-size:13px;color:var(--dim);font-weight:500;}
+  .hero .track{height:2px;background:var(--line);margin-top:18px;overflow:hidden;}
+  .hero .track i{display:block;height:100%;width:77%;background:var(--acid);}
+  /* macros */
+  .macros{display:flex;margin-bottom:46px;}
+  .macro{flex:1;padding-right:16px;}
+  .macro:not(:last-child){border-right:1px solid var(--line);margin-right:16px;}
+  .macro .m-top{font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;font-weight:600;}
+  .macro .m-val{font-size:26px;font-weight:700;margin:8px 0 3px;letter-spacing:-1px;}
+  .macro .m-of{font-size:12px;color:var(--muted);font-weight:500;}
+  .macro .m-of b{color:var(--acid);}
+  /* arni */
+  .arni{border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:22px 0;margin-bottom:42px;display:flex;align-items:flex-start;gap:14px;}
+  .arni .a-av{width:32px;height:32px;border-radius:50%;background:var(--acid);color:#0A0A0A;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;flex-shrink:0;}
+  .arni .a-txt b{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);font-weight:600;}
+  .arni .a-txt p{font-size:15px;font-weight:500;margin-top:7px;line-height:1.45;}
+  .arni .a-txt p .hl{color:var(--acid);}
+  /* meals */
+  .sec-title{font-size:11px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;font-weight:600;margin-bottom:18px;}
+  .meal{display:flex;align-items:center;padding:14px 0;border-bottom:1px solid var(--line);}
+  .meal .m-name{font-size:16px;font-weight:600;}
+  .meal .m-kcal{font-size:12px;color:var(--muted);margin-top:3px;font-weight:500;}
+  .meal .m-r{margin-left:auto;font-size:14px;font-weight:600;}
+  .meal .done{color:var(--acid);}
+  .meal .add{color:var(--dim);}
+  /* nav */
+  .nav{display:flex;justify-content:space-between;padding:16px 30px 28px;border-top:1px solid var(--line);}
+  .nav a{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:10px;letter-spacing:.5px;color:var(--muted);text-decoration:none;font-weight:500;text-transform:uppercase;}
+  .nav a.on{color:var(--acid);}
+  .nav .n-ic{font-size:6px;}
+  .nav .dotmark{width:6px;height:6px;border-radius:50%;border:1px solid currentColor;}
+  .nav a.on .dotmark{background:var(--acid);border-color:var(--acid);}
+</style>
+</head>
+<body>
+  <div class="status"><span>9:41</span><span class="ic">􀙇 􀊪 􀛨</span></div>
+  <div class="scroll">
+    <div class="head">
+      <div><div class="lbl">Среда · 15 июня</div><h1>Привет, Пётр</h1><p>Сегодняшний баланс</p></div>
+      <div class="avatar">П</div>
+    </div>
+    <div class="hero">
+      <div class="top">Калории</div>
+      <div class="big">1 850<span class="of"> / 2 400</span></div>
+      <div class="rem"><span class="dot"></span><b>550 ккал</b><span>осталось до цели</span></div>
+      <div class="track"><i></i></div>
+    </div>
+    <div class="macros">
+      <div class="macro"><div class="m-top">Белки</div><div class="m-val">90</div><div class="m-of">из <b>140 г</b></div></div>
+      <div class="macro"><div class="m-top">Жиры</div><div class="m-val">50</div><div class="m-of">из <b>70 г</b></div></div>
+      <div class="macro"><div class="m-top">Углеводы</div><div class="m-val">180</div><div class="m-of">из <b>250 г</b></div></div>
+    </div>
+    <div class="arni">
+      <div class="a-av">А</div>
+      <div class="a-txt"><b>Арни</b><p>Белка не хватает <span class="hl">50 г</span>. Добавь творог на ужин — закроешь норму.</p></div>
+    </div>
+    <div class="sec-title">Приёмы пищи</div>
+    <div class="meal"><div><div class="m-name">Завтрак</div><div class="m-kcal">520 ккал</div></div><div class="m-r done">✓</div></div>
+    <div class="meal"><div><div class="m-name">Обед</div><div class="m-kcal">640 ккал</div></div><div class="m-r done">✓</div></div>
+    <div class="meal"><div><div class="m-name">Ужин</div><div class="m-kcal">Запланировано</div></div><div class="m-r add">+ добавить</div></div>
+  </div>
+  <div class="nav">
+    <a class="on"><span class="dotmark"></span>Главная</a>
+    <a><span class="dotmark"></span>Дневник</a>
+    <a><span class="dotmark"></span>Чат</a>
+    <a><span class="dotmark"></span>Профиль</a>
+  </div>
+</body>
+</html>

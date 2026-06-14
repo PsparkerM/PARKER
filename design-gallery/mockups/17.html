@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390, initial-scale=1">
+<title>17 — Y2K Retro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#C9F0FF; --chrome1:#FFFFFF; --chrome2:#BFE3F5; --pink:#FF6EC7; --lime:#B6FF3C;
+    --blue:#2B8CFF; --purple:#A06BFF; --ink:#10243A; --silver:#D6E6F2;
+    --font:"Baloo 2","Comic Sans MS",-apple-system,"Segoe UI",sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-font-smoothing:antialiased;}
+  html,body{width:390px;height:844px;}
+  body{font-family:var(--font);color:var(--ink);overflow:hidden;display:flex;flex-direction:column;
+    background:
+      radial-gradient(circle at 20% 0%, rgba(255,110,199,.35), transparent 45%),
+      radial-gradient(circle at 90% 20%, rgba(160,107,255,.3), transparent 40%),
+      linear-gradient(180deg,#C9F0FF,#A6E3FF);}
+  .status{display:flex;justify-content:space-between;align-items:center;padding:13px 22px 4px;font-size:14px;font-weight:800;color:#1A4A6E;}
+  .status .ic{font-size:12px;letter-spacing:1px;}
+  .scroll{flex:1;overflow:hidden;padding:4px 16px 0;}
+  .head{display:flex;justify-content:space-between;align-items:center;padding:6px 2px 14px;}
+  .head .big{font-size:27px;font-weight:800;color:#fff;text-shadow:2px 2px 0 var(--pink),3px 3px 0 rgba(0,0,0,.15);}
+  .head .sub{font-size:13px;font-weight:700;color:#1A4A6E;margin-top:2px;}
+  .head .av{width:46px;height:46px;border-radius:50%;background:linear-gradient(160deg,#fff,var(--pink));border:3px solid #fff;box-shadow:0 4px 0 rgba(255,110,199,.5),inset 0 4px 6px rgba(255,255,255,.9);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:19px;color:#fff;text-shadow:1px 1px 1px rgba(0,0,0,.2);}
+  /* glossy card base */
+  .glass{background:linear-gradient(180deg,#fff 0%,var(--chrome2) 100%);border:3px solid #fff;border-radius:28px;box-shadow:0 6px 0 rgba(43,140,255,.35),0 8px 20px rgba(43,140,255,.25);position:relative;overflow:hidden;}
+  .glass::before{content:"";position:absolute;top:5px;left:8px;right:8px;height:38%;border-radius:22px;background:linear-gradient(180deg,rgba(255,255,255,.85),transparent);pointer-events:none;}
+  /* hero */
+  .hero{padding:18px 22px 20px;margin-bottom:14px;text-align:center;}
+  .hero .lbl{font-size:13px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:1px;}
+  .hero .num{font-size:54px;font-weight:800;line-height:1;margin:2px 0;color:var(--purple);text-shadow:2px 2px 0 #fff,4px 4px 0 rgba(160,107,255,.3);}
+  .hero .of{font-size:15px;font-weight:700;color:#1A4A6E;}
+  .hero .bar{height:18px;border-radius:12px;background:#fff;border:2px solid #fff;box-shadow:inset 0 2px 4px rgba(0,0,0,.12);margin:14px 0 8px;overflow:hidden;}
+  .hero .bar i{display:block;height:100%;border-radius:10px;background:linear-gradient(180deg,#FF8FD6,var(--pink));box-shadow:inset 0 2px 2px rgba(255,255,255,.7);}
+  .hero .rem{display:inline-block;background:var(--lime);color:#2A5A00;font-weight:800;font-size:14px;padding:5px 16px;border-radius:16px;border:2px solid #fff;box-shadow:0 3px 0 rgba(120,180,0,.5);}
+  /* macros */
+  .macros{display:flex;gap:9px;margin-bottom:14px;}
+  .macro{flex:1;padding:13px 8px;text-align:center;border-radius:22px;}
+  .macro .mt{font-size:12px;font-weight:800;text-transform:uppercase;}
+  .macro .mv{font-size:15px;font-weight:800;margin:4px 0 8px;color:#10243A;}
+  .macro .pb{height:9px;border-radius:8px;background:rgba(255,255,255,.7);overflow:hidden;}
+  .macro .pb i{display:block;height:100%;border-radius:8px;}
+  /* arni */
+  .arni{display:flex;align-items:center;gap:12px;padding:15px 16px;margin-bottom:14px;}
+  .arni .ic{width:50px;height:50px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,var(--blue));border:3px solid #fff;box-shadow:0 4px 0 rgba(43,140,255,.5);display:flex;align-items:center;justify-content:center;font-size:25px;flex-shrink:0;}
+  .arni .t b{font-size:17px;font-weight:800;color:var(--blue);}
+  .arni .t p{font-size:13px;font-weight:600;color:#1A4A6E;margin-top:1px;line-height:1.3;}
+  .arni .go{margin-left:auto;width:34px;height:34px;border-radius:50%;background:var(--pink);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;border:2px solid #fff;box-shadow:0 3px 0 rgba(255,110,199,.5);flex-shrink:0;}
+  /* meals */
+  .sec{font-size:15px;font-weight:800;color:#fff;text-shadow:1px 1px 0 var(--purple);padding:4px 4px 10px;}
+  .meal{display:flex;align-items:center;gap:12px;padding:12px 14px;margin-bottom:9px;border-radius:22px;}
+  .meal .mi{width:42px;height:42px;border-radius:50%;background:#fff;border:2px solid #fff;box-shadow:0 3px 0 rgba(43,140,255,.25);display:flex;align-items:center;justify-content:center;font-size:21px;}
+  .meal .mn{font-size:16px;font-weight:800;}
+  .meal .mk{font-size:12px;font-weight:600;color:var(--blue);margin-top:1px;}
+  .meal .r{margin-left:auto;font-weight:800;font-size:13px;}
+  .meal .done{background:var(--lime);color:#2A5A00;padding:5px 12px;border-radius:14px;border:2px solid #fff;box-shadow:0 3px 0 rgba(120,180,0,.4);}
+  .meal .add{background:var(--pink);color:#fff;padding:5px 12px;border-radius:14px;border:2px solid #fff;box-shadow:0 3px 0 rgba(255,110,199,.5);}
+  /* nav */
+  .nav{display:flex;justify-content:space-around;padding:12px 8px 22px;background:linear-gradient(180deg,#fff,var(--chrome2));border-top:3px solid #fff;}
+  .nav a{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11px;font-weight:800;color:#7AA9C9;text-decoration:none;}
+  .nav a.on{color:var(--pink);}
+  .nav .ni{font-size:21px;}
+  .nav a.on .ni{filter:drop-shadow(0 2px 2px rgba(255,110,199,.5));transform:scale(1.15);}
+</style>
+</head>
+<body>
+  <div class="status"><span>9:41</span><span class="ic">📶 🔋 100%</span></div>
+  <div class="scroll">
+    <div class="head">
+      <div><div class="big">Привет, Пётр ✨</div><div class="sub">Среда, 15 июня</div></div>
+      <div class="av">П</div>
+    </div>
+    <div class="glass hero">
+      <div class="lbl">★ Калории сегодня ★</div>
+      <div class="num">1 850</div>
+      <div class="of">из 2 400 ккал</div>
+      <div class="bar"><i style="width:77%"></i></div>
+      <div class="rem">Осталось 550 ккал 🎉</div>
+    </div>
+    <div class="macros">
+      <div class="glass macro"><div class="mt" style="color:var(--pink)">Белки</div><div class="mv">90/140</div><div class="pb"><i style="width:64%;background:linear-gradient(180deg,#FF8FD6,var(--pink))"></i></div></div>
+      <div class="glass macro"><div class="mt" style="color:var(--purple)">Жиры</div><div class="mv">50/70</div><div class="pb"><i style="width:71%;background:linear-gradient(180deg,#C49BFF,var(--purple))"></i></div></div>
+      <div class="glass macro"><div class="mt" style="color:var(--blue)">Углев</div><div class="mv">180/250</div><div class="pb"><i style="width:72%;background:linear-gradient(180deg,#7CC0FF,var(--blue))"></i></div></div>
+    </div>
+    <div class="glass arni">
+      <div class="ic">🤖</div>
+      <div class="t"><b>Арни</b><p>До цели по белку 50 г — кинь творог на ужин!</p></div>
+      <div class="go">›</div>
+    </div>
+    <div class="sec">🍴 Приёмы пищи</div>
+    <div class="glass meal"><div class="mi">🍳</div><div><div class="mn">Завтрак</div><div class="mk">520 ккал · 3 шт</div></div><div class="r"><span class="done">✓ 520</span></div></div>
+    <div class="glass meal"><div class="mi">🥗</div><div><div class="mn">Обед</div><div class="mk">640 ккал · 4 шт</div></div><div class="r"><span class="done">✓ 640</span></div></div>
+    <div class="glass meal"><div class="mi">🍽️</div><div><div class="mn">Ужин</div><div class="mk">Запланировано</div></div><div class="r"><span class="add">＋ добавить</span></div></div>
+  </div>
+  <div class="nav">
+    <a class="on"><span class="ni">🏠</span>Главная</a>
+    <a><span class="ni">📖</span>Дневник</a>
+    <a><span class="ni">💬</span>Чат</a>
+    <a><span class="ni">👤</span>Профиль</a>
+  </div>
+</body>
+</html>

@@ -82,7 +82,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
   background:rgba(12,12,18,0.96);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
   border-top:1px solid var(--border)}
 .ntab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
-  height:var(--nav-h);color:var(--text3);font-size:10px;font-weight:600;letter-spacing:.2px;transition:color .15s;
+  height:var(--nav-h);padding-bottom:12px;color:var(--text3);font-size:10px;font-weight:600;letter-spacing:.2px;transition:color .15s;
   touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 .ntab .ni{font-size:22px;line-height:1;transition:transform .15s}
 .ntab.on{color:var(--cyan)}.ntab.on .ni{transform:scale(1.12)}
@@ -1510,13 +1510,17 @@ function removeAvatarPhoto() {
 
 function toggleNotif(key) {
   if (!notifSettings[key]) notifSettings[key] = {active:false};
-  notifSettings[key].active = !notifSettings[key].active;
+  const turningOn = !notifSettings[key].active;
+  notifSettings[key].active = turningOn;
   localStorage.setItem('pk_notif', JSON.stringify(notifSettings));
   renderProfile();
   const notifEl = document.getElementById('pf-notif-content');
   if (notifEl && document.getElementById('pf-notif-panel')?.classList.contains('on')) renderPfNotifContent(notifEl);
   const typeMap = {food:'meal', water:'water', log:'log', workout:'workout', motivation:'motivation'};
   saveReminderToBackend(typeMap[key] || key);
+  // При ВКЛЮЧЕНИИ — сразу открываем настройки времени, чтобы юзер задал своё,
+  // а не оставался с дефолтом (главная жалоба: «не могу задать своё время»).
+  if (turningOn) openNotifModal(typeMap[key] || key);
 }
 
 function notifSubText(key) {
@@ -2054,7 +2058,8 @@ function goTab(name) {
     document.querySelector(`.ntab[data-sc="${k}"]`)?.classList.toggle('on', k===name);
   });
   const fab = document.getElementById('fab-btn');
-  if (fab) fab.style.display = (name==='home'||name==='tracker') ? 'flex' : 'none';
+  // FAB «быстро записать еду» — на всех вкладках кроме трекера (там ты уже в форме еды)
+  if (fab) fab.style.display = (name==='tracker') ? 'none' : 'flex';
   if (name==='home')     renderHome();
   if (name==='tracker')  { _trackerFoodDate = todayKey(); renderTracker(); }
   if (name==='progress') renderProgress();
@@ -2752,10 +2757,14 @@ function renderTracker() {
     <div class="card">
       <div class="card-ttl"><span>🍽</span> ${ru?'Добавить еду':'Log food'}</div>
       <div class="food-row">
-        <textarea class="food-ta" id="food-ta" placeholder="${ru?'куриная грудка 200г, гречка 150г...':'chicken breast 200g, rice 150g...'}"></textarea>
+        <textarea class="food-ta" id="food-ta" placeholder="${ru?'найди продукт или опиши: куриная грудка 200г...':'search a product or describe: chicken breast 200g...'}"></textarea>
         <div class="cam-btn" onclick="document.getElementById('photo-input').click()">📷</div>
       </div>
-      <button class="calc-btn" id="calc-btn" onclick="calcFood()">${ru?'Посчитать КБЖУ →':'Calculate macros →'}</button>
+      <div style="display:flex;gap:8px">
+        <button class="calc-btn" id="search-btn" onclick="searchFoodDb()" style="flex:1;background:linear-gradient(135deg,var(--cyan),var(--violet))">${ru?'🔍 Найти в базе':'🔍 Find in DB'}</button>
+        <button class="calc-btn" id="calc-btn" onclick="calcFood()" style="flex:1;background:rgba(255,255,255,.07);color:var(--text2)">${ru?'🤖 Посчитать (AI)':'🤖 Estimate (AI)'}</button>
+      </div>
+      <div style="text-align:center;margin-top:8px"><span onclick="scanBarcode()" style="font-size:12px;color:var(--cyan);font-weight:600;cursor:pointer;touch-action:manipulation">📷 ${ru?'Сканировать штрихкод':'Scan barcode'}</span></div>
       <div class="food-result" id="food-result"></div>
     </div>
 
@@ -2881,6 +2890,117 @@ function saveFoodEntry() {
   document.getElementById('food-ta').value=''; document.getElementById('food-result').style.display='none';
   renderTracker(); if(curTab==='home')renderHome(); toast(t('t_food'));
   scheduleSyncLogs();
+}
+
+// ══ ПОИСК ПРОДУКТОВ В БАЗЕ (Open Food Facts) ══
+let _foodSearchResults = [];
+
+async function searchFoodDb() {
+  const ru = lang !== 'en';
+  const q = document.getElementById('food-ta')?.value.trim();
+  if (!q || q.length < 2) { toast(ru?'Введи название продукта':'Type a product name'); return; }
+  const btn = document.getElementById('search-btn'), res = document.getElementById('food-result');
+  const orig = btn.textContent;
+  btn.textContent = ru?'Ищу…':'Searching…'; btn.disabled = true;
+  res.style.display = 'none'; pendingFood = null;
+  try {
+    const r = await fetch('/api/food/search?q=' + encodeURIComponent(q));
+    const data = await r.json();
+    _foodSearchResults = data.products || [];
+    if (!_foodSearchResults.length) {
+      res.style.display='block';
+      res.innerHTML = `<div style="font-size:13px;color:var(--text2);margin-top:10px">${ru?'В базе не нашлось 🤔':'Nothing in the DB 🤔'}<br><span onclick="calcFood()" style="color:var(--cyan);font-weight:600;cursor:pointer">${ru?'→ Посчитать через AI':'→ Estimate with AI'}</span></div>`;
+      return;
+    }
+    _renderFoodSearchResults();
+  } catch {
+    res.style.display='block';
+    res.innerHTML = `<div style="color:var(--red);font-size:13px;margin-top:8px">${ru?'Ошибка поиска':'Search error'}</div>`;
+  } finally { btn.textContent = orig; btn.disabled = false; }
+}
+
+function _renderFoodSearchResults() {
+  const ru = lang !== 'en';
+  const res = document.getElementById('food-result'); res.style.display='block';
+  const rows = _foodSearchResults.map((p,i)=>`
+    <div onclick="pickFoodProduct(${i})" style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:12px;margin-bottom:6px;cursor:pointer;touch-action:manipulation">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(p.name)}</div>
+        ${p.brand?`<div style="font-size:11px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(p.brand)}</div>`:''}
+      </div>
+      <div style="text-align:right;flex-shrink:0"><div style="font-size:14px;font-weight:800;color:var(--cyan)">${Math.round(p.kcal_100g)}</div><div style="font-size:9px;color:var(--text3)">${ru?'ккал/100г':'kcal/100g'}</div></div>
+    </div>`).join('');
+  res.innerHTML = `<div style="margin-top:10px">${rows}</div>
+    <div style="text-align:center;margin-top:4px;font-size:12px;color:var(--text3)">${ru?'Не то? ':'Not it? '}<span onclick="calcFood()" style="color:var(--cyan);font-weight:600;cursor:pointer">${ru?'Посчитать через AI':'Use AI'}</span></div>`;
+}
+
+function pickFoodProduct(i) {
+  const ru = lang !== 'en';
+  const p = _foodSearchResults[i]; if(!p) return;
+  haptic('light');
+  const res = document.getElementById('food-result'); res.style.display='block';
+  res.innerHTML = `
+    <div style="margin-top:10px;padding:12px;background:rgba(255,255,255,.04);border-radius:12px">
+      <div style="font-size:13px;font-weight:700;margin-bottom:2px">${escHtml(p.name)}</div>
+      ${p.brand?`<div style="font-size:11px;color:var(--text3);margin-bottom:8px">${escHtml(p.brand)}</div>`:''}
+      <div style="font-size:11px;color:var(--text3);margin-bottom:10px">100г: ${Math.round(p.kcal_100g)} ккал · Б ${p.protein_100g} · Ж ${p.fat_100g} · У ${p.carb_100g}</div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="display:flex;align-items:center;background:rgba(255,255,255,.06);border-radius:10px;padding:0 12px;flex:1">
+          <input id="db-grams" type="number" inputmode="numeric" value="100" min="1" max="3000" oninput="_updFoodPreview(${i})" style="flex:1;background:none;border:none;color:var(--text);font-size:16px;font-weight:700;padding:12px 0;outline:none;width:100%">
+          <span style="font-size:13px;color:var(--text3)">г</span>
+        </div>
+        <button class="save-food-btn" style="margin:0;flex-shrink:0;width:auto;padding:12px 18px" onclick="confirmFoodGrams(${i})">${ru?'Добавить ✓':'Add ✓'}</button>
+      </div>
+      <div id="db-preview" style="font-size:13px;font-weight:700;color:var(--cyan);margin-top:10px;text-align:center"></div>
+      <div onclick="_renderFoodSearchResults()" style="font-size:12px;color:var(--text3);margin-top:8px;text-align:center;cursor:pointer">← ${ru?'к списку':'back to list'}</div>
+    </div>`;
+  _updFoodPreview(i);
+}
+
+function _foodItemFor(p, grams) {
+  const f = grams/100;
+  return { name: p.brand?`${p.name} (${p.brand})`:p.name, amount_g: grams,
+    calories: p.kcal_100g*f, protein_g: p.protein_100g*f, fat_g: p.fat_100g*f, carb_g: p.carb_100g*f };
+}
+
+function _updFoodPreview(i) {
+  const p = _foodSearchResults[i]; if(!p) return;
+  const g = Math.max(0, parseFloat(document.getElementById('db-grams')?.value)||0);
+  const it = _foodItemFor(p, g); const el = document.getElementById('db-preview');
+  if (el) el.textContent = `${Math.round(it.calories)} ккал · Б ${it.protein_g.toFixed(1)} · Ж ${it.fat_g.toFixed(1)} · У ${it.carb_g.toFixed(1)}`;
+}
+
+function confirmFoodGrams(i) {
+  const ru = lang !== 'en';
+  const p = _foodSearchResults[i]; if(!p) return;
+  const g = Math.max(0, parseFloat(document.getElementById('db-grams')?.value)||0);
+  if (g <= 0) { toast(ru?'Укажи граммы':'Enter grams'); return; }
+  const it = _foodItemFor(p, g);
+  showFoodResult({ items:[it], total:{calories:it.calories,protein_g:it.protein_g,fat_g:it.fat_g,carb_g:it.carb_g} }, it.name);
+}
+
+function scanBarcode() {
+  const ru = lang !== 'en';
+  const handle = (raw) => { const code=(raw||'').replace(/\D/g,''); if(code.length>=6) _lookupBarcode(code); else if(raw) toast(ru?'Не похоже на штрихкод':'Not a barcode'); };
+  if (tg?.showScanQrPopup) {
+    tg.showScanQrPopup({ text: ru?'Наведи на штрихкод':'Point at the barcode' }, (txt) => { tg.closeScanQrPopup?.(); handle(txt); return true; });
+  } else {
+    const code = prompt(ru?'Введи цифры штрихкода с упаковки:':'Enter the barcode digits:'); if(code) handle(code);
+  }
+}
+
+async function _lookupBarcode(code) {
+  const ru = lang !== 'en';
+  toast(ru?'Ищу по штрихкоду…':'Looking up barcode…');
+  try {
+    const r = await fetch('/api/food/barcode?code=' + encodeURIComponent(code));
+    if (r.status === 404) { toast(ru?'Не найдено. Поищи по названию':'Not found — try name search'); return; }
+    const data = await r.json();
+    if (!data.product) { toast(ru?'Не найдено':'Not found'); return; }
+    _foodSearchResults = [data.product];
+    goTab('tracker');
+    setTimeout(()=>pickFoodProduct(0), 60);
+  } catch { toast(ru?'Ошибка поиска':'Lookup error'); }
 }
 
 function saveMetrics() {
@@ -3144,7 +3264,10 @@ function renderProgress() {
       ${weightChart}
     </div>
     ${weightLogs.length?`<div class="chart-card" style="margin-top:0">
-      <div class="chart-hd"><div class="chart-ttl">📋 ${ruP?'История веса':'Weight history'}</div></div>${wlogRows}</div>`:''}
+      <div class="chart-hd">
+        <div class="chart-ttl">📋 ${ruP?'История веса':'Weight history'}</div>
+        <button onclick="exportWeightHistory(this)" style="padding:5px 11px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid rgba(0,229,255,.3);background:rgba(0,229,255,.1);color:var(--cyan);touch-action:manipulation">📥 Excel</button>
+      </div>${wlogRows}</div>`:''}
     <div class="chart-card">
       <div class="chart-hd"><div class="chart-ttl">🔥 ${ruP?'Калории / день':'Calories / day'}</div><div class="chart-period">14 ${ruP?'дней':'days'}</div></div>
       ${calChart}
@@ -3290,6 +3413,22 @@ function editWeightLog(date) {
   openQE(`${lang==='en'?'Weight for':'Вес за'} ${date} (кг)`,e.weight,v=>{if(v<20||v>300){toast(lang==='en'?'Check value':'Проверь значение');return;}e.weight=v;if(profile)profile.weight_kg=v;persist();renderProgress();toast(t('t_wt_upd'));});
 }
 function deleteWeightLog(date) { logs=logs.map(l=>l.date===date?{...l,weight:null}:l); persist(); renderProgress(); toast(t('t_del')); }
+
+async function exportWeightHistory(btn) {
+  const ru = lang !== 'en';
+  const tgId = getTgId();
+  if (!tgId) { toast(ru ? 'Открой через Telegram' : 'Open via Telegram'); return; }
+  if (btn) { btn.disabled = true; btn.textContent = '⏳'; }
+  try {
+    // бэкенд соберёт CSV из БД и пришлёт файл документом в бота (надёжно внутри Telegram)
+    const r = await fetch('/api/export/weight', { method:'POST' });
+    const d = await r.json();
+    toast(d.ok
+      ? (ru ? '✓ Файл отправлен в бота — смотри Telegram' : '✓ File sent to bot — check Telegram')
+      : (ru ? 'Ошибка: ' : 'Error: ') + (d.error || ''));
+  } catch { toast(t('t_conn_err')); }
+  finally { if (btn) { btn.disabled = false; btn.textContent = '📥 Excel'; } }
+}
 
 // ══ ADAPTATION ══
 async function getWeeklyAdapt() {

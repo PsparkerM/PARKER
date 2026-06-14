@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390, initial-scale=1">
+<title>14 — Monochrome Editorial</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FAFAFA; --ink:#0A0A0A; --muted:#8A8A86; --line:#E4E4E0; --hair:#1A1A1A;
+    --serif:"Fraunces",Georgia,"Times New Roman",serif;
+    --sans:"Inter",-apple-system,"Segoe UI",sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-font-smoothing:antialiased;}
+  html,body{width:390px;height:844px;}
+  body{background:var(--bg);font-family:var(--sans);color:var(--ink);overflow:hidden;display:flex;flex-direction:column;}
+  .status{display:flex;justify-content:space-between;align-items:center;padding:14px 26px 4px;font-size:13px;font-weight:600;letter-spacing:.3px;}
+  .status .ic{font-size:12px;letter-spacing:2px;}
+  .scroll{flex:1;overflow:hidden;padding:6px 26px 0;}
+  /* masthead */
+  .mast{display:flex;justify-content:space-between;align-items:flex-end;padding:14px 0 12px;border-bottom:2px solid var(--hair);}
+  .mast .kick{font-family:var(--serif);font-size:10px;font-weight:600;letter-spacing:4px;text-transform:uppercase;color:var(--muted);}
+  .mast h1{font-family:var(--serif);font-size:40px;font-weight:900;line-height:.92;letter-spacing:-1.5px;margin-top:4px;}
+  .mast .av{width:40px;height:40px;border-radius:50%;border:1.5px solid var(--ink);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-weight:600;font-size:17px;}
+  .dateline{display:flex;justify-content:space-between;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);padding:8px 0 18px;border-bottom:1px solid var(--line);}
+  /* hero number */
+  .lede{padding:20px 0 8px;}
+  .lede .label{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);}
+  .lede .num{font-family:var(--serif);font-size:88px;font-weight:900;line-height:.85;letter-spacing:-4px;margin:6px 0 2px;}
+  .lede .goal{font-family:var(--serif);font-size:15px;font-style:italic;color:var(--muted);}
+  .lede .rem{display:inline-block;margin-top:14px;font-size:11px;letter-spacing:1px;border-top:1.5px solid var(--ink);padding-top:6px;}
+  .lede .rem b{font-weight:600;}
+  /* macros row */
+  .macros{display:flex;border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin-top:20px;}
+  .macros .m{flex:1;padding:14px 0;}
+  .macros .m + .m{border-left:1px solid var(--line);padding-left:14px;}
+  .macros .m .mt{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);}
+  .macros .m .mv{font-family:var(--serif);font-size:22px;font-weight:600;margin:5px 0 8px;letter-spacing:-.5px;}
+  .macros .m .mv small{font-size:12px;color:var(--muted);font-weight:400;}
+  .macros .m .ln{height:2px;background:var(--line);}
+  .macros .m .ln i{display:block;height:100%;background:var(--ink);}
+  /* arni pull quote */
+  .pull{display:flex;gap:14px;padding:22px 0 20px;border-bottom:1px solid var(--line);align-items:flex-start;}
+  .pull .mark{font-family:var(--serif);font-size:54px;font-weight:900;line-height:.6;}
+  .pull .q{font-family:var(--serif);font-size:17px;font-style:italic;line-height:1.32;font-weight:400;}
+  .pull .by{display:block;margin-top:8px;font-family:var(--sans);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);font-style:normal;}
+  /* meals */
+  .sec{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);padding:18px 0 4px;}
+  .meal{display:flex;align-items:baseline;gap:12px;padding:13px 0;border-bottom:1px solid var(--line);}
+  .meal .idx{font-family:var(--serif);font-size:13px;color:var(--muted);width:18px;}
+  .meal .mn{font-family:var(--serif);font-size:18px;font-weight:600;letter-spacing:-.3px;}
+  .meal .mk{font-size:10px;letter-spacing:1px;color:var(--muted);margin-top:1px;}
+  .meal .r{margin-left:auto;font-size:11px;letter-spacing:1px;}
+  .meal .done{font-weight:600;}
+  .meal .add{color:var(--muted);border-bottom:1px solid var(--ink);padding-bottom:1px;}
+  /* nav */
+  .nav{display:flex;justify-content:space-between;padding:16px 30px 28px;border-top:2px solid var(--hair);background:var(--bg);}
+  .nav a{display:flex;flex-direction:column;align-items:center;gap:5px;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);text-decoration:none;}
+  .nav a.on{color:var(--ink);}
+  .nav a.on .ni{border-bottom:2px solid var(--ink);}
+  .nav .ni{font-family:var(--serif);font-size:16px;font-weight:600;padding-bottom:2px;}
+</style>
+</head>
+<body>
+  <div class="status"><span>9:41</span><span class="ic">5G ▮▮▮ 100</span></div>
+  <div class="scroll">
+    <div class="mast">
+      <div><div class="kick">Дневной выпуск</div><h1>Привет,<br>Пётр</h1></div>
+      <div class="av">П</div>
+    </div>
+    <div class="dateline"><span>Среда · 15 июня</span><span>№ 167</span></div>
+    <div class="lede">
+      <div class="label">Калории · потреблено</div>
+      <div class="num">1 850</div>
+      <div class="goal">из 2 400 ккал за сегодня</div>
+      <div class="rem"><b>Осталось 550 ккал</b> · сожжено 420</div>
+    </div>
+    <div class="macros">
+      <div class="m"><div class="mt">Белки</div><div class="mv">90<small>/140 г</small></div><div class="ln"><i style="width:64%"></i></div></div>
+      <div class="m"><div class="mt">Жиры</div><div class="mv">50<small>/70 г</small></div><div class="ln"><i style="width:71%"></i></div></div>
+      <div class="m"><div class="mt">Углеводы</div><div class="mv">180<small>/250 г</small></div><div class="ln"><i style="width:72%"></i></div></div>
+    </div>
+    <div class="pull">
+      <div class="mark">“</div>
+      <div class="q">До цели по белку осталось 50 граммов — добавь к ужину творог.<span class="by">Арни · AI-нутрициолог</span></div>
+    </div>
+    <div class="sec">Приёмы пищи</div>
+    <div class="meal"><span class="idx">01</span><div><div class="mn">Завтрак</div><div class="mk">3 ПРОДУКТА</div></div><span class="r done">520 ккал ✓</span></div>
+    <div class="meal"><span class="idx">02</span><div><div class="mn">Обед</div><div class="mk">4 ПРОДУКТА</div></div><span class="r done">640 ккал ✓</span></div>
+    <div class="meal"><span class="idx">03</span><div><div class="mn">Ужин</div><div class="mk">ЗАПЛАНИРОВАНО</div></div><span class="r add">добавить</span></div>
+  </div>
+  <div class="nav">
+    <a class="on"><span class="ni">A</span>Главная</a>
+    <a><span class="ni">B</span>Дневник</a>
+    <a><span class="ni">C</span>Чат</a>
+    <a><span class="ni">D</span>Профиль</a>
+  </div>
+</body>
+</html>

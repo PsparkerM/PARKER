@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390, initial-scale=1">
+<title>26 — Claymorphism</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FDE7E7; --clay:#FFF4F4; --text:#4A3340; --muted:#B596A0;
+    --pink:#FF8FA3; --blue:#5D5FEF; --line:#FBD9DD;
+    --font:"Nunito",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    /* double shadow recipe */
+    --clayShadow:8px 8px 18px rgba(214,150,160,.45), -8px -8px 18px rgba(255,255,255,.9);
+    --clayInset:inset 4px 4px 9px rgba(214,150,160,.4), inset -4px -4px 9px rgba(255,255,255,.85);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-font-smoothing:antialiased;}
+  html,body{width:390px;height:844px;}
+  body{background:var(--bg);font-family:var(--font);color:var(--text);overflow:hidden;display:flex;flex-direction:column;font-weight:700;}
+  .status{display:flex;justify-content:space-between;align-items:center;padding:14px 26px 6px;font-size:14px;font-weight:800;}
+  .status .ic{font-size:13px;}
+  .scroll{flex:1;overflow:hidden;padding:8px 22px 0;}
+  .head{display:flex;justify-content:space-between;align-items:center;margin:8px 0 22px;}
+  .head h1{font-size:25px;font-weight:900;letter-spacing:-.5px;}
+  .head p{font-size:13px;color:var(--muted);margin-top:3px;font-weight:700;}
+  .avatar{width:52px;height:52px;border-radius:18px;background:var(--clay);color:var(--pink);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:20px;box-shadow:var(--clayShadow);}
+  /* hero */
+  .hero{display:flex;align-items:center;gap:18px;background:var(--clay);border-radius:32px;padding:22px;margin-bottom:18px;box-shadow:var(--clayShadow);}
+  .ring{width:138px;height:138px;border-radius:50%;flex-shrink:0;background:var(--clay);display:flex;align-items:center;justify-content:center;box-shadow:var(--clayInset);position:relative;}
+  .ring svg{position:absolute;inset:0;}
+  .ring .inner{text-align:center;position:relative;z-index:1;}
+  .ring .big{font-size:29px;font-weight:900;letter-spacing:-1px;color:var(--pink);}
+  .ring .sub{font-size:10px;color:var(--muted);margin-top:2px;font-weight:800;}
+  .hero .side .label{font-size:11px;color:var(--muted);font-weight:800;text-transform:uppercase;letter-spacing:.5px;}
+  .hero .side .val{font-size:21px;font-weight:900;margin:3px 0 14px;letter-spacing:-.5px;}
+  .hero .side .val b{color:var(--blue);}
+  /* macros */
+  .macros{display:flex;gap:11px;margin-bottom:18px;}
+  .macro{flex:1;background:var(--clay);border-radius:24px;padding:15px 13px;box-shadow:var(--clayShadow);}
+  .macro .m-top{font-size:11px;color:var(--muted);margin-bottom:8px;font-weight:800;}
+  .macro .m-val{font-size:15px;font-weight:900;margin-bottom:10px;letter-spacing:-.3px;}
+  .macro .m-val small{color:var(--muted);font-weight:700;font-size:11px;}
+  .macro .bar{height:8px;border-radius:8px;background:var(--clay);box-shadow:var(--clayInset);overflow:hidden;padding:1px;}
+  .macro .bar i{display:block;height:100%;border-radius:8px;}
+  .macro.p .bar i{background:var(--pink);}
+  .macro.f .bar i{background:var(--blue);}
+  .macro.c .bar i{background:#FFB36B;}
+  /* arni */
+  .arni{display:flex;align-items:center;gap:15px;background:var(--blue);color:#fff;border-radius:28px;padding:18px 20px;margin-bottom:20px;
+    box-shadow:8px 8px 20px rgba(93,95,239,.4), -6px -6px 16px rgba(255,255,255,.5);}
+  .arni .a-av{width:48px;height:48px;border-radius:16px;background:rgba(255,255,255,.22);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:22px;flex-shrink:0;
+    box-shadow:inset 3px 3px 7px rgba(40,40,140,.4), inset -3px -3px 7px rgba(255,255,255,.25);}
+  .arni .a-txt b{font-size:15px;font-weight:900;}
+  .arni .a-txt p{font-size:12.5px;opacity:.92;margin-top:3px;font-weight:700;line-height:1.4;}
+  .arni .a-go{margin-left:auto;font-size:22px;font-weight:900;}
+  /* meals */
+  .sec-title{font-size:16px;font-weight:900;margin-bottom:13px;letter-spacing:-.3px;}
+  .meal{display:flex;align-items:center;gap:14px;padding:13px 16px;background:var(--clay);border-radius:22px;margin-bottom:11px;box-shadow:var(--clayShadow);}
+  .meal .m-ic{width:46px;height:46px;border-radius:15px;background:var(--clay);display:flex;align-items:center;justify-content:center;font-size:21px;box-shadow:var(--clayInset);}
+  .meal .m-name{font-size:15px;font-weight:900;}
+  .meal .m-kcal{font-size:12px;color:var(--muted);margin-top:2px;font-weight:700;}
+  .meal .m-r{margin-left:auto;}
+  .meal .done{width:32px;height:32px;border-radius:50%;background:var(--pink);color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900;box-shadow:3px 3px 8px rgba(255,143,163,.5);}
+  .meal .add{color:var(--blue);font-size:13px;font-weight:900;background:var(--clay);padding:8px 13px;border-radius:14px;box-shadow:var(--clayShadow);}
+  /* nav */
+  .nav{display:flex;justify-content:space-around;padding:14px 14px 26px;background:var(--bg);position:relative;}
+  .nav a{display:flex;flex-direction:column;align-items:center;gap:5px;font-size:10.5px;font-weight:800;color:var(--muted);text-decoration:none;}
+  .nav a.on{color:var(--pink);}
+  .nav a.on .n-ic{background:var(--clay);box-shadow:var(--clayShadow);}
+  .nav .n-ic{font-size:18px;width:46px;height:36px;border-radius:14px;display:flex;align-items:center;justify-content:center;}
+</style>
+</head>
+<body>
+  <div class="status"><span>9:41</span><span class="ic">􀙇 􀊪 􀛨</span></div>
+  <div class="scroll">
+    <div class="head">
+      <div><h1>Привет, Пётр 🫶</h1><p>Среда, 15 июня</p></div>
+      <div class="avatar">П</div>
+    </div>
+    <div class="hero">
+      <div class="ring">
+        <svg width="138" height="138" viewBox="0 0 138 138">
+          <circle cx="69" cy="69" r="58" fill="none" stroke="#FF8FA3" stroke-width="9" stroke-linecap="round"
+            stroke-dasharray="364" stroke-dashoffset="84" transform="rotate(-90 69 69)"/>
+        </svg>
+        <div class="inner"><div class="big">1 850</div><div class="sub">ИЗ 2 400</div></div>
+      </div>
+      <div class="side">
+        <div class="label">Осталось</div><div class="val"><b>550</b> ккал</div>
+        <div class="label">Сожжено</div><div class="val">420 ккал</div>
+      </div>
+    </div>
+    <div class="macros">
+      <div class="macro p"><div class="m-top">Белки</div><div class="m-val">90<small> /140</small></div><div class="bar"><i style="width:64%"></i></div></div>
+      <div class="macro f"><div class="m-top">Жиры</div><div class="m-val">50<small> /70</small></div><div class="bar"><i style="width:71%"></i></div></div>
+      <div class="macro c"><div class="m-top">Углев</div><div class="m-val">180<small> /250</small></div><div class="bar"><i style="width:72%"></i></div></div>
+    </div>
+    <div class="arni">
+      <div class="a-av">🤖</div>
+      <div class="a-txt"><b>Арни</b><p>До цели по белку 50 г. Возьми творог на ужин — будет идеально!</p></div>
+      <div class="a-go">›</div>
+    </div>
+    <div class="sec-title">Приёмы пищи</div>
+    <div class="meal"><div class="m-ic">🍳</div><div><div class="m-name">Завтрак</div><div class="m-kcal">520 ккал · 3 продукта</div></div><div class="m-r"><div class="done">✓</div></div></div>
+    <div class="meal"><div class="m-ic">🥗</div><div><div class="m-name">Обед</div><div class="m-kcal">640 ккал · 4 продукта</div></div><div class="m-r"><div class="done">✓</div></div></div>
+    <div class="meal"><div class="m-ic">🍽️</div><div><div class="m-name">Ужин</div><div class="m-kcal">Запланировано</div></div><div class="m-r"><div class="add">+ добавить</div></div></div>
+  </div>
+  <div class="nav">
+    <a class="on"><span class="n-ic">🏠</span>Главная</a>
+    <a><span class="n-ic">📖</span>Дневник</a>
+    <a><span class="n-ic">💬</span>Чат</a>
+    <a><span class="n-ic">👤</span>Профиль</a>
+  </div>
+</body>
+</html>

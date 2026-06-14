@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390, initial-scale=1">
+<title>23 — Blue Corporate Clean</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FFFFFF; --surface:#F4F7FB; --navy:#1E3A8A; --blue:#3B82F6; --blue-l:#EBF2FE;
+    --green:#22A06B; --text:#0F1B33; --muted:#7E8AA0; --line:#E6ECF5;
+    --font:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-font-smoothing:antialiased;}
+  html,body{width:390px;height:844px;}
+  body{background:var(--bg);font-family:var(--font);color:var(--text);overflow:hidden;display:flex;flex-direction:column;}
+  .status{display:flex;justify-content:space-between;align-items:center;padding:14px 24px 6px;font-size:14px;font-weight:600;}
+  .status .ic{display:flex;gap:6px;align-items:center;font-size:13px;}
+  .scroll{flex:1;overflow:hidden;padding:8px 22px 0;}
+  .head{display:flex;justify-content:space-between;align-items:center;margin:8px 0 20px;}
+  .head h1{font-size:23px;font-weight:800;letter-spacing:-.5px;}
+  .head p{font-size:12.5px;color:var(--muted);margin-top:2px;font-weight:500;}
+  .avatar{width:48px;height:48px;border-radius:12px;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;}
+  /* hero */
+  .hero{background:linear-gradient(135deg,var(--navy),#2A4DA8);border-radius:18px;padding:22px 24px;margin-bottom:14px;color:#fff;display:flex;align-items:center;gap:24px;position:relative;overflow:hidden;}
+  .hero::after{content:"";position:absolute;right:-40px;top:-40px;width:150px;height:150px;border-radius:50%;background:rgba(255,255,255,.06);}
+  .ring{position:relative;width:120px;height:120px;flex-shrink:0;display:flex;align-items:center;justify-content:center;}
+  .ring .ctxt{position:absolute;text-align:center;}
+  .ring .big{font-size:27px;font-weight:800;letter-spacing:-1px;}
+  .ring .sub{font-size:10px;opacity:.7;margin-top:2px;font-weight:500;}
+  .hero .side{position:relative;z-index:1;}
+  .hero .side .lab{font-size:10.5px;letter-spacing:1px;text-transform:uppercase;opacity:.7;font-weight:600;}
+  .hero .side .v{font-size:23px;font-weight:800;margin:2px 0 16px;}
+  .hero .side .v small{font-size:12px;opacity:.7;font-weight:500;}
+  .hero .side .v.acc{color:#7FB0FF;}
+  /* macros */
+  .macros{display:flex;gap:10px;margin-bottom:16px;}
+  .macro{flex:1;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 13px;}
+  .macro .m-top{font-size:10.5px;letter-spacing:.5px;color:var(--muted);margin-bottom:7px;text-transform:uppercase;font-weight:600;}
+  .macro .m-val{font-size:15px;font-weight:700;margin-bottom:9px;}
+  .macro .m-val small{font-size:11px;color:var(--muted);font-weight:500;}
+  .macro .bar{height:6px;border-radius:3px;background:#DCE5F2;overflow:hidden;}
+  .macro .bar i{display:block;height:100%;border-radius:3px;background:var(--blue);}
+  /* arni */
+  .arni{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--blue);border-radius:12px;padding:16px 18px;margin-bottom:20px;display:flex;align-items:center;gap:14px;}
+  .arni .a-av{width:44px;height:44px;border-radius:10px;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;flex-shrink:0;}
+  .arni .a-txt b{font-size:14.5px;}
+  .arni .a-txt .tag{font-size:9px;letter-spacing:1px;color:var(--blue);text-transform:uppercase;font-weight:700;display:inline-block;background:var(--blue-l);padding:2px 7px;border-radius:5px;margin-left:7px;}
+  .arni .a-txt p{font-size:12.5px;color:var(--muted);margin-top:6px;line-height:1.4;font-weight:500;}
+  .arni .a-go{margin-left:auto;font-size:20px;color:var(--blue);}
+  /* meals */
+  .sec-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+  .sec-title{font-size:14px;font-weight:700;}
+  .sec-row a{font-size:12px;color:var(--blue);font-weight:600;text-decoration:none;}
+  .meal{display:flex;align-items:center;gap:14px;border:1px solid var(--line);border-radius:12px;padding:13px 15px;margin-bottom:9px;}
+  .meal .m-ic{width:42px;height:42px;border-radius:10px;background:var(--blue-l);display:flex;align-items:center;justify-content:center;font-size:19px;}
+  .meal .m-name{font-size:14px;font-weight:700;}
+  .meal .m-kcal{font-size:11.5px;color:var(--muted);margin-top:2px;font-weight:500;}
+  .meal .m-r{margin-left:auto;}
+  .meal .done{display:flex;align-items:center;gap:5px;color:var(--green);font-size:12px;font-weight:700;}
+  .meal .done span{width:22px;height:22px;border-radius:50%;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;}
+  .meal .add{color:#fff;background:var(--blue);border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;}
+  /* nav */
+  .nav{display:flex;justify-content:space-around;padding:14px 10px 26px;background:var(--bg);border-top:1px solid var(--line);}
+  .nav a{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:10.5px;color:var(--muted);text-decoration:none;font-weight:600;}
+  .nav a.on{color:var(--navy);}
+  .nav .n-ic{font-size:18px;}
+</style>
+</head>
+<body>
+  <div class="status"><span>9:41</span><span class="ic">􀙇 􀊪 􀛨</span></div>
+  <div class="scroll">
+    <div class="head">
+      <div><h1>Привет, Пётр 👋</h1><p>Среда, 15 июня</p></div>
+      <div class="avatar">П</div>
+    </div>
+    <div class="hero">
+      <div class="ring">
+        <svg width="120" height="120" viewBox="0 0 120 120">
+          <circle cx="60" cy="60" r="52" fill="none" stroke="rgba(255,255,255,.18)" stroke-width="8"/>
+          <circle cx="60" cy="60" r="52" fill="none" stroke="#7FB0FF" stroke-width="8"
+            stroke-dasharray="327" stroke-dashoffset="75" stroke-linecap="round" transform="rotate(-90 60 60)"/>
+        </svg>
+        <div class="ctxt"><div class="big">1 850</div><div class="sub">из 2 400 ккал</div></div>
+      </div>
+      <div class="side">
+        <div class="lab">Осталось</div><div class="v acc">550 <small>ккал</small></div>
+        <div class="lab">Сожжено</div><div class="v">420 <small>ккал</small></div>
+      </div>
+    </div>
+    <div class="macros">
+      <div class="macro"><div class="m-top">Белки</div><div class="m-val">90 <small>/ 140 г</small></div><div class="bar"><i style="width:64%"></i></div></div>
+      <div class="macro"><div class="m-top">Жиры</div><div class="m-val">50 <small>/ 70 г</small></div><div class="bar"><i style="width:71%"></i></div></div>
+      <div class="macro"><div class="m-top">Углев</div><div class="m-val">180 <small>/ 250 г</small></div><div class="bar"><i style="width:72%"></i></div></div>
+    </div>
+    <div class="arni">
+      <div class="a-av">А</div>
+      <div class="a-txt"><b>Арни</b><span class="tag">AI Coach</span><p>До цели по белку 50 г. Рекомендую творог на ужин.</p></div>
+      <div class="a-go">›</div>
+    </div>
+    <div class="sec-row"><div class="sec-title">Приёмы пищи</div><a>Все →</a></div>
+    <div class="meal"><div class="m-ic">🍳</div><div><div class="m-name">Завтрак</div><div class="m-kcal">520 ккал · 3 продукта</div></div><div class="m-r"><div class="done"><span>✓</span>520</div></div></div>
+    <div class="meal"><div class="m-ic">🥗</div><div><div class="m-name">Обед</div><div class="m-kcal">640 ккал · 4 продукта</div></div><div class="m-r"><div class="done"><span>✓</span>640</div></div></div>
+    <div class="meal"><div class="m-ic">🍽️</div><div><div class="m-name">Ужин</div><div class="m-kcal">Запланировано</div></div><div class="m-r"><span class="add">+ добавить</span></div></div>
+  </div>
+  <div class="nav">
+    <a class="on"><span class="n-ic">🏠</span>Главная</a>
+    <a><span class="n-ic">📖</span>Дневник</a>
+    <a><span class="n-ic">💬</span>Чат</a>
+    <a><span class="n-ic">👤</span>Профиль</a>
+  </div>
+</body>
+</html>
