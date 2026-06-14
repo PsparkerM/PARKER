@@ -28,6 +28,34 @@ def _get_client() -> anthropic.AsyncAnthropic:
 
 MODEL = "claude-sonnet-4-6"
 
+# Приблизительная цена Sonnet 4.6 (USD за 1M токенов) — для оценки расхода в логах.
+_PRICE_IN_PER_M = 3.0
+_PRICE_OUT_PER_M = 15.0
+_usage_totals = {"input": 0, "output": 0}
+
+
+def _log_usage(label: str, msg) -> None:
+    """Логирует расход токенов Claude (раньше usage из ответов игнорировался)."""
+    try:
+        u = getattr(msg, "usage", None)
+        if not u:
+            return
+        i  = getattr(u, "input_tokens", 0) or 0
+        o  = getattr(u, "output_tokens", 0) or 0
+        cr = getattr(u, "cache_read_input_tokens", 0) or 0
+        cc = getattr(u, "cache_creation_input_tokens", 0) or 0
+        _usage_totals["input"]  += i
+        _usage_totals["output"] += o
+        cost = (i / 1e6) * _PRICE_IN_PER_M + (o / 1e6) * _PRICE_OUT_PER_M
+        logger.info(
+            "claude_usage label=%s in=%d out=%d cache_read=%d cache_write=%d cost~$%.4f "
+            "session_in=%d session_out=%d",
+            label, i, o, cr, cc, cost, _usage_totals["input"], _usage_totals["output"],
+        )
+    except Exception:
+        pass
+
+
 # ──────────────────────────────────────────────
 #  Label maps
 # ──────────────────────────────────────────────
@@ -390,6 +418,7 @@ async def summarize_chat_history(messages: list, lang: str = "ru") -> str:
             max_tokens=400,
             messages=[{"role": "user", "content": prompt_en if lang == "en" else prompt_ru}],
         )
+        _log_usage("summarize", msg)
         return _strip_markdown(msg.content[0].text).strip()
     except Exception as e:
         logger.warning("summarize_chat_history failed: %s", e)
@@ -425,6 +454,10 @@ async def stream_chat_response(
                     continue
                 full.append(chunk)
                 yield ("chunk", chunk)
+            try:
+                _log_usage("chat_stream", await stream.get_final_message())
+            except Exception:
+                pass
         yield ("done", _strip_markdown("".join(full)))
     except anthropic.AuthenticationError:
         logger.error("Anthropic auth error in stream")
@@ -459,6 +492,7 @@ async def generate_chat_response(
             system=system,
             messages=messages,
         )
+        _log_usage("chat", msg)
         return _strip_markdown(msg.content[0].text)
     except anthropic.AuthenticationError:
         logger.error("Anthropic auth error — check ANTHROPIC_API_KEY")
@@ -488,6 +522,7 @@ async def calculate_food_macros(text: str) -> dict:
             system=[_cached(FOOD_SYSTEM)],
             messages=[{"role": "user", "content": f"Рассчитай КБЖУ: {text}"}],
         )
+        _log_usage("food", msg)
         return _extract_json(msg.content[0].text)
     except (anthropic.AuthenticationError, anthropic.RateLimitError, anthropic.APITimeoutError) as e:
         logger.error("food_macros API error: %s", e)
@@ -523,6 +558,7 @@ async def calculate_food_macros_from_photo(image_b64: str, media_type: str = "im
                 ],
             }],
         )
+        _log_usage("food_photo", msg)
         return _extract_json(msg.content[0].text)
     except (anthropic.AuthenticationError, anthropic.RateLimitError, anthropic.APITimeoutError) as e:
         logger.error("photo_food API error: %s", e)
@@ -564,6 +600,7 @@ async def generate_nutrition_plan(profile: dict, macros: dict) -> str:
             system=[_cached(PARKER_SYSTEM_PROMPT)],
             messages=[{"role": "user", "content": prompt}],
         )
+        _log_usage("nutrition_plan", msg)
         return msg.content[0].text
     except Exception as e:
         logger.exception("generate_nutrition_plan failed: %s", e)
@@ -591,6 +628,7 @@ async def generate_workout_plan(profile: dict) -> str:
             system=[_cached(PARKER_SYSTEM_PROMPT)],
             messages=[{"role": "user", "content": prompt}],
         )
+        _log_usage("workout_plan", msg)
         return msg.content[0].text
     except Exception as e:
         logger.exception("generate_workout_plan failed: %s", e)
@@ -623,6 +661,7 @@ async def generate_weekly_adaptation(profile: dict, logs: list, food_logs: list,
             system=[_cached(ADAPT_SYSTEM)],
             messages=[{"role": "user", "content": user_msg}],
         )
+        _log_usage("adapt", msg)
         return _extract_json(msg.content[0].text)
     except ValueError:
         return {"error": "Не удалось разобрать ответ адаптации"}

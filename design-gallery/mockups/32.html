@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390, initial-scale=1">
+<title>32 — Swiss Typographic</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FFFFFF; --ink:#0A0A0A; --red:#E1140A; --muted:#8A8A8A; --line:#0A0A0A;
+    --hair:#E4E4E4;
+    --font:"Inter","Helvetica Neue",Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-font-smoothing:antialiased;}
+  html,body{width:390px;height:844px;}
+  body{background:var(--bg);font-family:var(--font);color:var(--ink);overflow:hidden;display:flex;flex-direction:column;}
+  .status{display:flex;justify-content:space-between;align-items:center;padding:14px 22px 8px;font-size:13px;font-weight:700;letter-spacing:-.2px;}
+  .scroll{flex:1;overflow:hidden;padding:0 22px;}
+  /* head */
+  .head{display:flex;justify-content:space-between;align-items:flex-end;padding:14px 0 14px;border-bottom:2px solid var(--ink);}
+  .head .l .k{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--red);}
+  .head h1{font-size:26px;font-weight:800;letter-spacing:-1px;margin-top:3px;line-height:1;}
+  .head .l p{font-size:11px;font-weight:500;color:var(--muted);margin-top:5px;letter-spacing:.5px;}
+  .avatar{width:44px;height:44px;border-radius:0;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;}
+  /* hero */
+  .hero{padding:20px 0 16px;border-bottom:1px solid var(--hair);}
+  .hero .top{display:flex;justify-content:space-between;align-items:baseline;}
+  .hero .num{font-size:74px;font-weight:900;letter-spacing:-4px;line-height:.85;}
+  .hero .num span{color:var(--red);}
+  .hero .of{font-size:13px;font-weight:600;color:var(--muted);text-align:right;letter-spacing:.3px;}
+  .hero .of b{display:block;font-size:22px;font-weight:800;color:var(--ink);letter-spacing:-.5px;}
+  .hero .line{margin-top:16px;height:6px;background:var(--hair);position:relative;}
+  .hero .line i{position:absolute;left:0;top:0;bottom:0;width:77%;background:var(--red);}
+  .hero .rem{margin-top:9px;display:flex;justify-content:space-between;font-size:11px;font-weight:600;letter-spacing:.5px;}
+  .hero .rem .r{color:var(--red);}
+  /* macros */
+  .macros{display:flex;border-bottom:1px solid var(--hair);}
+  .macro{flex:1;padding:16px 0;}
+  .macro:not(:last-child){border-right:1px solid var(--hair);}
+  .macro .k{font-size:9.5px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);}
+  .macro .n{font-size:30px;font-weight:900;letter-spacing:-1.5px;margin:6px 0 2px;}
+  .macro .g{font-size:11px;font-weight:600;color:var(--muted);}
+  .macro .b{margin-top:10px;height:3px;background:var(--hair);}
+  .macro .b i{display:block;height:100%;background:var(--ink);}
+  /* arni */
+  .arni{border-bottom:1px solid var(--hair);padding:18px 0;display:flex;gap:14px;align-items:flex-start;}
+  .arni .num{font-size:11px;font-weight:800;color:var(--red);letter-spacing:1px;border:2px solid var(--red);padding:6px 8px;line-height:1;}
+  .arni .k{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);}
+  .arni .t{font-size:15px;font-weight:700;letter-spacing:-.3px;margin-top:5px;line-height:1.25;}
+  .arni .go{margin-left:auto;align-self:center;font-size:22px;font-weight:800;}
+  /* meals */
+  .lbl{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);padding:16px 0 4px;}
+  .meal{display:flex;align-items:center;gap:14px;padding:13px 0;border-bottom:1px solid var(--hair);}
+  .meal .idx{font-size:12px;font-weight:800;color:var(--muted);width:18px;}
+  .meal .mn{font-size:16px;font-weight:700;letter-spacing:-.3px;}
+  .meal .mk{font-size:11px;font-weight:600;color:var(--muted);margin-top:2px;letter-spacing:.3px;}
+  .meal .mr{margin-left:auto;font-size:13px;font-weight:800;}
+  .meal .ok{color:var(--ink);}
+  .meal .add{color:var(--red);}
+  .nav{display:flex;justify-content:space-around;padding:14px 10px 26px;border-top:2px solid var(--ink);}
+  .nav a{display:flex;flex-direction:column;align-items:center;gap:5px;font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);text-decoration:none;}
+  .nav a.on{color:var(--ink);}
+  .nav a.on .ni{color:var(--red);}
+  .nav .ni{font-size:18px;}
+</style>
+</head>
+<body>
+  <div class="status"><span>9:41</span><span>􀙇 􀊪 􀛨</span></div>
+  <div class="scroll">
+    <div class="head">
+      <div class="l"><div class="k">P.A.R.K.E.R.</div><h1>Привет,&nbsp;Пётр</h1><p>СРЕДА · 15.06.2026</p></div>
+      <div class="avatar">П</div>
+    </div>
+    <div class="hero">
+      <div class="top">
+        <div class="num">1 850<span>.</span></div>
+        <div class="of">из <b>2 400</b><br>ккал</div>
+      </div>
+      <div class="line"><i></i></div>
+      <div class="rem"><span>СЪЕДЕНО 77%</span><span class="r">ОСТАЛОСЬ 550 ККАЛ</span></div>
+    </div>
+    <div class="macros">
+      <div class="macro"><div class="k">Белки</div><div class="n">90</div><div class="g">/ 140 г</div><div class="b"><i style="width:64%"></i></div></div>
+      <div class="macro"><div class="k">Жиры</div><div class="n">50</div><div class="g">/ 70 г</div><div class="b"><i style="width:71%"></i></div></div>
+      <div class="macro"><div class="k">Углев.</div><div class="n">180</div><div class="g">/ 250 г</div><div class="b"><i style="width:72%"></i></div></div>
+    </div>
+    <div class="arni">
+      <div class="num">АИ</div>
+      <div><div class="k">Арни · AI-коуч</div><div class="t">Осталось 50 г белка. Творог на ужин закроет норму.</div></div>
+      <div class="go">→</div>
+    </div>
+    <div class="lbl">Приёмы пищи</div>
+    <div class="meal"><div class="idx">01</div><div><div class="mn">Завтрак</div><div class="mk">520 ккал · 3 продукта</div></div><div class="mr ok">✓ 520</div></div>
+    <div class="meal"><div class="idx">02</div><div><div class="mn">Обед</div><div class="mk">640 ккал · 4 продукта</div></div><div class="mr ok">✓ 640</div></div>
+    <div class="meal"><div class="idx">03</div><div><div class="mn">Ужин</div><div class="mk">Запланировано</div></div><div class="mr add">+ добавить</div></div>
+  </div>
+  <div class="nav">
+    <a class="on"><span class="ni">▣</span>Главная</a>
+    <a><span class="ni">▤</span>Дневник</a>
+    <a><span class="ni">▥</span>Чат</a>
+    <a><span class="ni">▦</span>Профиль</a>
+  </div>
+</body>
+</html>

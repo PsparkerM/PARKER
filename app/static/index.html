@@ -4851,27 +4851,68 @@ function removeChatPhoto() {
 // Chat photo handled inside main sendChat via _chatImageB64 state
 
 // ══ AUTO-ADAPTATION ══
-function _checkAutoAdapt() {
+// Авто-адаптация: после 3 дней данных приложение САМО анализирует и корректирует
+// цели — без кнопки. Арни прозрачно пишет в чат что и почему изменил. Реверсивно.
+const _AUTO_ADAPT_DAYS = 3;
+
+async function _checkAutoAdapt() {
   if (!profile || !planData) return;
+  const tgId = getTgId(); if (!tgId) return;
   const lastAdapt = localStorage.getItem('pk_last_adapt');
   if (lastAdapt) {
     const daysSince = (Date.now() - new Date(lastAdapt).getTime()) / 86400000;
-    if (daysSince < 7) return;
+    if (daysSince < _AUTO_ADAPT_DAYS) return;
   } else {
     const oldestLog = [...logs].sort((a,b) => a.date > b.date ? 1 : -1)[0];
     if (!oldestLog) return;
     const daysSince = (Date.now() - new Date(oldestLog.date.split('.').reverse().join('-')).getTime()) / 86400000;
-    if (daysSince < 7) return;
+    if (daysSince < _AUTO_ADAPT_DAYS) return;
   }
+  // нужно хоть немного реальных данных, иначе адаптировать не от чего
+  const weightPoints = logs.filter(l => l.weight).length;
+  if (weightPoints < 2 && foodLogs.length < 3) return;
+
+  // помечаем СРАЗУ — чтобы повторный boot/гонка не запустили адаптацию дважды
+  localStorage.setItem('pk_last_adapt', new Date().toISOString().slice(0,10));
   const ru = lang !== 'en';
-  if (chatHist.length > 0) {
-    const msg = ru
-      ? 'Смотрю на твои данные за неделю — давай разберём что идёт не так и скорректируем план 📊'
-      : "I'm looking at your weekly data — let's review what's going on and adjust your plan 📊";
+  try {
+    const r = await fetch('/api/adapt', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({profile, logs: logs.slice(-14), food_logs: foodLogs.slice(-50), current_macros: planData?.macros||{}})
+    });
+    if (!r.ok) return;               // напр. 429 (квота) — тихо пропускаем, попробуем в след. раз
+    const data = await r.json();
+    if (data.error) return;
+
+    let msg = ru
+      ? '📊 Я сам проанализировал твои данные за последние дни.'
+      : '📊 I analyzed your recent data on my own.';
+    if (data.summary) msg += '\n\n' + data.summary;
+
+    // авто-применяем новые цели, если Арни их предложил
+    if (data.new_macros && data.new_macros.calories) {
+      const nm = data.new_macros, cm = data.current_macros || planData?.macros || {};
+      const diff = nm.calories - (cm.calories || nm.calories);
+      try {
+        await fetch('/api/adapt/apply', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(nm)});
+        macrosOverride = {calories:nm.calories, protein_g:nm.protein_g, fat_g:nm.fat_g, carb_g:nm.carb_g};
+        updateTargetsSubLabel?.();
+        msg += '\n\n' + (ru
+          ? `🎯 Скорректировал цели: ${nm.calories} ккал (${diff>0?'+':''}${diff}). Б ${nm.protein_g} · Ж ${nm.fat_g} · У ${nm.carb_g}.`
+          : `🎯 Adjusted targets: ${nm.calories} kcal (${diff>0?'+':''}${diff}). P ${nm.protein_g} · F ${nm.fat_g} · C ${nm.carb_g}.`);
+      } catch {}
+    } else {
+      msg += '\n\n' + (ru ? '✅ Цели уже оптимальны — менять не нужно.' : '✅ Your targets are already optimal.');
+    }
+    if (Array.isArray(data.recommendations) && data.recommendations.length)
+      msg += '\n\n' + data.recommendations.map((x,i)=>`${i+1}. ${x}`).join('\n');
+
     chatHist.push({role:'assistant', content: msg});
     persist();
-    localStorage.setItem('pk_last_adapt', new Date().toISOString().slice(0,10));
-  }
+    saveChatToServer();
+    if (curTab === 'home') renderHome();
+    if (curTab === 'chat') initChat(false);
+  } catch {}
 }
 
 // ══ CHALLENGE ON FIRST LAUNCH ══

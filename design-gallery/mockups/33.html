@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390, initial-scale=1">
+<title>33 — Memphis 80s</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FDF6E3; --pink:#FF5CA2; --teal:#34D1BF; --yellow:#FFC93C; --ink:#1A1A2E;
+    --font:"Poppins",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-font-smoothing:antialiased;}
+  html,body{width:390px;height:844px;}
+  body{position:relative;background:var(--bg);font-family:var(--font);color:var(--ink);overflow:hidden;display:flex;flex-direction:column;}
+  /* memphis decor */
+  .deco{position:fixed;pointer-events:none;z-index:0;}
+  .d1{top:120px;right:-20px;width:90px;height:90px;border-radius:50%;border:8px solid var(--teal);opacity:.5;}
+  .d2{top:330px;left:-26px;width:70px;height:70px;background:var(--yellow);border-radius:50%;opacity:.55;}
+  .d3{bottom:150px;right:14px;width:54px;height:54px;background:var(--pink);transform:rotate(18deg);opacity:.5;}
+  .dots{top:90px;left:18px;width:60px;height:30px;opacity:.6;
+    background-image:radial-gradient(var(--pink) 3px, transparent 3px);background-size:14px 14px;}
+  .zig{position:fixed;bottom:90px;left:0;width:140px;height:18px;opacity:.55;z-index:0;
+    background:linear-gradient(135deg,var(--teal) 25%,transparent 25%) -10px 0,
+              linear-gradient(225deg,var(--teal) 25%,transparent 25%) -10px 0;background-size:20px 20px;}
+  .status{position:relative;z-index:2;display:flex;justify-content:space-between;align-items:center;padding:14px 22px 6px;font-size:14px;font-weight:700;}
+  .scroll{position:relative;z-index:2;flex:1;overflow:hidden;padding:6px 20px 0;}
+  .head{display:flex;justify-content:space-between;align-items:center;margin:8px 0 18px;}
+  .head h1{font-size:25px;font-weight:900;letter-spacing:-.5px;}
+  .head p{font-size:12px;font-weight:600;color:var(--pink);margin-top:3px;}
+  .avatar{width:50px;height:50px;border-radius:14px;background:var(--yellow);border:3px solid var(--ink);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:20px;box-shadow:4px 4px 0 var(--ink);}
+  /* hero */
+  .hero{position:relative;background:var(--teal);border:3px solid var(--ink);border-radius:24px;padding:20px;margin-bottom:18px;box-shadow:6px 6px 0 var(--ink);display:flex;align-items:center;gap:18px;}
+  .ring{width:120px;height:120px;flex-shrink:0;position:relative;display:flex;align-items:center;justify-content:center;}
+  .ring .c{position:absolute;text-align:center;}
+  .ring .big{font-size:25px;font-weight:900;letter-spacing:-1px;color:var(--ink);}
+  .ring .sub{font-size:10px;font-weight:700;color:var(--ink);opacity:.7;margin-top:1px;}
+  .hero .side .lab{font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--ink);}
+  .hero .side .v{font-size:42px;font-weight:900;letter-spacing:-2px;line-height:1;margin:2px 0;color:#fff;-webkit-text-stroke:2px var(--ink);}
+  .hero .side .u{font-size:12px;font-weight:700;color:var(--ink);}
+  /* macros */
+  .macros{display:flex;gap:10px;margin-bottom:18px;}
+  .macro{flex:1;border:3px solid var(--ink);border-radius:18px;padding:12px 11px;box-shadow:3px 3px 0 var(--ink);}
+  .m1{background:var(--pink);} .m2{background:var(--yellow);} .m3{background:#fff;}
+  .macro .t{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;}
+  .macro .val{font-size:18px;font-weight:900;letter-spacing:-.5px;margin-bottom:8px;}
+  .macro .val small{font-size:11px;font-weight:700;opacity:.7;}
+  .macro .bar{height:6px;border-radius:6px;background:rgba(26,26,46,.18);border:1.5px solid var(--ink);overflow:hidden;}
+  .macro .bar i{display:block;height:100%;background:var(--ink);}
+  /* arni */
+  .arni{display:flex;align-items:center;gap:13px;background:var(--ink);color:var(--bg);border-radius:20px;padding:15px 16px;margin-bottom:20px;box-shadow:5px 5px 0 var(--pink);}
+  .arni .av{width:46px;height:46px;border-radius:50%;flex-shrink:0;background:var(--yellow);border:3px solid var(--bg);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:18px;color:var(--ink);}
+  .arni b{font-size:15px;font-weight:800;color:var(--yellow);}
+  .arni p{font-size:12.5px;font-weight:500;margin-top:3px;line-height:1.35;opacity:.92;}
+  .arni .go{margin-left:auto;font-size:24px;font-weight:900;color:var(--teal);}
+  .sec{font-size:16px;font-weight:900;margin-bottom:12px;letter-spacing:-.3px;}
+  .meal{display:flex;align-items:center;gap:13px;padding:11px 12px;margin-bottom:9px;border:3px solid var(--ink);border-radius:16px;background:#fff;box-shadow:3px 3px 0 var(--ink);}
+  .meal .mi{width:40px;height:40px;border-radius:11px;border:2.5px solid var(--ink);display:flex;align-items:center;justify-content:center;font-size:19px;}
+  .meal.b1 .mi{background:var(--pink);} .meal.b2 .mi{background:var(--teal);} .meal.b3 .mi{background:var(--yellow);}
+  .meal .mn{font-size:15px;font-weight:800;}
+  .meal .mk{font-size:11px;font-weight:600;color:#777;margin-top:1px;}
+  .meal .mr{margin-left:auto;font-size:13px;font-weight:900;}
+  .meal .ok{color:var(--teal);-webkit-text-stroke:.4px var(--ink);}
+  .meal .add{color:var(--pink);}
+  .nav{position:relative;z-index:2;display:flex;justify-content:space-around;padding:12px 10px 24px;border-top:3px solid var(--ink);background:var(--bg);}
+  .nav a{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10px;font-weight:700;color:var(--ink);opacity:.5;text-decoration:none;}
+  .nav a.on{opacity:1;}
+  .nav a.on .ni{background:var(--pink);}
+  .nav .ni{font-size:17px;width:36px;height:36px;border-radius:11px;display:flex;align-items:center;justify-content:center;border:2.5px solid var(--ink);background:#fff;}
+</style>
+</head>
+<body>
+  <div class="deco d1"></div><div class="deco d2"></div><div class="deco d3"></div><div class="deco dots"></div><div class="zig"></div>
+  <div class="status"><span>9:41</span><span>􀙇 􀊪 􀛨</span></div>
+  <div class="scroll">
+    <div class="head">
+      <div><h1>Привет, Пётр 🎉</h1><p>СРЕДА, 15 ИЮНЯ</p></div>
+      <div class="avatar">П</div>
+    </div>
+    <div class="hero">
+      <div class="ring">
+        <svg width="120" height="120" viewBox="0 0 120 120">
+          <circle cx="60" cy="60" r="50" fill="#FDF6E3" stroke="#1A1A2E" stroke-width="4"/>
+          <circle cx="60" cy="60" r="50" fill="none" stroke="#FF5CA2" stroke-width="10" stroke-linecap="round"
+            stroke-dasharray="314" stroke-dashoffset="72" transform="rotate(-90 60 60)"/>
+        </svg>
+        <div class="c"><div class="big">1 850</div><div class="sub">из 2 400 ккал</div></div>
+      </div>
+      <div class="side">
+        <div class="lab">Осталось</div>
+        <div class="v">550</div>
+        <div class="u">ккал 🔥</div>
+      </div>
+    </div>
+    <div class="macros">
+      <div class="macro m1"><div class="t">Белки</div><div class="val">90<small>/140</small></div><div class="bar"><i style="width:64%"></i></div></div>
+      <div class="macro m2"><div class="t">Жиры</div><div class="val">50<small>/70</small></div><div class="bar"><i style="width:71%"></i></div></div>
+      <div class="macro m3"><div class="t">Углев</div><div class="val">180<small>/250</small></div><div class="bar"><i style="width:72%"></i></div></div>
+    </div>
+    <div class="arni">
+      <div class="av">А</div>
+      <div><b>Арни</b><p>Эй! До цели по белку 50 г — кинь творог на ужин 💪</p></div>
+      <div class="go">›</div>
+    </div>
+    <div class="sec">Приёмы пищи 🍽️</div>
+    <div class="meal b1"><div class="mi">🍳</div><div><div class="mn">Завтрак</div><div class="mk">520 ккал · 3 продукта</div></div><div class="mr ok">✓ 520</div></div>
+    <div class="meal b2"><div class="mi">🥗</div><div><div class="mn">Обед</div><div class="mk">640 ккал · 4 продукта</div></div><div class="mr ok">✓ 640</div></div>
+    <div class="meal b3"><div class="mi">🍽️</div><div><div class="mn">Ужин</div><div class="mk">Запланировано</div></div><div class="mr add">+ добавить</div></div>
+  </div>
+  <div class="nav">
+    <a class="on"><span class="ni">🏠</span>Главная</a>
+    <a><span class="ni">📖</span>Дневник</a>
+    <a><span class="ni">💬</span>Чат</a>
+    <a><span class="ni">👤</span>Профиль</a>
+  </div>
+</body>
+</html>

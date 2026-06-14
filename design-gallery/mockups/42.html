@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390, initial-scale=1">
+<title>42 — Fashion Magazine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;0,900;1,500&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F7F5F2; --paper:#FFFFFF; --ink:#15110D; --gold:#B08D57; --gold2:#C9A877;
+    --muted:#9A8E7E; --line:#E3DCD2;
+    --serif:"Playfair Display",Georgia,"Times New Roman",serif;
+    --sans:"Jost","Futura","Century Gothic",sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-font-smoothing:antialiased;}
+  html,body{width:390px;height:844px;}
+  body{background:var(--bg);font-family:var(--sans);color:var(--ink);overflow:hidden;display:flex;flex-direction:column;}
+  .status{display:flex;justify-content:space-between;align-items:center;padding:14px 24px 4px;font-size:13px;font-weight:500;letter-spacing:.5px;}
+  .scroll{flex:1;overflow:hidden;padding:4px 24px 0;}
+  /* masthead */
+  .mast{text-align:center;border-bottom:1px solid var(--ink);padding:6px 0 9px;margin-bottom:14px;position:relative;}
+  .mast .iss{position:absolute;left:0;top:9px;font-size:9px;letter-spacing:2px;color:var(--muted);}
+  .mast .iss2{position:absolute;right:0;top:9px;font-size:9px;letter-spacing:2px;color:var(--muted);}
+  .mast h2{font-family:var(--serif);font-size:30px;font-weight:900;letter-spacing:8px;line-height:1;}
+  .mast .sub{font-size:8px;letter-spacing:5px;color:var(--gold);margin-top:5px;text-transform:uppercase;}
+  /* head */
+  .head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:16px;}
+  .head .kick{font-size:9px;letter-spacing:3px;color:var(--gold);text-transform:uppercase;}
+  .head h1{font-family:var(--serif);font-size:27px;font-weight:700;line-height:1;margin-top:5px;letter-spacing:-.5px;}
+  .head h1 em{font-style:italic;color:var(--gold);}
+  .head p{font-size:10px;letter-spacing:1px;color:var(--muted);margin-top:6px;text-transform:uppercase;}
+  .ava{width:48px;height:48px;border-radius:50%;border:1px solid var(--gold);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:20px;font-style:italic;color:var(--gold);flex-shrink:0;}
+  /* hero */
+  .hero{text-align:center;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:18px 0 16px;margin-bottom:18px;}
+  .hero .ed{font-size:9px;letter-spacing:4px;color:var(--gold);text-transform:uppercase;margin-bottom:8px;}
+  .hero .big{font-family:var(--serif);font-size:62px;font-weight:900;line-height:.9;letter-spacing:-2px;}
+  .hero .of{font-family:var(--serif);font-style:italic;font-size:15px;color:var(--muted);margin-top:4px;}
+  .hero .rem{margin-top:12px;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--ink);}
+  .hero .rem b{font-family:var(--serif);font-weight:700;color:var(--gold);font-size:13px;letter-spacing:0;}
+  /* macros */
+  .macros{display:flex;gap:0;margin-bottom:18px;}
+  .macro{flex:1;text-align:center;padding:0 8px;position:relative;}
+  .macro+.macro::before{content:"";position:absolute;left:0;top:6px;bottom:6px;width:1px;background:var(--line);}
+  .macro .l{font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);}
+  .macro .v{font-family:var(--serif);font-size:22px;font-weight:700;margin:5px 0 3px;}
+  .macro .v small{font-size:11px;color:var(--muted);font-weight:500;}
+  .macro .bar{height:2px;background:var(--line);margin:0 auto;width:70%;}
+  .macro .bar i{display:block;height:100%;background:var(--gold);}
+  /* arni editorial */
+  .arni{background:var(--ink);color:var(--bg);padding:18px 20px;margin-bottom:18px;position:relative;}
+  .arni::after{content:"";position:absolute;inset:5px;border:1px solid var(--gold);pointer-events:none;}
+  .arni .col{font-size:8px;letter-spacing:3px;color:var(--gold2);text-transform:uppercase;margin-bottom:8px;}
+  .arni .q{font-family:var(--serif);font-style:italic;font-size:16px;line-height:1.35;}
+  .arni .by{font-size:9px;letter-spacing:2px;color:var(--gold2);margin-top:10px;text-transform:uppercase;}
+  .arni .by span{float:right;}
+  /* meals */
+  .lbl{font-family:var(--serif);font-size:14px;font-weight:700;letter-spacing:1px;margin-bottom:4px;}
+  .lbl em{font-style:italic;color:var(--gold);}
+  .ldash{height:1px;background:var(--ink);margin-bottom:10px;}
+  .meal{display:flex;align-items:center;gap:14px;padding:10px 0;border-bottom:1px solid var(--line);}
+  .meal .no{font-family:var(--serif);font-size:18px;font-style:italic;color:var(--gold);width:28px;}
+  .meal .nm{flex:1;}
+  .meal .nm b{font-family:var(--serif);font-size:16px;font-weight:700;}
+  .meal .nm small{display:block;font-size:9px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;margin-top:2px;}
+  .meal .r{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--gold);}
+  .meal.add .r{color:var(--ink);font-weight:500;}
+  /* nav */
+  .nav{display:flex;justify-content:space-around;padding:13px 10px 26px;border-top:1px solid var(--ink);background:var(--bg);}
+  .nav a{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);text-decoration:none;}
+  .nav a .ni{font-size:16px;}
+  .nav a.on{color:var(--ink);}
+  .nav a.on .ni{color:var(--gold);}
+</style>
+</head>
+<body>
+  <div class="status"><span>9:41</span><span>􀙇 􀊪 􀛨</span></div>
+  <div class="scroll">
+    <div class="mast">
+      <span class="iss">№ 06</span><span class="iss2">2026</span>
+      <h2>PARKER</h2>
+      <div class="sub">the nutrition edit</div>
+    </div>
+    <div class="head">
+      <div>
+        <div class="kick">Сегодня в номере</div>
+        <h1>Bonjour, <em>Пётр</em></h1>
+        <p>Среда · 15 июня</p>
+      </div>
+      <div class="ava">П</div>
+    </div>
+    <div class="hero">
+      <div class="ed">Калории дня</div>
+      <div class="big">1 850</div>
+      <div class="of">из 2&nbsp;400 ккал</div>
+      <div class="rem">Осталось <b>550 ккал</b></div>
+    </div>
+    <div class="macros">
+      <div class="macro"><div class="l">Белки</div><div class="v">90<small>/140г</small></div><div class="bar"><i style="width:64%"></i></div></div>
+      <div class="macro"><div class="l">Жиры</div><div class="v">50<small>/70г</small></div><div class="bar"><i style="width:71%"></i></div></div>
+      <div class="macro"><div class="l">Углеводы</div><div class="v">180<small>/250г</small></div><div class="bar"><i style="width:72%"></i></div></div>
+    </div>
+    <div class="arni">
+      <div class="col">Колонка эксперта</div>
+      <div class="q">«До цели по белку 50 г. Рекомендую творог на ужин.»</div>
+      <div class="by">Арни · AI-нутрициолог <span>Спросить →</span></div>
+    </div>
+    <div class="lbl">Меню <em>дня</em></div>
+    <div class="ldash"></div>
+    <div class="meal"><span class="no">I</span><span class="nm"><b>Завтрак</b><small>3 продукта</small></span><span class="r">520 ккал ✓</span></div>
+    <div class="meal"><span class="no">II</span><span class="nm"><b>Обед</b><small>4 продукта</small></span><span class="r">640 ккал ✓</span></div>
+    <div class="meal add"><span class="no">III</span><span class="nm"><b>Ужин</b><small>запланировано</small></span><span class="r">+ Добавить</span></div>
+  </div>
+  <div class="nav">
+    <a class="on"><span class="ni">❖</span>Главная</a>
+    <a><span class="ni">✎</span>Дневник</a>
+    <a><span class="ni">✦</span>Чат</a>
+    <a><span class="ni">❀</span>Профиль</a>
+  </div>
+</body>
+</html>

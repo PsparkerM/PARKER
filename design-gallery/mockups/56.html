@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390, initial-scale=1">
+<title>56 — Soft 3D Pill</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#EEF1F8; --surface:#F7F9FE; --text:#2C3050; --muted:#9AA0BC;
+    --indigo:#6C7BFF; --indigo-d:#5563E6; --peach:#FF9AA2; --peach-d:#FF7A86;
+    --font:"Nunito",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    --soft:0 8px 18px rgba(108,123,255,.18), 0 2px 4px rgba(44,48,80,.06), inset 0 1px 0 rgba(255,255,255,.7);
+    --soft-in:inset 4px 4px 9px rgba(170,178,210,.5), inset -4px -4px 9px rgba(255,255,255,.95);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-font-smoothing:antialiased;}
+  html,body{width:390px;height:844px;}
+  body{background:var(--bg);font-family:var(--font);color:var(--text);overflow:hidden;display:flex;flex-direction:column;}
+  .status{display:flex;justify-content:space-between;align-items:center;padding:14px 26px 4px;font-size:14px;font-weight:800;color:var(--text);}
+  .status .ic{display:flex;gap:7px;font-size:13px;}
+  .scroll{flex:1;overflow:hidden;padding:6px 20px 0;}
+  .head{display:flex;justify-content:space-between;align-items:center;margin:6px 0 18px;}
+  .head h1{font-size:24px;font-weight:900;letter-spacing:-.4px;}
+  .head p{font-size:13px;color:var(--muted);margin-top:3px;font-weight:700;}
+  .avatar{width:50px;height:50px;border-radius:50%;background:linear-gradient(145deg,#7E8CFF,#5563E6);color:#fff;
+          display:flex;align-items:center;justify-content:center;font-weight:900;font-size:19px;
+          box-shadow:var(--soft);}
+  /* hero */
+  .hero{background:linear-gradient(150deg,#7E8CFF,#5C6BF2);border-radius:32px;padding:22px 24px;margin-bottom:18px;color:#fff;
+        box-shadow:0 14px 30px rgba(92,107,242,.4), inset 0 1px 0 rgba(255,255,255,.4);position:relative;overflow:hidden;}
+  .hero::after{content:"";position:absolute;width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,.12);top:-60px;right:-40px;}
+  .hero .lbl{font-size:13px;font-weight:700;opacity:.85;}
+  .hero .big{font-size:46px;font-weight:900;letter-spacing:-1.5px;line-height:1;margin:6px 0 2px;}
+  .hero .big small{font-size:18px;font-weight:800;opacity:.7;}
+  .hero .rem{display:inline-block;margin-top:12px;background:rgba(255,255,255,.22);padding:7px 16px;border-radius:20px;font-size:13px;font-weight:800;
+             box-shadow:inset 0 1px 0 rgba(255,255,255,.4);}
+  .hero .track{margin-top:14px;height:9px;border-radius:9px;background:rgba(255,255,255,.25);overflow:hidden;box-shadow:inset 0 1px 2px rgba(0,0,0,.15);}
+  .hero .track i{display:block;height:100%;width:77%;border-radius:9px;background:linear-gradient(90deg,#FFC4C9,#FF9AA2);}
+  /* macros pills */
+  .macros{display:flex;gap:11px;margin-bottom:18px;}
+  .macro{flex:1;background:var(--surface);border-radius:22px;padding:14px 12px;text-align:center;box-shadow:var(--soft);}
+  .macro .m-top{font-size:12px;color:var(--muted);font-weight:800;margin-bottom:7px;}
+  .macro .m-val{font-size:15px;font-weight:900;margin-bottom:9px;}
+  .macro .m-val small{color:var(--muted);font-size:12px;font-weight:700;}
+  .macro .bar{height:7px;border-radius:7px;box-shadow:var(--soft-in);overflow:hidden;}
+  .macro .bar i{display:block;height:100%;border-radius:7px;background:linear-gradient(90deg,var(--indigo),var(--peach));}
+  /* arni */
+  .arni{display:flex;align-items:center;gap:14px;background:var(--surface);border-radius:26px;padding:15px 18px;margin-bottom:18px;box-shadow:var(--soft);}
+  .arni .a-av{width:48px;height:48px;border-radius:50%;background:linear-gradient(145deg,#FFB1B8,#FF7A86);color:#fff;
+              display:flex;align-items:center;justify-content:center;font-weight:900;font-size:18px;
+              box-shadow:0 6px 14px rgba(255,122,134,.45),inset 0 1px 0 rgba(255,255,255,.6);}
+  .arni .a-txt b{font-size:16px;font-weight:900;}
+  .arni .a-txt p{font-size:12.5px;color:var(--muted);margin-top:2px;font-weight:700;}
+  .arni .a-go{margin-left:auto;width:34px;height:34px;border-radius:50%;background:var(--indigo);color:#fff;display:flex;align-items:center;justify-content:center;
+              font-size:18px;font-weight:900;box-shadow:0 5px 12px rgba(108,123,255,.5),inset 0 1px 0 rgba(255,255,255,.4);}
+  /* meals */
+  .sec-title{font-size:16px;font-weight:900;margin-bottom:12px;}
+  .meal{display:flex;align-items:center;gap:14px;padding:11px 14px;margin-bottom:10px;background:var(--surface);border-radius:22px;box-shadow:var(--soft);}
+  .meal .m-ic{width:44px;height:44px;border-radius:16px;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:21px;box-shadow:var(--soft-in);}
+  .meal .m-name{font-size:15px;font-weight:800;}
+  .meal .m-kcal{font-size:12px;color:var(--muted);margin-top:2px;font-weight:700;}
+  .meal .m-r{margin-left:auto;font-size:13px;font-weight:900;}
+  .meal .done{width:30px;height:30px;border-radius:50%;background:#E6FBF0;color:#22B573;display:flex;align-items:center;justify-content:center;box-shadow:inset 0 0 0 2px rgba(34,181,115,.15);}
+  .meal .add{color:var(--peach-d);background:#FFEEEF;padding:7px 14px;border-radius:18px;box-shadow:inset 0 1px 0 rgba(255,255,255,.7);}
+  /* nav */
+  .nav{display:flex;justify-content:space-around;padding:12px 14px 22px;margin:0 14px 14px;background:var(--surface);border-radius:28px;box-shadow:var(--soft);}
+  .nav a{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:10.5px;color:var(--muted);text-decoration:none;font-weight:800;}
+  .nav a.on{color:var(--indigo-d);}
+  .nav a.on .n-ic{background:linear-gradient(145deg,#7E8CFF,#5563E6);color:#fff;box-shadow:0 6px 13px rgba(85,99,230,.45),inset 0 1px 0 rgba(255,255,255,.4);}
+  .nav .n-ic{width:42px;height:42px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:19px;background:var(--bg);box-shadow:var(--soft-in);}
+</style>
+</head>
+<body>
+  <div class="status"><span>9:41</span><span class="ic">📶 📡 🔋</span></div>
+  <div class="scroll">
+    <div class="head">
+      <div><h1>Привет, Пётр 👋</h1><p>Среда, 15 июня</p></div>
+      <div class="avatar">П</div>
+    </div>
+    <div class="hero">
+      <div class="lbl">Калории сегодня</div>
+      <div class="big">1 850 <small>/ 2 400</small></div>
+      <div class="rem">🔥 Осталось 550 ккал</div>
+      <div class="track"><i></i></div>
+    </div>
+    <div class="macros">
+      <div class="macro"><div class="m-top">Белки</div><div class="m-val">90<small>/140г</small></div><div class="bar"><i style="width:64%"></i></div></div>
+      <div class="macro"><div class="m-top">Жиры</div><div class="m-val">50<small>/70г</small></div><div class="bar"><i style="width:71%"></i></div></div>
+      <div class="macro"><div class="m-top">Углеводы</div><div class="m-val">180<small>/250г</small></div><div class="bar"><i style="width:72%"></i></div></div>
+    </div>
+    <div class="arni">
+      <div class="a-av">А</div>
+      <div class="a-txt"><b>Арни</b><p>Спроси меня про твой ужин</p></div>
+      <div class="a-go">›</div>
+    </div>
+    <div class="sec-title">Приёмы пищи</div>
+    <div class="meal"><div class="m-ic">🍳</div><div><div class="m-name">Завтрак</div><div class="m-kcal">520 ккал · 3 продукта</div></div><div class="m-r"><span class="done">✓</span></div></div>
+    <div class="meal"><div class="m-ic">🥗</div><div><div class="m-name">Обед</div><div class="m-kcal">640 ккал · 4 продукта</div></div><div class="m-r"><span class="done">✓</span></div></div>
+    <div class="meal"><div class="m-ic">🍽️</div><div><div class="m-name">Ужин</div><div class="m-kcal">Запланировано</div></div><div class="m-r"><span class="add">+ добавить</span></div></div>
+  </div>
+  <div class="nav">
+    <a class="on"><span class="n-ic">🏠</span>Главная</a>
+    <a><span class="n-ic">📖</span>Дневник</a>
+    <a><span class="n-ic">💬</span>Чат</a>
+    <a><span class="n-ic">👤</span>Профиль</a>
+  </div>
+</body>
+</html>

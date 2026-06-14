@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390, initial-scale=1">
+<title>37 — Frosted Dark Glass</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0B0F17; --glass:rgba(255,255,255,.05); --glass2:rgba(94,200,255,.06);
+    --blue:#5EC8FF; --blue-soft:#9FE0FF; --text:#EAF3FB; --muted:#7C8CA3;
+    --edge:rgba(94,200,255,.35); --line:rgba(255,255,255,.07);
+    --font:"Sora",-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-font-smoothing:antialiased;}
+  html,body{width:390px;height:844px;}
+  body{
+    background:
+      radial-gradient(70% 38% at 15% 0%, rgba(94,200,255,.20), transparent 60%),
+      radial-gradient(60% 35% at 100% 30%, rgba(120,90,255,.16), transparent 60%),
+      radial-gradient(80% 40% at 50% 110%, rgba(94,200,255,.10), transparent 60%),
+      var(--bg);
+    font-family:var(--font);color:var(--text);overflow:hidden;display:flex;flex-direction:column;}
+  .status{display:flex;justify-content:space-between;align-items:center;padding:14px 24px 6px;font-size:14px;font-weight:600;}
+  .status .ic{display:flex;gap:7px;font-size:12px;color:var(--blue);}
+  .scroll{flex:1;overflow:hidden;padding:8px 20px 0;position:relative;z-index:1;}
+  .head{display:flex;justify-content:space-between;align-items:center;margin:8px 0 20px;}
+  .head h1{font-size:23px;font-weight:600;letter-spacing:-.3px;}
+  .head h1 b{color:var(--blue);}
+  .head p{font-size:12px;color:var(--muted);margin-top:4px;}
+  .avatar{width:48px;height:48px;border-radius:16px;
+    background:var(--glass);border:1px solid var(--edge);backdrop-filter:blur(14px);
+    display:flex;align-items:center;justify-content:center;font-weight:600;font-size:18px;color:var(--blue);
+    box-shadow:0 0 18px rgba(94,200,255,.18), inset 0 0 14px rgba(94,200,255,.08);}
+  /* hero glass */
+  .hero{border-radius:26px;padding:22px 20px;margin-bottom:16px;
+    background:linear-gradient(150deg,var(--glass2),rgba(255,255,255,.03));
+    border:1px solid var(--edge);backdrop-filter:blur(20px);
+    box-shadow:0 12px 40px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.08);
+    display:flex;align-items:center;gap:20px;}
+  .ring{width:138px;height:138px;border-radius:50%;flex-shrink:0;position:relative;
+    background:conic-gradient(var(--blue) 0 77%, rgba(255,255,255,.06) 77% 100%);
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 0 26px rgba(94,200,255,.4);}
+  .ring .inner{width:112px;height:112px;border-radius:50%;
+    background:rgba(11,15,23,.85);backdrop-filter:blur(8px);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;}
+  .ring .big{font-size:29px;font-weight:700;letter-spacing:-1px;}
+  .ring .sub{font-size:10.5px;color:var(--muted);margin-top:3px;}
+  .hero .side .label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;}
+  .hero .side .val{font-size:22px;font-weight:700;margin:3px 0 14px;}
+  .hero .side .val b{color:var(--blue);}
+  /* macros */
+  .macros{display:flex;gap:10px;margin-bottom:16px;}
+  .macro{flex:1;border-radius:18px;padding:14px 12px;
+    background:var(--glass);border:1px solid var(--line);backdrop-filter:blur(14px);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.06);}
+  .macro .m-top{font-size:11px;color:var(--muted);margin-bottom:8px;}
+  .macro .m-val{font-size:14px;font-weight:600;margin-bottom:9px;}
+  .macro .m-val small{color:var(--muted);font-weight:400;}
+  .macro .bar{height:5px;border-radius:5px;background:rgba(255,255,255,.07);overflow:hidden;}
+  .macro .bar i{display:block;height:100%;border-radius:5px;background:linear-gradient(90deg,var(--blue),var(--blue-soft));box-shadow:0 0 8px var(--blue);}
+  /* arni */
+  .arni{display:flex;align-items:center;gap:14px;border-radius:20px;padding:16px 18px;margin-bottom:18px;
+    background:linear-gradient(135deg,rgba(94,200,255,.14),rgba(255,255,255,.03));
+    border:1px solid var(--edge);backdrop-filter:blur(20px);
+    box-shadow:0 0 24px rgba(94,200,255,.12), inset 0 1px 0 rgba(255,255,255,.08);}
+  .arni .a-av{width:44px;height:44px;border-radius:50%;flex-shrink:0;
+    background:linear-gradient(135deg,var(--blue),#3A86FF);
+    display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:18px;
+    box-shadow:0 0 16px rgba(94,200,255,.5);}
+  .arni .a-txt b{font-size:15px;}
+  .arni .a-txt p{font-size:12px;color:var(--muted);margin-top:3px;line-height:1.35;}
+  .arni .a-go{margin-left:auto;font-size:20px;color:var(--blue);}
+  /* meals */
+  .sec-title{font-size:14px;font-weight:600;margin-bottom:12px;letter-spacing:.2px;}
+  .meal{display:flex;align-items:center;gap:13px;padding:11px 14px;margin-bottom:8px;border-radius:16px;
+    background:var(--glass);border:1px solid var(--line);backdrop-filter:blur(12px);}
+  .meal .m-ic{width:40px;height:40px;border-radius:12px;background:rgba(255,255,255,.05);
+    border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:19px;}
+  .meal .m-name{font-size:14px;font-weight:600;}
+  .meal .m-kcal{font-size:11.5px;color:var(--muted);margin-top:2px;}
+  .meal .m-r{margin-left:auto;font-size:13px;font-weight:600;}
+  .meal .done{color:var(--blue-soft);}
+  .meal .add{color:var(--blue);}
+  /* nav */
+  .nav{display:flex;justify-content:space-around;padding:14px 10px 26px;margin:6px 14px 14px;border-radius:24px;
+    background:rgba(255,255,255,.05);border:1px solid var(--line);backdrop-filter:blur(24px);
+    box-shadow:0 8px 30px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.08);position:relative;z-index:1;}
+  .nav a{display:flex;flex-direction:column;align-items:center;gap:5px;font-size:10px;color:var(--muted);text-decoration:none;}
+  .nav a.on{color:var(--blue);text-shadow:0 0 10px rgba(94,200,255,.6);}
+  .nav .n-ic{font-size:18px;}
+</style>
+</head>
+<body>
+  <div class="status"><span>9:41</span><span class="ic">􀙇 􀊪 􀛨</span></div>
+  <div class="scroll">
+    <div class="head">
+      <div><h1>Привет, <b>Пётр</b></h1><p>Среда, 15 июня</p></div>
+      <div class="avatar">П</div>
+    </div>
+    <div class="hero">
+      <div class="ring"><div class="inner"><div class="big">1 850</div><div class="sub">из 2 400 ккал</div></div></div>
+      <div class="side">
+        <div class="label">Осталось</div><div class="val"><b>550</b> ккал</div>
+        <div class="label">Сожжено</div><div class="val">420 ккал</div>
+      </div>
+    </div>
+    <div class="macros">
+      <div class="macro"><div class="m-top">Белки</div><div class="m-val">90 <small>/ 140 г</small></div><div class="bar"><i style="width:64%"></i></div></div>
+      <div class="macro"><div class="m-top">Жиры</div><div class="m-val">50 <small>/ 70 г</small></div><div class="bar"><i style="width:71%"></i></div></div>
+      <div class="macro"><div class="m-top">Углеводы</div><div class="m-val">180 <small>/ 250 г</small></div><div class="bar"><i style="width:72%"></i></div></div>
+    </div>
+    <div class="arni">
+      <div class="a-av">А</div>
+      <div class="a-txt"><b>Арни</b><p>До цели по белку 50 г. Рекомендую творог на ужин →</p></div>
+      <div class="a-go">›</div>
+    </div>
+    <div class="sec-title">Приёмы пищи</div>
+    <div class="meal"><div class="m-ic">🍳</div><div><div class="m-name">Завтрак</div><div class="m-kcal">520 ккал · 3 продукта</div></div><div class="m-r done">✓</div></div>
+    <div class="meal"><div class="m-ic">🥗</div><div><div class="m-name">Обед</div><div class="m-kcal">640 ккал · 4 продукта</div></div><div class="m-r done">✓</div></div>
+    <div class="meal"><div class="m-ic">🍽️</div><div><div class="m-name">Ужин</div><div class="m-kcal">Запланировано</div></div><div class="m-r add">+ добавить</div></div>
+  </div>
+  <div class="nav">
+    <a class="on"><span class="n-ic">🏠</span>Главная</a>
+    <a><span class="n-ic">📖</span>Дневник</a>
+    <a><span class="n-ic">💬</span>Чат</a>
+    <a><span class="n-ic">👤</span>Профиль</a>
+  </div>
+</body>
+</html>

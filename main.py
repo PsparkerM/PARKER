@@ -258,7 +258,28 @@ async def serve_sw():
 
 @app.get("/health")
 async def health():
+    # Lightweight liveness probe — never fails, so a transient DB blip can't
+    # trigger a Railway restart loop. Deep checks live in /health/ready.
     return {"status": "ok", "bot": "P.A.R.K.E.R."}
+
+
+@app.get("/health/ready")
+async def health_ready():
+    """Readiness check with real component status (DB + Claude + bot)."""
+    from bot.config import ANTHROPIC_API_KEY
+    from db.queries import db_ping
+
+    db_ok = await asyncio.to_thread(db_ping)
+    checks = {
+        "db":     "ok" if db_ok else "down",
+        "claude": "ok" if ANTHROPIC_API_KEY else "missing",
+        "bot":    "ok" if BOT_TOKEN else "missing",
+    }
+    healthy = db_ok and bool(ANTHROPIC_API_KEY) and bool(BOT_TOKEN)
+    return JSONResponse(
+        {"status": "ok" if healthy else "degraded", "checks": checks},
+        status_code=200 if healthy else 503,
+    )
 
 
 @app.get("/debug/webhook")

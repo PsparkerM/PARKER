@@ -4,6 +4,19 @@ from datetime import datetime, timezone, timedelta
 from db.client import get_client
 
 
+def db_ping() -> bool:
+    """Cheap liveness check for the database — used by /health/ready."""
+    db = get_client()
+    if not db:
+        return False
+    try:
+        db.table("users").select("id").limit(1).execute()
+        return True
+    except Exception:
+        logging.warning("db_ping failed", exc_info=True)
+        return False
+
+
 def upsert_user(tg_id: int, profile: dict) -> dict | None:
     db = get_client()
     if not db:

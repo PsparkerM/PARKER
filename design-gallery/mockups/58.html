@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390, initial-scale=1">
+<title>58 — Ultra Minimal Type</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FAFAF8; --text:#0A0A0A; --muted:#B4B4AE; --coral:#FF5436; --line:#EBEBE6;
+    --font:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-font-smoothing:antialiased;}
+  html,body{width:390px;height:844px;}
+  body{background:var(--bg);font-family:var(--font);color:var(--text);overflow:hidden;display:flex;flex-direction:column;}
+  .status{display:flex;justify-content:space-between;align-items:center;padding:14px 28px 4px;font-size:13px;font-weight:600;}
+  .status .ic{font-size:12px;color:var(--muted);letter-spacing:2px;}
+  .scroll{flex:1;overflow:hidden;padding:14px 28px 0;}
+  .head{display:flex;justify-content:space-between;align-items:baseline;margin:6px 0 38px;}
+  .head h1{font-size:19px;font-weight:600;letter-spacing:-.3px;}
+  .head p{font-size:12px;color:var(--muted);margin-top:4px;font-weight:400;letter-spacing:.3px;}
+  .head .ava{font-size:12px;color:var(--muted);font-weight:500;letter-spacing:1px;}
+  /* hero — giant number */
+  .hero{margin-bottom:44px;}
+  .hero .cap{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);font-weight:600;}
+  .hero .big{font-size:92px;font-weight:300;letter-spacing:-5px;line-height:.92;margin:12px 0 2px;}
+  .hero .big b{font-weight:700;}
+  .hero .of{font-size:15px;color:var(--muted);font-weight:400;}
+  .hero .rem{font-size:15px;font-weight:500;margin-top:14px;}
+  .hero .rem em{color:var(--coral);font-style:normal;font-weight:700;}
+  /* macros — bare type rows */
+  .macros{margin-bottom:42px;}
+  .macro{display:flex;align-items:baseline;justify-content:space-between;padding:11px 0;}
+  .macro .m-name{font-size:14px;font-weight:500;letter-spacing:.2px;}
+  .macro .m-val{font-size:14px;font-weight:600;font-variant-numeric:tabular-nums;}
+  .macro .m-val small{color:var(--muted);font-weight:400;}
+  /* arni — single line */
+  .arni{display:flex;align-items:center;gap:12px;margin-bottom:42px;}
+  .arni .dot{width:7px;height:7px;border-radius:50%;background:var(--coral);flex-shrink:0;}
+  .arni b{font-size:14px;font-weight:600;}
+  .arni span{font-size:13px;color:var(--muted);font-weight:400;}
+  .arni .go{margin-left:auto;font-size:15px;color:var(--text);}
+  /* meals */
+  .sec{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:16px;}
+  .meal{display:flex;align-items:baseline;justify-content:space-between;padding:13px 0;}
+  .meal .m-name{font-size:15px;font-weight:500;}
+  .meal .m-name small{color:var(--muted);font-weight:400;font-size:12px;margin-left:8px;}
+  .meal .done{font-size:13px;color:var(--text);font-weight:600;}
+  .meal .done::before{content:"✓ ";color:var(--coral);}
+  .meal .add{font-size:13px;color:var(--coral);font-weight:600;}
+  /* nav — text only */
+  .nav{display:flex;justify-content:space-between;padding:20px 30px 30px;}
+  .nav a{font-size:12px;color:var(--muted);text-decoration:none;font-weight:500;letter-spacing:.3px;}
+  .nav a.on{color:var(--text);font-weight:700;}
+</style>
+</head>
+<body>
+  <div class="status"><span>9:41</span><span class="ic">5G ▪ 100</span></div>
+  <div class="scroll">
+    <div class="head">
+      <div><h1>Пётр</h1><p>Среда, 15 июня</p></div>
+      <div class="ava">П</div>
+    </div>
+    <div class="hero">
+      <div class="cap">Калории</div>
+      <div class="big">1<b>850</b></div>
+      <div class="of">из 2 400 ккал</div>
+      <div class="rem">Осталось <em>550</em></div>
+    </div>
+    <div class="macros">
+      <div class="macro"><span class="m-name">Белки</span><span class="m-val">90<small> / 140 г</small></span></div>
+      <div class="macro"><span class="m-name">Жиры</span><span class="m-val">50<small> / 70 г</small></span></div>
+      <div class="macro"><span class="m-name">Углеводы</span><span class="m-val">180<small> / 250 г</small></span></div>
+    </div>
+    <div class="arni">
+      <span class="dot"></span><b>Арни</b><span>спроси про ужин</span><span class="go">→</span>
+    </div>
+    <div class="sec">Приёмы пищи</div>
+    <div class="meal"><span class="m-name">Завтрак<small>520 ккал</small></span><span class="done">готово</span></div>
+    <div class="meal"><span class="m-name">Обед<small>640 ккал</small></span><span class="done">готово</span></div>
+    <div class="meal"><span class="m-name">Ужин<small>запланировано</small></span><span class="add">добавить</span></div>
+  </div>
+  <div class="nav">
+    <a class="on">Главная</a>
+    <a>Дневник</a>
+    <a>Чат</a>
+    <a>Профиль</a>
+  </div>
+</body>
+</html>
