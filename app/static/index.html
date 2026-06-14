@@ -2184,7 +2184,37 @@ function goTab(name) {
   if (name==='tracker')  { _trackerFoodDate = todayKey(); renderTracker(); }
   if (name==='progress') renderProgress();
   if (name==='profile')  renderProfile();
+  _updateBackButton();
 }
+
+// ══ TELEGRAM BACK BUTTON ══
+// Закрывает открытый оверлей / уводит на Главную вместо закрытия всего приложения.
+const _OVERLAY_IDS = ['settings-panel','faq-page','targets-panel','name-panel','lang-panel',
+  'daily-panel','cal-panel','chal-overlay','wo-overlay','wo-sheet','rem-overlay','rem-sheet',
+  'qe-overlay','qe-sheet','ios-install-overlay','ios-install-sheet','cal-day-sheet-overlay',
+  'cal-day-sheet','ava-overlay','ava-sheet'];
+function _openOverlayIds() {
+  return _OVERLAY_IDS.filter(id => document.getElementById(id)?.classList.contains('on'));
+}
+function _updateBackButton() {
+  if (!tg?.BackButton) return;
+  const show = _openOverlayIds().length > 0 || (curTab && curTab !== 'home');
+  try { show ? tg.BackButton.show() : tg.BackButton.hide(); } catch {}
+}
+function _handleBack() {
+  const open = _openOverlayIds();
+  if (open.length) { open.forEach(id => document.getElementById(id)?.classList.remove('on')); _updateBackButton(); haptic('light'); return; }
+  if (curTab && curTab !== 'home') goTab('home');
+}
+function _initBackButton() {
+  if (!tg?.BackButton) return;
+  try { tg.BackButton.onClick(_handleBack); } catch {}
+  // Реагируем на открытие/закрытие любого оверлея без правки каждого места.
+  const mo = new MutationObserver(_updateBackButton);
+  _OVERLAY_IDS.forEach(id => { const el = document.getElementById(id); if (el) mo.observe(el, {attributes:true, attributeFilter:['class']}); });
+  _updateBackButton();
+}
+_initBackButton();
 
 function haptic(t='light') { tg?.HapticFeedback?.impactOccurred(t); }
 function hapticSuccess() { tg?.HapticFeedback?.notificationOccurred('success'); }
