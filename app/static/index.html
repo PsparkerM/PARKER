@@ -664,6 +664,27 @@ input[type=time]{color-scheme:dark}
   color:var(--gold);background:none;border:none;padding:8px 0;min-width:70px}
 .faq-page-ttl{font-size:15px;font-weight:800;letter-spacing:.3px}
 .faq-page-scrl{flex:1;min-height:0;overflow-y:auto;padding:16px 16px 40px;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+/* ── РАЦИОН (таблица + печать в PDF) ── */
+.racion-macros{background:rgba(0,200,255,.08);border:1px solid rgba(0,200,255,.2);border-radius:12px;
+  padding:10px 14px;font-size:13px;font-weight:700;color:var(--cyan);margin-bottom:14px;text-align:center}
+.racion-day{font-size:13px;font-weight:800;color:var(--gold);text-transform:uppercase;letter-spacing:.5px;
+  margin:18px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.racion-tbl{width:100%;border-collapse:collapse;margin-bottom:6px}
+.racion-tbl td{padding:9px 10px;font-size:13px;vertical-align:top;border-bottom:1px solid var(--border)}
+.racion-tbl .rt-meal{font-weight:700;color:var(--cyan);white-space:nowrap;width:1%}
+.racion-tbl .rt-desc{color:var(--text);line-height:1.5}
+.racion-note{font-size:13px;color:var(--text2);line-height:1.6;margin:6px 0;white-space:pre-wrap}
+@media print{
+  body{background:#fff!important}
+  body>*:not(#racion-page){display:none!important}
+  #racion-page{position:static!important;transform:none!important;display:block!important;background:#fff!important;color:#000!important;pointer-events:auto!important}
+  #racion-page .racion-print-hide{display:none!important}
+  #racion-page .faq-page-scrl{overflow:visible!important;padding:0!important}
+  .racion-tbl td{color:#000!important;border-color:#bbb!important}
+  .racion-day{color:#000!important;border-color:#999!important}
+  .racion-macros{color:#000!important;background:#eee!important;border-color:#999!important}
+  .racion-note{color:#222!important}
+}
 .faq-hero{background:linear-gradient(135deg,rgba(139,92,246,.12),rgba(139,92,246,.04));
   border:1px solid rgba(139,92,246,.2);border-radius:20px;padding:20px;margin-bottom:20px;text-align:center}
 .faq-hero-ico{font-size:42px;margin-bottom:10px}
@@ -1270,6 +1291,16 @@ input[type=time]{color-scheme:dark}
     <div class="faq-page-scrl" id="faq-page-content"></div>
   </div>
 
+  <!-- ПОЛНЫЙ РАЦИОН (таблица + печать в PDF) -->
+  <div class="faq-page" id="racion-page">
+    <div class="faq-page-hdr racion-print-hide">
+      <button class="faq-back-btn" onclick="closeRacionPage()">‹ Назад</button>
+      <div class="faq-page-ttl">🍽 Полный рацион</div>
+      <button class="faq-back-btn" style="color:var(--cyan);justify-content:flex-end" onclick="printRacion()">🖨 PDF</button>
+    </div>
+    <div class="faq-page-scrl" id="racion-page-content"></div>
+  </div>
+
   <!-- WORKOUT BOTTOM SHEET -->
   <div class="wo-overlay" id="wo-overlay" onclick="closeWorkoutSheet()"></div>
   <div class="wo-sheet" id="wo-sheet">
@@ -1429,6 +1460,18 @@ let deletedFood   = JSON.parse(localStorage.getItem('pk_deleted_food')    || '[]
 let macrosOverride= JSON.parse(localStorage.getItem('pk_macros_override') || 'null');
 
 function todayKey() { return new Date().toLocaleDateString('ru-RU'); }
+// Локальные даты хранятся как "ДД.ММ.ГГГГ", сервер требует ISO "ГГГГ-ММ-ДД".
+// Конвертируем на границе синка (иначе POST /api/logs падал с 422 → логи не сохранялись).
+function _localeToIso(d) {
+  if (!d || /^\d{4}-\d{2}-\d{2}$/.test(d)) return d;
+  const p = String(d).split('.'); if (p.length !== 3) return d;
+  return `${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
+}
+function _isoToLocale(d) {
+  if (!d || /^\d{2}\.\d{2}\.\d{4}$/.test(d)) return d;
+  const p = String(d).split('-'); if (p.length !== 3) return d;
+  return `${p[2].padStart(2,'0')}.${p[1].padStart(2,'0')}.${p[0]}`;
+}
 function getWater() { return parseInt(localStorage.getItem('pk_water_'+todayKey())||'0'); }
 function setWater(v) { localStorage.setItem('pk_water_'+todayKey(), String(v)); }
 // Единая норма воды (мл): вес × 33, дефолт 70 кг. Используется везде, чтобы UI не рассинхронивался.
@@ -2005,9 +2048,9 @@ async function syncLogsToServer() {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({
         tg_id: tgId,
-        food: foodLogs.slice(-500),
-        weight_logs: logs.slice(-365),
-        meas_logs: measLogs.slice(-365),
+        food: foodLogs.slice(-500).map(f => ({...f, date: _localeToIso(f.date)})),
+        weight_logs: logs.slice(-365).map(l => ({...l, date: _localeToIso(l.date)})),
+        meas_logs: measLogs.slice(-365).map(m => ({...m, date: _localeToIso(m.date)})),
         water: _collectWaterEntries(),
         deleted_food: deletedFood.slice(-1000),
       })
@@ -2042,13 +2085,17 @@ async function loadLogsFromServer(force = false) {
     if (Array.isArray(data.deleted_food))
       deletedFood = Array.from(new Set([...deletedFood, ...data.deleted_food]));
     const _del = new Set(deletedFood);
+    // Сервер хранит ISO-даты → конвертируем обратно в локальный формат для фильтрации по todayKey().
+    const _srvFood = (data.food||[]).map(f => ({...f, date: _isoToLocale(f.date)}));
+    const _srvWeight = (data.weight_logs||[]).map(l => ({...l, date: _isoToLocale(l.date)}));
+    const _srvMeas = (data.meas_logs||[]).map(m => ({...m, date: _isoToLocale(m.date)}));
     if (Array.isArray(data.food))
-      foodLogs = _mergeByKey(foodLogs, data.food, f => f.ts ?? `${f.date}|${f.text||f.description||f.name||''}`)
+      foodLogs = _mergeByKey(foodLogs, _srvFood, f => f.ts ?? `${f.date}|${f.text||f.description||f.name||''}`)
         .filter(f => !_del.has(f.ts));
     if (Array.isArray(data.weight_logs))
-      logs = _mergeByKey(logs, data.weight_logs, l => l.date);
+      logs = _mergeByKey(logs, _srvWeight, l => l.date);
     if (Array.isArray(data.meas_logs))
-      measLogs = _mergeByKey(measLogs, data.meas_logs, m => m.date);
+      measLogs = _mergeByKey(measLogs, _srvMeas, m => m.date);
     if (Array.isArray(data.water))
       data.water.forEach(e => {
         if (e.date && e.ml > 0) {
@@ -2442,7 +2489,9 @@ function renderHome() {
       <div class="plan-hd" onclick="togglePlan('home-nutr-card')">
         <div class="plan-ttl">🍽 Рацион на 7 дней</div><div class="plan-chevron">▼</div>
       </div>
-      <div class="plan-body"><div class="plan-body-scrl">${escHtml(planData.nutrition_plan)}</div></div>
+      <div class="plan-body"><div class="plan-body-scrl">${escHtml(planData.nutrition_plan)}</div>
+        <button onclick="event.stopPropagation();openRacionPage()" style="margin-top:10px;width:100%;padding:11px;border-radius:12px;font-size:13px;font-weight:700;cursor:pointer;border:1px solid rgba(0,229,255,.3);background:rgba(0,229,255,.1);color:var(--cyan);touch-action:manipulation">📋 ${ru?'Открыть таблицей · PDF':'Open as table · PDF'}</button>
+      </div>
     </div>` : '';
 
   const wrkCard = planData.workout_plan ? (()=>{
@@ -4499,6 +4548,45 @@ function openFaqPage() {
 
 function closeFaqPage() {
   document.getElementById('faq-page').classList.remove('on');
+}
+
+// ── ПОЛНЫЙ РАЦИОН: таблица + печать в PDF ──
+function openRacionPage() { renderRacionPage(); document.getElementById('racion-page')?.classList.add('on'); }
+function closeRacionPage() { document.getElementById('racion-page')?.classList.remove('on'); }
+function printRacion() {
+  const ru = lang !== 'en';
+  try { window.print(); }
+  catch (e) { toast(ru ? 'Печать недоступна в этом окружении' : 'Print not available here'); }
+}
+function renderRacionPage() {
+  const el = document.getElementById('racion-page-content'); if (!el) return;
+  const ru = lang !== 'en';
+  const text = (planData && planData.nutrition_plan) || '';
+  const m = (planData && planData.macros) || {};
+  // распознаём строки приёмов пищи и заголовки дней — остальное идёт примечанием
+  const mealRe = /^(завтрак|второй завтрак|обед|полдник|ужин|перекус|поздний ужин|breakfast|lunch|dinner|snack|supper|brunch)\b/i;
+  const dayRe  = /^(день\s*\d+|day\s*\d+|понедельник|вторник|среда|четверг|пятница|суббота|воскресенье|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i;
+  const lines = text.split('\n').map(s => s.trim()).filter(Boolean);
+  let out = '', tblOpen = false;
+  const closeTbl = () => { if (tblOpen) { out += '</table>'; tblOpen = false; } };
+  lines.forEach(line => {
+    if (dayRe.test(line) && line.length < 48) { closeTbl(); out += `<div class="racion-day">${escHtml(line)}</div>`; return; }
+    if (mealRe.test(line)) {
+      const idx = line.indexOf(':');
+      const meal = idx > 0 ? line.slice(0, idx) : line;
+      const desc = idx > 0 ? line.slice(idx + 1).trim() : '';
+      if (!tblOpen) { out += '<table class="racion-tbl">'; tblOpen = true; }
+      out += `<tr><td class="rt-meal">${escHtml(meal)}</td><td class="rt-desc">${escHtml(desc)}</td></tr>`;
+      return;
+    }
+    closeTbl();
+    out += `<div class="racion-note">${escHtml(line)}</div>`;
+  });
+  closeTbl();
+  const macros = m.calories
+    ? `<div class="racion-macros">🎯 ${m.calories} ${ru?'ккал':'kcal'} · ${ru?'Б':'P'} ${m.protein_g} · ${ru?'Ж':'F'} ${m.fat_g} · ${ru?'У':'C'} ${m.carb_g}</div>`
+    : '';
+  el.innerHTML = macros + (out || `<div class="racion-note">${ru?'План пока пуст':'Plan is empty'}</div>`);
 }
 
 function renderFaqPage() {

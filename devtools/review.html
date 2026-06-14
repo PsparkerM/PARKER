@@ -395,6 +395,7 @@ iframe.addEventListener('load', ()=>{
   if(want){ setTimeout(()=>{ try{ iframe.contentWindow.goTab(want); }catch(e){} }, 700); }
   const panel = qp.get('panel');   // профильная под-панель: data|notif|account
   if(panel){ setTimeout(()=>{ try{ iframe.contentWindow.openProfilePanel(panel); }catch(e){} }, 1100); }
+  if(qp.get('racion')){ setTimeout(()=>{ try{ iframe.contentWindow.openRacionPage(); }catch(e){} }, 1100); }
 });
 
 // ════════════════════ Экспорт ════════════════════
