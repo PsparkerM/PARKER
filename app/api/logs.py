@@ -8,9 +8,45 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, AfterValidator
 
 from app.api.deps import get_current_tg_id
-from db.queries import get_user, save_user_logs, get_user_logs
+from db.queries import get_user, save_user_logs, get_user_logs, upsert_daily_logs
 
 router = APIRouter()
+
+
+def _daily_rows_from(merged: dict) -> list[dict]:
+    """Assemble normalized per-day rows from the merged blob for daily_logs."""
+    by_date: dict[str, dict] = {}
+
+    def row(d):
+        return by_date.setdefault(d, {"log_date": d})
+
+    for e in merged.get("weight_logs") or []:
+        d = e.get("date")
+        if not d:
+            continue
+        r = row(d)
+        if e.get("weight") is not None: r["weight_kg"]   = e["weight"]
+        if e.get("sleep")  is not None: r["sleep_hours"] = e["sleep"]
+    for e in merged.get("meas_logs") or []:
+        d = e.get("date")
+        if not d:
+            continue
+        r = row(d)
+        for src, dst in (("waist", "waist_cm"), ("hips", "hips_cm"), ("chest", "chest_cm"),
+                         ("thigh", "thigh_cm"), ("arm", "arm_cm")):
+            if e.get(src) is not None:
+                r[dst] = e[src]
+    for e in merged.get("water") or []:
+        if e.get("date") and e.get("ml"):
+            row(e["date"])["water_ml"] = e["ml"]
+    for e in merged.get("steps") or []:
+        if e.get("date") and e.get("steps"):
+            row(e["date"])["steps"] = e["steps"]
+
+    # Only rows with at least one metric beyond log_date.
+    rows = [r for r in by_date.values() if len(r) > 1]
+    rows.sort(key=lambda r: r["log_date"])
+    return rows[-365:]
 
 _MAX_ENTRIES = 1_000
 _MAX_TOMBSTONES = 1_000
@@ -173,6 +209,11 @@ async def save_logs(body: LogsRequest, tg_id: int = Depends(get_current_tg_id)):
         existing = await asyncio.to_thread(get_user_logs, user["id"])
         merged = _merge_logs(existing, body.model_dump())
         await asyncio.to_thread(save_user_logs, user["id"], merged)
+        # Dual-write to normalized daily_logs (best-effort; never affects the blob).
+        try:
+            await asyncio.to_thread(upsert_daily_logs, user["id"], _daily_rows_from(merged))
+        except Exception:
+            logging.warning("daily_logs dual-write skipped", exc_info=True)
         return JSONResponse({"ok": True})
     except Exception:
         logging.exception("save_logs error")

@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390, initial-scale=1">
+<title>18 — Cyberpunk Neon</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0D0221; --panel:rgba(255,42,109,.06); --line:rgba(5,217,232,.28);
+    --mag:#FF2A6D; --cy:#05D9E8; --vio:#9D4EDD; --yel:#F9F002;
+    --text:#E8F7FF; --mut:#6E5B8A;
+    --disp:"Orbitron",-apple-system,sans-serif;
+    --body:"Rajdhani",-apple-system,"Segoe UI",sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-font-smoothing:antialiased;}
+  html,body{width:390px;height:844px;}
+  body{font-family:var(--body);color:var(--text);overflow:hidden;display:flex;flex-direction:column;
+    background:
+      radial-gradient(100% 50% at 50% 0%, rgba(255,42,109,.18), transparent 60%),
+      radial-gradient(80% 50% at 100% 100%, rgba(5,217,232,.14), transparent 55%),
+      var(--bg);}
+  body::before{content:"";position:fixed;inset:0;pointer-events:none;
+    background:repeating-linear-gradient(0deg,rgba(5,217,232,.04) 0 1px,transparent 1px 4px);}
+  .status{display:flex;justify-content:space-between;align-items:center;padding:14px 22px 6px;font-family:var(--disp);font-size:11px;color:var(--cy);letter-spacing:2px;text-shadow:0 0 8px var(--cy);}
+  .scroll{flex:1;overflow:hidden;padding:6px 18px 0;position:relative;z-index:1;}
+  .head{display:flex;justify-content:space-between;align-items:center;padding:6px 2px 16px;}
+  .head .sys{font-family:var(--disp);font-size:9px;color:var(--mag);letter-spacing:3px;text-shadow:0 0 8px var(--mag);}
+  .head .big{font-family:var(--disp);font-size:21px;font-weight:700;letter-spacing:1px;margin-top:5px;
+    color:#fff;text-shadow:0 0 6px var(--cy),2px 0 0 var(--mag),-2px 0 0 rgba(5,217,232,.6);}
+  .head .av{width:46px;height:46px;border-radius:8px;border:1px solid var(--mag);background:var(--panel);
+    display:flex;align-items:center;justify-content:center;font-family:var(--disp);font-size:14px;color:var(--mag);
+    box-shadow:0 0 16px rgba(255,42,109,.4),inset 0 0 12px rgba(255,42,109,.2);}
+  /* hero */
+  .hero{border:1px solid var(--line);border-radius:6px;padding:20px;margin-bottom:16px;position:relative;
+    background:linear-gradient(180deg,rgba(255,42,109,.08),rgba(13,2,33,.5));
+    box-shadow:0 0 24px rgba(255,42,109,.15),inset 0 0 30px rgba(5,217,232,.05);}
+  .hero::before{content:"// FUEL_CORE";position:absolute;top:10px;right:14px;font-family:var(--disp);font-size:8px;color:var(--cy);letter-spacing:2px;}
+  .hero .lbl{font-family:var(--disp);font-size:9px;color:var(--mut);letter-spacing:3px;}
+  .hero .num{font-family:var(--disp);font-size:50px;font-weight:900;letter-spacing:-1px;line-height:1;margin:8px 0 2px;
+    color:#fff;text-shadow:0 0 14px var(--mag),0 0 30px var(--mag);}
+  .hero .of{font-family:var(--disp);font-size:11px;color:var(--cy);letter-spacing:2px;}
+  .hero .bar{height:8px;background:rgba(5,217,232,.12);border-radius:2px;margin:16px 0 10px;overflow:hidden;clip-path:polygon(0 0,100% 0,98% 100%,0 100%);}
+  .hero .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--mag),var(--cy));box-shadow:0 0 12px var(--cy);}
+  .hero .rem{display:inline-block;font-family:var(--disp);font-size:11px;color:var(--yel);letter-spacing:1px;text-shadow:0 0 8px rgba(249,240,2,.5);}
+  /* macros */
+  .macros{display:flex;gap:9px;margin-bottom:16px;}
+  .macro{flex:1;border:1px solid var(--line);border-radius:5px;background:var(--panel);padding:12px 10px;position:relative;
+    box-shadow:inset 0 0 16px rgba(5,217,232,.06);}
+  .macro .mt{font-family:var(--disp);font-size:8px;letter-spacing:1px;color:var(--mut);}
+  .macro .mv{font-family:var(--disp);font-size:16px;font-weight:700;margin:7px 0 8px;color:#fff;}
+  .macro .mv small{font-size:9px;color:var(--mut);}
+  .macro .pb{height:3px;background:rgba(5,217,232,.15);overflow:hidden;}
+  .macro .pb i{display:block;height:100%;}
+  /* arni */
+  .arni{border:1px solid var(--line);border-radius:6px;padding:16px;margin-bottom:16px;position:relative;
+    background:linear-gradient(180deg,rgba(5,217,232,.08),rgba(13,2,33,.5));box-shadow:0 0 20px rgba(5,217,232,.12);}
+  .arni::before{content:"● ONLINE";position:absolute;top:13px;right:14px;font-family:var(--disp);font-size:8px;color:var(--cy);letter-spacing:1px;text-shadow:0 0 6px var(--cy);}
+  .arni .h{display:flex;align-items:center;gap:11px;margin-bottom:11px;}
+  .arni .dot{width:38px;height:38px;border-radius:8px;border:1px solid var(--vio);display:flex;align-items:center;justify-content:center;
+    color:var(--vio);font-family:var(--disp);font-size:16px;box-shadow:0 0 16px rgba(157,78,221,.5),inset 0 0 10px rgba(157,78,221,.2);}
+  .arni .h b{font-family:var(--disp);font-size:14px;letter-spacing:2px;color:#fff;text-shadow:0 0 8px var(--vio);}
+  .arni .h span{font-size:11px;color:var(--mut);letter-spacing:1px;display:block;}
+  .arni .msg{font-size:15px;color:var(--text);line-height:1.4;font-weight:500;}
+  .arni .msg .cur{color:var(--cy);text-shadow:0 0 8px var(--cy);}
+  /* meals */
+  .sec{font-family:var(--disp);font-size:9px;letter-spacing:3px;color:var(--mut);padding:2px 2px 12px;}
+  .meal{display:flex;align-items:center;gap:12px;padding:11px 12px;margin-bottom:8px;border:1px solid var(--line);border-radius:5px;background:rgba(13,2,33,.4);}
+  .meal .mi{width:38px;height:38px;border-radius:6px;border:1px solid var(--line);background:var(--panel);display:flex;align-items:center;justify-content:center;font-size:18px;}
+  .meal .mn{font-family:var(--disp);font-size:13px;font-weight:500;letter-spacing:1px;}
+  .meal .mk{font-family:var(--disp);font-size:9px;color:var(--mut);letter-spacing:1px;margin-top:3px;}
+  .meal .r{margin-left:auto;font-family:var(--disp);font-size:11px;letter-spacing:1px;}
+  .meal .done{color:var(--cy);text-shadow:0 0 8px var(--cy);}
+  .meal .add{color:var(--mag);text-shadow:0 0 8px var(--mag);}
+  /* nav */
+  .nav{display:flex;justify-content:space-around;padding:14px 8px 24px;border-top:1px solid var(--line);background:rgba(13,2,33,.75);backdrop-filter:blur(8px);position:relative;z-index:1;}
+  .nav a{display:flex;flex-direction:column;align-items:center;gap:5px;font-family:var(--disp);font-size:8px;letter-spacing:2px;color:var(--mut);text-decoration:none;}
+  .nav a.on{color:var(--mag);text-shadow:0 0 10px var(--mag);}
+  .nav .ni{font-size:18px;}
+</style>
+</head>
+<body>
+  <div class="status"><span>09:41</span><span>NET ◇ 100%</span></div>
+  <div class="scroll">
+    <div class="head">
+      <div><div class="sys">USER_SESSION ACTIVE</div><div class="big">ПРИВЕТ, ПЁТР</div></div>
+      <div class="av">PM</div>
+    </div>
+    <div class="hero">
+      <div class="lbl">CALORIES // 15.06</div>
+      <div class="num">1 850</div>
+      <div class="of">/ 2 400 KCAL</div>
+      <div class="bar"><i style="width:77%"></i></div>
+      <div class="rem">▲ ОСТАЛОСЬ 550 · СОЖЖЕНО 420</div>
+    </div>
+    <div class="macros">
+      <div class="macro"><div class="mt">БЕЛКИ</div><div class="mv">90<small>/140г</small></div><div class="pb"><i style="width:64%;background:linear-gradient(90deg,var(--mag),#FF7AA8);box-shadow:0 0 8px var(--mag)"></i></div></div>
+      <div class="macro"><div class="mt">ЖИРЫ</div><div class="mv">50<small>/70г</small></div><div class="pb"><i style="width:71%;background:linear-gradient(90deg,var(--vio),#C49BFF);box-shadow:0 0 8px var(--vio)"></i></div></div>
+      <div class="macro"><div class="mt">УГЛЕВ</div><div class="mv">180<small>/250г</small></div><div class="pb"><i style="width:72%;background:linear-gradient(90deg,var(--cy),#7CF2FF);box-shadow:0 0 8px var(--cy)"></i></div></div>
+    </div>
+    <div class="arni">
+      <div class="h"><div class="dot">А</div><div><b>АРНИ</b><span>AI CORE · CLAUDE</span></div></div>
+      <div class="msg">До цели по белку 50 г. Рекомендую творог на ужин.<span class="cur">▌</span></div>
+    </div>
+    <div class="sec">// ПРИЁМЫ ПИЩИ</div>
+    <div class="meal"><div class="mi">🍳</div><div><div class="mn">ЗАВТРАК</div><div class="mk">520 KCAL · 3 ITEMS</div></div><div class="r done">[ ✓ ]</div></div>
+    <div class="meal"><div class="mi">🥗</div><div><div class="mn">ОБЕД</div><div class="mk">640 KCAL · 4 ITEMS</div></div><div class="r done">[ ✓ ]</div></div>
+    <div class="meal"><div class="mi">🍽️</div><div><div class="mn">УЖИН</div><div class="mk">PENDING</div></div><div class="r add">[ + ADD ]</div></div>
+  </div>
+  <div class="nav">
+    <a class="on"><span class="ni">⬢</span>HOME</a>
+    <a><span class="ni">▦</span>ДНЕВНИК</a>
+    <a><span class="ni">◈</span>ЧАТ</a>
+    <a><span class="ni">◉</span>ПРОФИЛЬ</a>
+  </div>
+</body>
+</html>

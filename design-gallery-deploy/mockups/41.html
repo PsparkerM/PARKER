@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390, initial-scale=1">
+<title>41 — Terminal Hacker</title>
+<style>
+  :root{
+    --bg:#001100; --bg2:#002200; --green:#33FF66; --dim:#1FA847;
+    --faint:#0E5C26; --amber:#FFD24A; --line:rgba(51,255,102,.28);
+    --font:"JetBrains Mono","SF Mono",ui-monospace,"Roboto Mono",Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-font-smoothing:antialiased;}
+  html,body{width:390px;height:844px;}
+  body{background:var(--bg);font-family:var(--font);color:var(--green);overflow:hidden;
+    display:flex;flex-direction:column;text-shadow:0 0 4px rgba(51,255,102,.45);}
+  body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:5;
+    background:repeating-linear-gradient(0deg,rgba(0,40,0,.0) 0 2px,rgba(0,0,0,.22) 2px 4px);}
+  body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:5;
+    background:radial-gradient(120% 90% at 50% 30%,transparent 55%,rgba(0,8,0,.7) 100%);}
+  .status{display:flex;justify-content:space-between;align-items:center;padding:14px 18px 6px;font-size:12px;letter-spacing:1px;color:var(--dim);}
+  .status b{color:var(--green);}
+  .scroll{flex:1;overflow:hidden;padding:6px 16px 0;position:relative;z-index:1;}
+  .pre{font-size:11px;line-height:1.25;color:var(--faint);white-space:pre;letter-spacing:0;margin-bottom:2px;}
+  .head{margin:6px 0 14px;}
+  .head .ln{font-size:13px;}
+  .head .pr{color:var(--dim);}
+  .head h1{display:inline;font-size:15px;font-weight:700;letter-spacing:.5px;}
+  .head .meta{font-size:11px;color:var(--dim);margin-top:5px;}
+  .blink{animation:bl 1s steps(1) infinite;}
+  @keyframes bl{50%{opacity:0;}}
+  /* ascii hero box */
+  .box{border:1px solid var(--line);border-radius:2px;padding:13px 14px;margin-bottom:14px;position:relative;background:rgba(0,30,0,.35);}
+  .box .cap{position:absolute;top:-8px;left:12px;background:var(--bg);padding:0 6px;font-size:10px;color:var(--dim);letter-spacing:2px;}
+  .hero{display:flex;align-items:baseline;gap:8px;}
+  .hero .big{font-size:38px;font-weight:700;line-height:1;letter-spacing:-1px;}
+  .hero .of{font-size:13px;color:var(--dim);}
+  .hero .rem{margin-left:auto;text-align:right;}
+  .hero .rem .n{font-size:20px;font-weight:700;color:var(--amber);text-shadow:0 0 5px rgba(255,210,74,.5);}
+  .hero .rem .l{font-size:9px;color:var(--dim);letter-spacing:1px;}
+  .gauge{margin-top:12px;font-size:11px;letter-spacing:0;color:var(--dim);}
+  .gauge b{color:var(--green);}
+  /* macros */
+  .macros{display:flex;flex-direction:column;gap:9px;margin-bottom:14px;}
+  .macro{font-size:11px;display:flex;align-items:center;gap:8px;}
+  .macro .nm{width:74px;color:var(--dim);}
+  .macro .nm i{color:var(--green);font-style:normal;}
+  .macro .br{flex:1;color:var(--faint);letter-spacing:-1px;font-size:12px;white-space:nowrap;overflow:hidden;}
+  .macro .br b{color:var(--green);}
+  .macro .vv{width:58px;text-align:right;color:var(--green);}
+  /* arni */
+  .arni{border:1px solid var(--line);border-radius:2px;padding:12px 13px;margin-bottom:14px;background:rgba(0,34,0,.4);}
+  .arni .ah{font-size:11px;color:var(--dim);letter-spacing:1px;margin-bottom:7px;}
+  .arni .ah b{color:var(--green);}
+  .arni .on{color:var(--amber);float:right;}
+  .arni .msg{font-size:12px;line-height:1.45;}
+  .arni .msg .q{color:var(--dim);}
+  /* meals */
+  .lbl{font-size:10px;color:var(--dim);letter-spacing:2px;margin-bottom:9px;}
+  .meal{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px dashed var(--faint);font-size:12px;}
+  .meal .ch{width:34px;color:var(--green);}
+  .meal .ch.p{color:var(--amber);}
+  .meal .nm{flex:1;}
+  .meal .nm b{font-weight:700;}
+  .meal .nm small{display:block;font-size:10px;color:var(--dim);margin-top:2px;}
+  .meal .k{color:var(--dim);}
+  .meal.add .nm b{color:var(--amber);}
+  /* nav */
+  .nav{display:flex;justify-content:space-around;padding:12px 8px 24px;border-top:1px solid var(--line);background:rgba(0,12,0,.7);position:relative;z-index:1;}
+  .nav a{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:9px;letter-spacing:1px;color:var(--dim);text-decoration:none;}
+  .nav a .ni{font-size:15px;}
+  .nav a.on{color:var(--green);}
+</style>
+</head>
+<body>
+  <div class="status"><span>09:41</span><span><b>parker</b>@tg:~$ <span class="blink">_</span></span><span>BAT 100%</span></div>
+  <div class="scroll">
+<div class="pre">  ____   _    ____  _  _______ ____
+ |  _ \ / \  |  _ \| |/ / ____|  _ \
+ | |_) / _ \ | |_) | ' /|  _| | |_) |
+ |  __/ ___ \|  _ <| . \| |___|  _ <
+ |_| /_/   \_\_| \_\_|\_\_____|_| \_\</div>
+    <div class="head">
+      <div class="ln"><span class="pr">$ </span>whoami &amp;&amp; date</div>
+      <div class="ln"><h1>Привет, Пётр</h1></div>
+      <div class="meta">&gt; Среда, 15 июня 2026 · uptime 14d · goal: cut</div>
+    </div>
+    <div class="box">
+      <div class="cap">/proc/calories</div>
+      <div class="hero">
+        <div><div class="big">1 850</div><div class="of">consumed / 2 400 kcal</div></div>
+        <div class="rem"><div class="n">550</div><div class="l">REMAINING</div></div>
+      </div>
+      <div class="gauge">[<b>██████████████████████</b>░░░░░░░] <b>77%</b></div>
+    </div>
+    <div class="macros">
+      <div class="macro"><span class="nm"><i>protein</i></span><span class="br">[<b>██████████████</b>░░░░░░░]</span><span class="vv">90/140г</span></div>
+      <div class="macro"><span class="nm"><i>fat</i>____</span><span class="br">[<b>████████████████</b>░░░░░]</span><span class="vv">50/70г</span></div>
+      <div class="macro"><span class="nm"><i>carbs</i>__</span><span class="br">[<b>████████████████</b>░░░░░]</span><span class="vv">180/250г</span></div>
+    </div>
+    <div class="arni">
+      <div class="ah"><span class="on">● ONLINE</span><b>arni</b> :: ai-core@claude --chat</div>
+      <div class="msg"><span class="q">&gt; </span>До цели по белку 50 г. Рекомендую творог на ужин.<span class="blink">▌</span></div>
+    </div>
+    <div class="lbl"># ПРИЁМЫ ПИЩИ</div>
+    <div class="meal"><span class="ch">[✓]</span><span class="nm"><b>Завтрак</b><small>egg.omelette · 3 items</small></span><span class="k">520 kcal</span></div>
+    <div class="meal"><span class="ch">[✓]</span><span class="nm"><b>Обед</b><small>salad.bowl · 4 items</small></span><span class="k">640 kcal</span></div>
+    <div class="meal add"><span class="ch p">[+]</span><span class="nm"><b>Ужин</b><small>./add_meal --new</small></span><span class="k">pending</span></div>
+  </div>
+  <div class="nav">
+    <a class="on"><span class="ni">▣</span>HOME</a>
+    <a><span class="ni">▤</span>LOG</a>
+    <a><span class="ni">»_</span>ARNI</a>
+    <a><span class="ni">◍</span>ME</a>
+  </div>
+</body>
+</html>

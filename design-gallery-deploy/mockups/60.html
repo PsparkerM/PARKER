@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390, initial-scale=1">
+<title>60 — Premium Midnight</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0B1426; --panel:#121E36; --panel-2:#0F1A30; --line:rgba(201,212,229,.12);
+    --silver:#C9D4E5; --silver-d:#8A98B0; --blue:#6EA8FF; --text:#E8EEF7;
+    --serif:"Cormorant Garamond",Georgia,serif;
+    --font:"Manrope",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-font-smoothing:antialiased;}
+  html,body{width:390px;height:844px;}
+  body{background:
+      radial-gradient(120% 50% at 50% 0%, rgba(110,168,255,.1), transparent 60%),
+      var(--bg);
+    font-family:var(--font);color:var(--text);overflow:hidden;display:flex;flex-direction:column;}
+  .status{display:flex;justify-content:space-between;align-items:center;padding:14px 26px 6px;font-size:13px;font-weight:600;color:var(--silver);}
+  .status .ic{font-size:12px;color:var(--silver-d);letter-spacing:1px;}
+  .scroll{flex:1;overflow:hidden;padding:10px 24px 0;}
+  .head{display:flex;justify-content:space-between;align-items:center;margin:8px 0 22px;}
+  .head .greet{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--silver-d);font-weight:600;}
+  .head h1{font-family:var(--serif);font-size:30px;font-weight:600;letter-spacing:.3px;margin-top:2px;color:#fff;}
+  .avatar{width:48px;height:48px;border-radius:50%;border:1px solid var(--line);background:var(--panel);
+          display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-weight:700;font-size:20px;color:var(--silver);}
+  /* hero */
+  .hero{background:linear-gradient(160deg,var(--panel),var(--panel-2));border:1px solid var(--line);border-radius:22px;padding:26px 24px;margin-bottom:18px;
+        position:relative;overflow:hidden;}
+  .hero::before{content:"";position:absolute;top:0;left:24px;right:24px;height:1px;background:linear-gradient(90deg,transparent,rgba(201,212,229,.35),transparent);}
+  .hero .cap{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--silver-d);font-weight:600;}
+  .hero .big{font-family:var(--serif);font-size:58px;font-weight:600;letter-spacing:-1px;line-height:1;margin:10px 0 2px;color:#fff;}
+  .hero .big small{font-size:22px;color:var(--silver-d);font-weight:500;}
+  .hero .rem{margin-top:14px;font-size:13px;color:var(--silver);font-weight:500;}
+  .hero .rem b{color:var(--blue);font-weight:700;}
+  .hero .track{margin-top:16px;height:4px;border-radius:4px;background:rgba(201,212,229,.1);overflow:hidden;}
+  .hero .track i{display:block;height:100%;width:77%;border-radius:4px;background:linear-gradient(90deg,var(--silver),var(--blue));}
+  /* macros */
+  .macros{display:flex;gap:11px;margin-bottom:18px;}
+  .macro{flex:1;background:var(--panel-2);border:1px solid var(--line);border-radius:16px;padding:15px 12px;}
+  .macro .m-top{font-size:10px;color:var(--silver-d);font-weight:600;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:9px;}
+  .macro .m-val{font-family:var(--serif);font-size:20px;font-weight:600;margin-bottom:10px;color:#fff;}
+  .macro .m-val small{font-family:var(--font);color:var(--silver-d);font-size:11px;font-weight:500;}
+  .macro .bar{height:3px;border-radius:3px;background:rgba(201,212,229,.1);overflow:hidden;}
+  .macro .bar i{display:block;height:100%;border-radius:3px;background:var(--blue);}
+  /* arni */
+  .arni{display:flex;align-items:center;gap:14px;background:linear-gradient(160deg,var(--panel),var(--panel-2));border:1px solid var(--line);border-radius:18px;padding:16px 18px;margin-bottom:20px;}
+  .arni .a-av{width:44px;height:44px;border-radius:50%;border:1px solid rgba(110,168,255,.4);background:var(--panel-2);
+              display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-weight:700;font-size:18px;color:var(--blue);}
+  .arni .a-txt b{font-size:15px;font-weight:600;letter-spacing:.5px;}
+  .arni .a-txt p{font-size:12.5px;color:var(--silver-d);margin-top:2px;font-weight:400;}
+  .arni .a-go{margin-left:auto;font-size:20px;color:var(--silver-d);}
+  /* meals */
+  .sec-title{font-size:10px;font-weight:600;letter-spacing:2.5px;text-transform:uppercase;color:var(--silver-d);margin-bottom:14px;}
+  .meal{display:flex;align-items:center;gap:14px;padding:13px 0;border-bottom:1px solid var(--line);}
+  .meal .m-ic{width:42px;height:42px;border-radius:12px;border:1px solid var(--line);background:var(--panel-2);display:flex;align-items:center;justify-content:center;font-size:19px;}
+  .meal .m-name{font-size:15px;font-weight:600;color:var(--text);}
+  .meal .m-kcal{font-size:12px;color:var(--silver-d);margin-top:2px;font-weight:400;letter-spacing:.3px;}
+  .meal .m-r{margin-left:auto;font-size:13px;font-weight:600;}
+  .meal .done{color:var(--blue);}
+  .meal .add{color:var(--silver);border:1px solid var(--line);padding:7px 14px;border-radius:14px;font-size:12.5px;font-weight:500;}
+  /* nav */
+  .nav{display:flex;justify-content:space-around;padding:14px 10px 26px;border-top:1px solid var(--line);background:var(--bg);}
+  .nav a{display:flex;flex-direction:column;align-items:center;gap:5px;font-size:10px;color:var(--silver-d);text-decoration:none;font-weight:600;letter-spacing:.5px;}
+  .nav a.on{color:var(--blue);}
+  .nav .n-ic{font-size:18px;}
+</style>
+</head>
+<body>
+  <div class="status"><span>9:41</span><span class="ic">5G ◦ 100%</span></div>
+  <div class="scroll">
+    <div class="head">
+      <div><div class="greet">Добрый вечер</div><h1>Пётр</h1></div>
+      <div class="avatar">П</div>
+    </div>
+    <div class="hero">
+      <div class="cap">Калории · Среда, 15 июня</div>
+      <div class="big">1 850 <small>/ 2 400</small></div>
+      <div class="rem">Осталось <b>550 ккал</b> до цели дня</div>
+      <div class="track"><i></i></div>
+    </div>
+    <div class="macros">
+      <div class="macro"><div class="m-top">Белки</div><div class="m-val">90<small> /140г</small></div><div class="bar"><i style="width:64%"></i></div></div>
+      <div class="macro"><div class="m-top">Жиры</div><div class="m-val">50<small> /70г</small></div><div class="bar"><i style="width:71%"></i></div></div>
+      <div class="macro"><div class="m-top">Углев</div><div class="m-val">180<small> /250г</small></div><div class="bar"><i style="width:72%"></i></div></div>
+    </div>
+    <div class="arni">
+      <div class="a-av">А</div>
+      <div class="a-txt"><b>Арни</b><p>Спроси меня про твой ужин</p></div>
+      <div class="a-go">›</div>
+    </div>
+    <div class="sec-title">Приёмы пищи</div>
+    <div class="meal"><div class="m-ic">🍳</div><div><div class="m-name">Завтрак</div><div class="m-kcal">520 ккал · 3 продукта</div></div><div class="m-r done">✓</div></div>
+    <div class="meal"><div class="m-ic">🥗</div><div><div class="m-name">Обед</div><div class="m-kcal">640 ккал · 4 продукта</div></div><div class="m-r done">✓</div></div>
+    <div class="meal"><div class="m-ic">🍽️</div><div><div class="m-name">Ужин</div><div class="m-kcal">Запланировано</div></div><div class="m-r"><span class="add">+ добавить</span></div></div>
+  </div>
+  <div class="nav">
+    <a class="on"><span class="n-ic">🏠</span>Главная</a>
+    <a><span class="n-ic">📖</span>Дневник</a>
+    <a><span class="n-ic">💬</span>Чат</a>
+    <a><span class="n-ic">👤</span>Профиль</a>
+  </div>
+</body>
+</html>

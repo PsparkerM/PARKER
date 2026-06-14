@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390, initial-scale=1">
+<title>43 — Kawaii Cute</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FFF0F5; --paper:#FFFFFF; --pink:#FF8FB1; --pink2:#FFC2D6; --blue:#8FD3FF;
+    --blue2:#C9ECFF; --ink:#7A5A66; --yellow:#FFE08A; --mint:#B6F2D6;
+    --round:"Baloo 2","Nunito","Comic Sans MS",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-font-smoothing:antialiased;}
+  html,body{width:390px;height:844px;}
+  body{background:
+      radial-gradient(circle at 12% 14%,rgba(143,211,255,.35),transparent 22%),
+      radial-gradient(circle at 88% 20%,rgba(255,224,138,.4),transparent 20%),
+      var(--bg);
+    font-family:var(--round);color:var(--ink);overflow:hidden;display:flex;flex-direction:column;}
+  .status{display:flex;justify-content:space-between;align-items:center;padding:14px 22px 4px;font-size:14px;font-weight:700;color:var(--pink);}
+  .scroll{flex:1;overflow:hidden;padding:6px 18px 0;position:relative;}
+  .sticker{position:absolute;font-size:15px;opacity:.85;}
+  /* head */
+  .head{display:flex;justify-content:space-between;align-items:center;margin:8px 0 16px;}
+  .head h1{font-size:23px;font-weight:800;line-height:1.05;color:var(--ink);}
+  .head h1 .hi{color:var(--pink);}
+  .head p{font-size:12px;font-weight:700;color:var(--blue);margin-top:3px;}
+  .ava{width:50px;height:50px;border-radius:50%;background:var(--pink2);border:3px solid #fff;box-shadow:0 4px 0 rgba(255,143,177,.35);display:flex;align-items:center;justify-content:center;font-size:24px;position:relative;}
+  .ava .face{font-size:13px;font-weight:800;color:#fff;}
+  /* hero */
+  .hero{background:var(--paper);border-radius:30px;padding:18px 20px 16px;margin-bottom:16px;
+    box-shadow:0 6px 0 rgba(255,143,177,.2);border:3px solid #fff;position:relative;text-align:center;}
+  .hero .bub{position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--blue);color:#fff;font-size:11px;font-weight:800;padding:4px 14px;border-radius:20px;box-shadow:0 3px 0 rgba(143,211,255,.5);}
+  .hero .kao{font-size:20px;margin:8px 0 2px;color:var(--pink);}
+  .hero .big{font-size:46px;font-weight:800;line-height:1;color:var(--ink);}
+  .hero .of{font-size:12px;font-weight:700;color:var(--blue);margin-top:2px;}
+  .hero .rem{margin-top:10px;display:inline-block;background:var(--pink2);color:#fff;font-size:13px;font-weight:800;padding:6px 16px;border-radius:20px;}
+  .hero .rem b{font-size:15px;}
+  /* macros */
+  .macros{display:flex;gap:9px;margin-bottom:16px;}
+  .macro{flex:1;background:var(--paper);border-radius:22px;padding:12px 8px;text-align:center;border:3px solid #fff;box-shadow:0 4px 0 rgba(143,211,255,.18);}
+  .macro .ic{font-size:18px;}
+  .macro .l{font-size:11px;font-weight:800;margin:3px 0;}
+  .macro .v{font-size:12px;font-weight:700;color:var(--ink);}
+  .macro .v small{color:#C3A8B2;}
+  .macro .bar{height:8px;border-radius:8px;background:#F3E5EB;margin-top:7px;overflow:hidden;}
+  .macro .bar i{display:block;height:100%;border-radius:8px;}
+  .macro.p .l{color:var(--pink);} .macro.p .bar i{background:var(--pink);}
+  .macro.f .l{color:#F5B94A;} .macro.f .bar i{background:var(--yellow);}
+  .macro.c .l{color:var(--blue);} .macro.c .bar i{background:var(--blue);}
+  /* arni */
+  .arni{background:linear-gradient(135deg,var(--blue2),#FFF);border-radius:28px;padding:16px;margin-bottom:16px;border:3px solid #fff;box-shadow:0 5px 0 rgba(143,211,255,.25);display:flex;gap:12px;align-items:center;}
+  .arni .av{width:52px;height:52px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;box-shadow:0 3px 0 rgba(143,211,255,.5);}
+  .arni .t b{font-size:14px;font-weight:800;color:var(--ink);}
+  .arni .t b .hb{color:var(--pink);}
+  .arni .t p{font-size:12px;font-weight:700;color:#8C7682;margin-top:3px;line-height:1.3;}
+  .arni .go{margin-left:auto;font-size:20px;color:var(--pink);}
+  /* meals */
+  .lbl{font-size:15px;font-weight:800;color:var(--ink);margin-bottom:10px;}
+  .lbl .st{color:var(--pink);}
+  .meal{display:flex;align-items:center;gap:12px;background:var(--paper);border-radius:22px;padding:11px 14px;margin-bottom:9px;border:3px solid #fff;box-shadow:0 4px 0 rgba(255,143,177,.12);}
+  .meal .mi{width:42px;height:42px;border-radius:16px;background:var(--pink2);display:flex;align-items:center;justify-content:center;font-size:20px;}
+  .meal .nm b{font-size:14px;font-weight:800;}
+  .meal .nm small{display:block;font-size:11px;font-weight:700;color:#B79DA6;margin-top:1px;}
+  .meal .r{margin-left:auto;font-size:13px;font-weight:800;}
+  .meal .r.ok{color:#3FC998;}
+  .meal.add{background:var(--mint);}
+  .meal.add .mi{background:#fff;}
+  .meal.add .r{color:#2FB985;}
+  /* nav */
+  .nav{display:flex;justify-content:space-around;padding:12px 10px 24px;background:#fff;border-top:3px solid var(--pink2);border-radius:30px 30px 0 0;}
+  .nav a{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10px;font-weight:800;color:#C9B2BB;text-decoration:none;}
+  .nav a .ni{font-size:19px;}
+  .nav a.on{color:var(--pink);}
+</style>
+</head>
+<body>
+  <div class="status"><span>9:41</span><span>♡ ⌁ ▰▰▰</span></div>
+  <div class="scroll">
+    <span class="sticker" style="top:54px;right:14px;">✦</span>
+    <span class="sticker" style="top:150px;left:6px;">♡</span>
+    <span class="sticker" style="bottom:120px;right:8px;">★</span>
+    <div class="head">
+      <div><h1>Привет, <span class="hi">Пётр</span>! <span style="font-size:20px">(◕ᴗ◕✿)</span></h1><p>★ Среда, 15 июня ★</p></div>
+      <div class="ava"><span class="face">(˶ᵔ ᵔ˶)</span></div>
+    </div>
+    <div class="hero">
+      <div class="bub">сегодня ♡</div>
+      <div class="kao">＼(^ω^)／</div>
+      <div class="big">1 850</div>
+      <div class="of">из 2 400 ккал ✿</div>
+      <div class="rem">осталось <b>550</b> ккал ♡</div>
+    </div>
+    <div class="macros">
+      <div class="macro p"><div class="ic">🍗</div><div class="l">Белки</div><div class="v">90<small>/140г</small></div><div class="bar"><i style="width:64%"></i></div></div>
+      <div class="macro f"><div class="ic">🧈</div><div class="l">Жиры</div><div class="v">50<small>/70г</small></div><div class="bar"><i style="width:71%"></i></div></div>
+      <div class="macro c"><div class="ic">🍙</div><div class="l">Углев</div><div class="v">180<small>/250г</small></div><div class="bar"><i style="width:72%"></i></div></div>
+    </div>
+    <div class="arni">
+      <div class="av">🐻</div>
+      <div class="t"><b>Арни <span class="hb">говорит:</span></b><p>До цели по белку 50 г! Скушай творожок на ужин (｡•ᴗ•｡)</p></div>
+      <div class="go">›</div>
+    </div>
+    <div class="lbl">Мои приёмы пищи <span class="st">♡</span></div>
+    <div class="meal"><div class="mi">🍳</div><div class="nm"><b>Завтрак</b><small>520 ккал · 3 вкусняшки</small></div><div class="r ok">✓ ♡</div></div>
+    <div class="meal"><div class="mi">🥗</div><div class="nm"><b>Обед</b><small>640 ккал · 4 вкусняшки</small></div><div class="r ok">✓ ♡</div></div>
+    <div class="meal add"><div class="mi">🍰</div><div class="nm"><b>Ужин</b><small>что покушаем? (・ω・)</small></div><div class="r">+ добавить</div></div>
+  </div>
+  <div class="nav">
+    <a class="on"><span class="ni">🏠</span>Главная</a>
+    <a><span class="ni">📔</span>Дневник</a>
+    <a><span class="ni">💬</span>Чат</a>
+    <a><span class="ni">🎀</span>Профиль</a>
+  </div>
+</body>
+</html>

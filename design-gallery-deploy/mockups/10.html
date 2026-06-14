@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390, initial-scale=1">
+<title>10 — JARVIS HUD</title>
+<style>
+  :root{
+    --bg:#05080F; --panel:rgba(20,40,60,.35); --line:rgba(56,225,255,.22);
+    --cy:#38E1FF; --cy2:#7CF2D8; --amber:#FFB454; --text:#DCF3FF; --muted:#5E8499;
+    --font:"SF Mono",ui-monospace,"Roboto Mono",Menlo,Consolas,monospace;
+    --display:-apple-system,"SF Pro Display","Segoe UI",sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-font-smoothing:antialiased;}
+  html,body{width:390px;height:844px;}
+  body{background:
+      radial-gradient(120% 60% at 50% -5%, rgba(56,225,255,.14), transparent 60%),
+      radial-gradient(80% 40% at 100% 100%, rgba(124,242,216,.08), transparent 60%),
+      var(--bg);
+    font-family:var(--display);color:var(--text);overflow:hidden;display:flex;flex-direction:column;}
+  body::before{content:"";position:fixed;inset:0;background:
+      repeating-linear-gradient(0deg, rgba(56,225,255,.035) 0 1px, transparent 1px 3px);pointer-events:none;}
+  .status{display:flex;justify-content:space-between;align-items:center;padding:14px 24px 6px;font-family:var(--font);font-size:12px;color:var(--cy);letter-spacing:1px;}
+  .scroll{flex:1;overflow:hidden;padding:8px 20px 0;position:relative;z-index:1;}
+  .head{display:flex;justify-content:space-between;align-items:center;margin:6px 0 18px;}
+  .head .sys{font-family:var(--font);font-size:10px;color:var(--muted);letter-spacing:2px;}
+  .head h1{font-size:22px;font-weight:600;letter-spacing:.5px;margin-top:2px;}
+  .head h1 b{color:var(--cy);}
+  .ava{width:48px;height:48px;border-radius:12px;border:1px solid var(--line);background:var(--panel);display:flex;align-items:center;justify-content:center;color:var(--cy);font-family:var(--font);box-shadow:0 0 18px rgba(56,225,255,.25) inset;}
+  /* reactor ring */
+  .core{position:relative;display:flex;align-items:center;justify-content:center;margin:6px 0 22px;}
+  .core svg{filter:drop-shadow(0 0 10px rgba(56,225,255,.5));}
+  .core .ctxt{position:absolute;text-align:center;}
+  .core .ctxt .b{font-family:var(--font);font-size:34px;font-weight:700;color:#fff;}
+  .core .ctxt .s{font-family:var(--font);font-size:10px;color:var(--muted);letter-spacing:2px;margin-top:4px;}
+  .core .ctxt .t{font-size:11px;color:var(--cy);margin-top:6px;}
+  /* macro hud */
+  .mh{display:flex;gap:10px;margin-bottom:20px;}
+  .mh .c{flex:1;border:1px solid var(--line);border-radius:10px;background:var(--panel);padding:12px;backdrop-filter:blur(4px);}
+  .mh .c .l{font-family:var(--font);font-size:9px;letter-spacing:1px;color:var(--muted);}
+  .mh .c .v{font-size:15px;font-weight:600;margin:6px 0;color:#fff;}
+  .mh .c .v small{color:var(--muted);font-size:11px;}
+  .mh .c .bar{height:3px;background:rgba(56,225,255,.15);border-radius:3px;overflow:hidden;}
+  .mh .c .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--cy),var(--cy2));box-shadow:0 0 8px var(--cy);}
+  /* arni terminal */
+  .arni{border:1px solid var(--line);border-radius:14px;background:linear-gradient(180deg,rgba(56,225,255,.08),rgba(5,8,15,.4));padding:16px;margin-bottom:20px;position:relative;}
+  .arni::before{content:"● ONLINE";position:absolute;top:12px;right:14px;font-family:var(--font);font-size:8px;color:var(--cy2);letter-spacing:1px;}
+  .arni .a-h{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+  .arni .dot{width:34px;height:34px;border-radius:50%;border:1px solid var(--cy);display:flex;align-items:center;justify-content:center;color:var(--cy);font-family:var(--font);font-size:13px;box-shadow:0 0 14px rgba(56,225,255,.4);}
+  .arni .a-h b{font-size:14px;letter-spacing:1px;}
+  .arni .a-h span{font-family:var(--font);font-size:9px;color:var(--muted);display:block;}
+  .arni .msg{font-family:var(--font);font-size:12px;color:var(--text);line-height:1.5;opacity:.9;}
+  .arni .msg .cur{color:var(--cy);}
+  /* meals */
+  .lbl{font-family:var(--font);font-size:10px;letter-spacing:2px;color:var(--muted);margin-bottom:12px;}
+  .meal{display:flex;align-items:center;gap:13px;padding:11px 0;border-bottom:1px solid var(--line);}
+  .meal .mi{width:40px;height:40px;border-radius:10px;border:1px solid var(--line);background:var(--panel);display:flex;align-items:center;justify-content:center;font-size:18px;}
+  .meal .mn{font-size:14px;font-weight:600;}
+  .meal .mk{font-family:var(--font);font-size:10px;color:var(--muted);margin-top:3px;letter-spacing:1px;}
+  .meal .mr{margin-left:auto;font-family:var(--font);font-size:11px;}
+  .meal .ok{color:var(--cy2);}
+  .meal .pend{color:var(--amber);}
+  .nav{display:flex;justify-content:space-around;padding:14px 8px 26px;border-top:1px solid var(--line);background:rgba(5,8,15,.6);backdrop-filter:blur(8px);position:relative;z-index:1;}
+  .nav a{display:flex;flex-direction:column;align-items:center;gap:4px;font-family:var(--font);font-size:9px;letter-spacing:1px;color:var(--muted);text-decoration:none;}
+  .nav a.on{color:var(--cy);text-shadow:0 0 8px var(--cy);}
+  .nav .ni{font-size:17px;}
+</style>
+</head>
+<body>
+  <div class="status"><span>09:41</span><span>P.A.R.K.E.R. ◇ 100%</span></div>
+  <div class="scroll">
+    <div class="head">
+      <div><div class="sys">SYSTEM ONLINE</div><h1>Добрый день, <b>Пётр</b></h1></div>
+      <div class="ava">PM</div>
+    </div>
+    <div class="core">
+      <svg width="190" height="190" viewBox="0 0 190 190">
+        <circle cx="95" cy="95" r="80" fill="none" stroke="rgba(56,225,255,.12)" stroke-width="2"/>
+        <circle cx="95" cy="95" r="80" fill="none" stroke="#38E1FF" stroke-width="4"
+          stroke-dasharray="502" stroke-dashoffset="115" stroke-linecap="round" transform="rotate(-90 95 95)"/>
+        <circle cx="95" cy="95" r="64" fill="none" stroke="rgba(124,242,216,.25)" stroke-width="1" stroke-dasharray="3 6"/>
+      </svg>
+      <div class="ctxt"><div class="b">1 850</div><div class="s">/ 2 400 KCAL</div><div class="t">▲ остаток 550</div></div>
+    </div>
+    <div class="mh">
+      <div class="c"><div class="l">БЕЛКИ</div><div class="v">90<small>/140г</small></div><div class="bar"><i style="width:64%"></i></div></div>
+      <div class="c"><div class="l">ЖИРЫ</div><div class="v">50<small>/70г</small></div><div class="bar"><i style="width:71%"></i></div></div>
+      <div class="c"><div class="l">УГЛЕВ</div><div class="v">180<small>/250г</small></div><div class="bar"><i style="width:72%"></i></div></div>
+    </div>
+    <div class="arni">
+      <div class="a-h"><div class="dot">А</div><div><b>АРНИ</b><span>AI CORE · CLAUDE</span></div></div>
+      <div class="msg">До цели по белку 50 г. Рекомендую творог на ужин.<span class="cur">▌</span></div>
+    </div>
+    <div class="lbl">// ПРИЁМЫ ПИЩИ</div>
+    <div class="meal"><div class="mi">🍳</div><div><div class="mn">Завтрак</div><div class="mk">520 KCAL</div></div><div class="mr ok">[ ✓ ]</div></div>
+    <div class="meal"><div class="mi">🥗</div><div><div class="mn">Обед</div><div class="mk">640 KCAL</div></div><div class="mr ok">[ ✓ ]</div></div>
+    <div class="meal"><div class="mi">🍽️</div><div><div class="mn">Ужин</div><div class="mk">PENDING</div></div><div class="mr pend">[ + ]</div></div>
+  </div>
+  <div class="nav">
+    <a class="on"><span class="ni">⬡</span>HOME</a>
+    <a><span class="ni">▦</span>LOG</a>
+    <a><span class="ni">◈</span>ARNI</a>
+    <a><span class="ni">◎</span>ME</a>
+  </div>
+</body>
+</html>

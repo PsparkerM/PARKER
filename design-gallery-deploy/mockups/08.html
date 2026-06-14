@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390, initial-scale=1">
+<title>08 — Clinical / Medical</title>
+<style>
+  :root{
+    --bg:#F4F7FB; --card:#FFFFFF; --blue:#0A84FF; --blue-soft:#E5F0FF;
+    --text:#16202E; --muted:#7A8AA0; --line:#E3EAF3; --green:#1FB36A;
+    --font:"Inter","SF Pro Text",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-font-smoothing:antialiased;}
+  html,body{width:390px;height:844px;}
+  body{background:var(--bg);font-family:var(--font);color:var(--text);overflow:hidden;display:flex;flex-direction:column;}
+  .status{display:flex;justify-content:space-between;align-items:center;padding:13px 22px 6px;font-size:13px;font-weight:600;color:var(--text);}
+  .scroll{flex:1;overflow:hidden;padding:6px 18px 0;}
+  .head{display:flex;justify-content:space-between;align-items:center;margin:6px 0 16px;}
+  .head h1{font-size:20px;font-weight:700;letter-spacing:-.3px;}
+  .head p{font-size:12px;color:var(--muted);margin-top:2px;}
+  .avatar{width:42px;height:42px;border-radius:11px;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:16px;}
+  /* hero card */
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:12px;}
+  .hero{display:flex;align-items:center;gap:18px;}
+  .ring{width:104px;height:104px;flex-shrink:0;position:relative;}
+  .ring svg{transform:rotate(-90deg);}
+  .ring .ctr{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+  .ring .ctr .b{font-size:22px;font-weight:700;letter-spacing:-.5px;}
+  .ring .ctr .s{font-size:10px;color:var(--muted);margin-top:1px;}
+  .hero .info{flex:1;}
+  .hero .row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--line);}
+  .hero .row:last-child{border-bottom:none;}
+  .hero .row .k{font-size:12px;color:var(--muted);}
+  .hero .row .v{font-size:14px;font-weight:700;}
+  .hero .row .v.acc{color:var(--blue);}
+  /* macros table */
+  .sub{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px;}
+  .mrow{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--line);}
+  .mrow:last-child{border-bottom:none;}
+  .mrow .dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+  .mrow .nm{font-size:13px;font-weight:600;width:74px;}
+  .mrow .track{flex:1;height:6px;background:var(--line);border-radius:6px;overflow:hidden;}
+  .mrow .track i{display:block;height:100%;border-radius:6px;}
+  .mrow .num{font-size:12px;color:var(--muted);width:62px;text-align:right;font-variant-numeric:tabular-nums;}
+  /* arni */
+  .arni{display:flex;align-items:flex-start;gap:12px;background:var(--blue-soft);border:1px solid #CFE3FF;border-radius:14px;padding:14px;margin-bottom:12px;}
+  .arni .av{width:38px;height:38px;border-radius:10px;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0;}
+  .arni .a-h{display:flex;align-items:center;gap:6px;}
+  .arni b{font-size:13px;}
+  .arni .badge{font-size:9px;font-weight:600;color:var(--blue);background:#fff;border:1px solid #CFE3FF;border-radius:5px;padding:1px 5px;}
+  .arni p{font-size:12px;color:#2B4866;margin-top:4px;line-height:1.4;}
+  /* meals */
+  .meal{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--line);}
+  .meal:last-child{border-bottom:none;}
+  .meal .mi{width:38px;height:38px;border-radius:10px;background:var(--bg);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:18px;}
+  .meal .mn{font-size:13.5px;font-weight:600;}
+  .meal .mk{font-size:11px;color:var(--muted);margin-top:2px;}
+  .meal .mr{margin-left:auto;font-size:12px;font-weight:600;display:flex;align-items:center;gap:5px;}
+  .meal .ok{color:var(--green);}
+  .meal .chk{width:18px;height:18px;border-radius:50%;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;}
+  .meal .add{color:var(--blue);border:1px solid #CFE3FF;border-radius:8px;padding:4px 9px;font-size:11px;}
+  /* nav */
+  .nav{display:flex;justify-content:space-around;padding:11px 8px 24px;background:var(--card);border-top:1px solid var(--line);}
+  .nav a{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10px;font-weight:500;color:var(--muted);text-decoration:none;}
+  .nav a.on{color:var(--blue);}
+  .nav .ni{font-size:18px;}
+</style>
+</head>
+<body>
+  <div class="status"><span>9:41</span><span>􀙇 􀊪 􀛨</span></div>
+  <div class="scroll">
+    <div class="head">
+      <div><h1>Привет, Пётр</h1><p>Среда, 15 июня · день 12</p></div>
+      <div class="avatar">П</div>
+    </div>
+    <div class="card hero">
+      <div class="ring">
+        <svg width="104" height="104" viewBox="0 0 104 104">
+          <circle cx="52" cy="52" r="46" fill="none" stroke="#E3EAF3" stroke-width="9"/>
+          <circle cx="52" cy="52" r="46" fill="none" stroke="#0A84FF" stroke-width="9" stroke-linecap="round" stroke-dasharray="289" stroke-dashoffset="66"/>
+        </svg>
+        <div class="ctr"><div class="b">1 850</div><div class="s">/ 2 400 ккал</div></div>
+      </div>
+      <div class="info">
+        <div class="row"><span class="k">Осталось</span><span class="v acc">550 ккал</span></div>
+        <div class="row"><span class="k">Потреблено</span><span class="v">1 850</span></div>
+        <div class="row"><span class="k">Сожжено</span><span class="v">420</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="sub">Макронутриенты</div>
+      <div class="mrow"><span class="dot" style="background:#0A84FF"></span><span class="nm">Белки</span><span class="track"><i style="width:64%;background:#0A84FF"></i></span><span class="num">90 / 140 г</span></div>
+      <div class="mrow"><span class="dot" style="background:#FFB020"></span><span class="nm">Жиры</span><span class="track"><i style="width:71%;background:#FFB020"></i></span><span class="num">50 / 70 г</span></div>
+      <div class="mrow"><span class="dot" style="background:#1FB36A"></span><span class="nm">Углеводы</span><span class="track"><i style="width:72%;background:#1FB36A"></i></span><span class="num">180 / 250 г</span></div>
+    </div>
+    <div class="arni">
+      <div class="av">А</div>
+      <div>
+        <div class="a-h"><b>Арни</b><span class="badge">AI-коуч</span></div>
+        <p>До нормы белка осталось 50 г. Рекомендую творог 0% на ужин.</p>
+      </div>
+    </div>
+    <div class="card" style="padding-top:14px;">
+      <div class="sub">Приёмы пищи</div>
+      <div class="meal"><div class="mi">🍳</div><div><div class="mn">Завтрак</div><div class="mk">520 ккал · 3 продукта</div></div><div class="mr ok"><span class="chk">✓</span>520</div></div>
+      <div class="meal"><div class="mi">🥗</div><div><div class="mn">Обед</div><div class="mk">640 ккал · 4 продукта</div></div><div class="mr ok"><span class="chk">✓</span>640</div></div>
+      <div class="meal"><div class="mi">🍽️</div><div><div class="mn">Ужин</div><div class="mk">Запланировано</div></div><div class="mr"><span class="add">+ добавить</span></div></div>
+    </div>
+  </div>
+  <div class="nav">
+    <a class="on"><span class="ni">🏠</span>Главная</a>
+    <a><span class="ni">📊</span>Дневник</a>
+    <a><span class="ni">💬</span>Чат</a>
+    <a><span class="ni">👤</span>Профиль</a>
+  </div>
+</body>
+</html>

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390, initial-scale=1">
+<title>25 — Soft Purple AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F6F4FF; --card:#FFFFFF; --text:#1B1633; --muted:#8E89A8;
+    --pur:#7C5CFC; --pur2:#A98BFF; --line:#ECE8FB; --soft:#F2EEFF;
+    --font:"Plus Jakarta Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-font-smoothing:antialiased;}
+  html,body{width:390px;height:844px;}
+  body{background:var(--bg);font-family:var(--font);color:var(--text);overflow:hidden;display:flex;flex-direction:column;}
+  body::before{content:"";position:fixed;top:-90px;left:-60px;width:300px;height:300px;border-radius:50%;
+    background:radial-gradient(circle,rgba(124,92,252,.18),transparent 65%);pointer-events:none;}
+  .status{display:flex;justify-content:space-between;align-items:center;padding:14px 26px 6px;font-size:14px;font-weight:700;position:relative;z-index:2;}
+  .status .ic{font-size:13px;}
+  .scroll{flex:1;overflow:hidden;padding:8px 22px 0;position:relative;z-index:1;}
+  .head{display:flex;justify-content:space-between;align-items:center;margin:8px 0 20px;}
+  .head h1{font-size:25px;font-weight:800;letter-spacing:-.5px;}
+  .head p{font-size:13px;color:var(--muted);margin-top:4px;font-weight:500;}
+  .avatar{width:48px;height:48px;border-radius:16px;background:linear-gradient(135deg,var(--pur),var(--pur2));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;box-shadow:0 8px 20px rgba(124,92,252,.35);}
+  /* hero */
+  .hero{display:flex;align-items:center;gap:20px;background:linear-gradient(150deg,#FFFFFF,#F6F2FF);border-radius:26px;padding:22px;margin-bottom:16px;box-shadow:0 14px 40px rgba(124,92,252,.12);}
+  .ring{width:138px;height:138px;border-radius:50%;flex-shrink:0;
+    background:conic-gradient(var(--pur) 0 77%, var(--soft) 77% 100%);
+    display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 8px #fff,0 10px 24px rgba(124,92,252,.2);}
+  .ring .inner{width:108px;height:108px;border-radius:50%;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+  .ring .big{font-size:30px;font-weight:800;letter-spacing:-1px;color:var(--pur);}
+  .ring .sub{font-size:10px;color:var(--muted);margin-top:3px;font-weight:600;letter-spacing:.5px;}
+  .hero .side .label{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;}
+  .hero .side .val{font-size:21px;font-weight:800;margin:3px 0 14px;letter-spacing:-.5px;}
+  .hero .side .val b{color:var(--pur);}
+  /* macros */
+  .macros{display:flex;gap:10px;margin-bottom:16px;}
+  .macro{flex:1;background:var(--card);border-radius:20px;padding:14px 13px;box-shadow:0 6px 18px rgba(124,92,252,.07);}
+  .macro .m-top{font-size:11px;color:var(--muted);margin-bottom:7px;font-weight:600;}
+  .macro .m-val{font-size:15px;font-weight:800;margin-bottom:9px;letter-spacing:-.3px;}
+  .macro .m-val small{color:var(--muted);font-weight:600;font-size:11px;}
+  .macro .bar{height:6px;border-radius:6px;background:var(--soft);overflow:hidden;}
+  .macro .bar i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,var(--pur),var(--pur2));}
+  /* arni — feature */
+  .arni{background:linear-gradient(135deg,#7C5CFC,#9D7DFF);color:#fff;border-radius:26px;padding:18px;margin-bottom:18px;position:relative;overflow:hidden;box-shadow:0 16px 36px rgba(124,92,252,.32);}
+  .arni::before{content:"";position:absolute;top:-40px;right:-30px;width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,.12);}
+  .arni .a-h{display:flex;align-items:center;gap:12px;margin-bottom:12px;position:relative;z-index:1;}
+  .arni .a-av{width:42px;height:42px;border-radius:14px;background:rgba(255,255,255,.22);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:17px;}
+  .arni .a-h b{font-size:15px;font-weight:800;letter-spacing:.3px;}
+  .arni .a-h span{font-size:11px;opacity:.85;display:block;margin-top:1px;font-weight:500;}
+  .arni .msg{font-size:13.5px;line-height:1.5;font-weight:500;position:relative;z-index:1;}
+  .arni .a-btn{margin-top:14px;display:inline-flex;align-items:center;gap:6px;background:#fff;color:var(--pur);font-size:12.5px;font-weight:700;padding:9px 16px;border-radius:14px;position:relative;z-index:1;}
+  /* meals */
+  .sec-title{font-size:15px;font-weight:800;margin-bottom:12px;letter-spacing:-.3px;}
+  .meal{display:flex;align-items:center;gap:14px;padding:11px 14px;background:var(--card);border-radius:18px;margin-bottom:9px;box-shadow:0 4px 14px rgba(124,92,252,.06);}
+  .meal .m-ic{width:42px;height:42px;border-radius:13px;background:var(--soft);display:flex;align-items:center;justify-content:center;font-size:20px;}
+  .meal .m-name{font-size:14.5px;font-weight:700;}
+  .meal .m-kcal{font-size:12px;color:var(--muted);margin-top:2px;font-weight:500;}
+  .meal .m-r{margin-left:auto;font-size:13px;font-weight:700;}
+  .meal .done{color:#fff;background:var(--pur);width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;}
+  .meal .add{color:var(--pur);}
+  /* nav */
+  .nav{display:flex;justify-content:space-around;padding:14px 10px 26px;background:#fff;box-shadow:0 -6px 24px rgba(124,92,252,.08);position:relative;z-index:2;}
+  .nav a{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:10.5px;font-weight:600;color:var(--muted);text-decoration:none;}
+  .nav a.on{color:var(--pur);}
+  .nav a.on .n-ic{background:var(--soft);}
+  .nav .n-ic{font-size:18px;width:42px;height:32px;border-radius:11px;display:flex;align-items:center;justify-content:center;}
+</style>
+</head>
+<body>
+  <div class="status"><span>9:41</span><span class="ic">􀙇 􀊪 􀛨</span></div>
+  <div class="scroll">
+    <div class="head">
+      <div><h1>Привет, Пётр 👋</h1><p>Среда, 15 июня</p></div>
+      <div class="avatar">П</div>
+    </div>
+    <div class="hero">
+      <div class="ring"><div class="inner"><div class="big">1 850</div><div class="sub">ИЗ 2 400 ККАЛ</div></div></div>
+      <div class="side">
+        <div class="label">Осталось</div><div class="val"><b>550</b> ккал</div>
+        <div class="label">Сожжено</div><div class="val">420 ккал</div>
+      </div>
+    </div>
+    <div class="macros">
+      <div class="macro"><div class="m-top">Белки</div><div class="m-val">90<small> /140 г</small></div><div class="bar"><i style="width:64%"></i></div></div>
+      <div class="macro"><div class="m-top">Жиры</div><div class="m-val">50<small> /70 г</small></div><div class="bar"><i style="width:71%"></i></div></div>
+      <div class="macro"><div class="m-top">Углеводы</div><div class="m-val">180<small> /250 г</small></div><div class="bar"><i style="width:72%"></i></div></div>
+    </div>
+    <div class="arni">
+      <div class="a-h">
+        <div class="a-av">✦</div>
+        <div><b>Арни</b><span>Твой AI-нутрициолог</span></div>
+      </div>
+      <div class="msg">Отличный день! До нормы белка осталось 50 г. Добавь творог или йогурт на ужин — и цель закрыта.</div>
+      <div class="a-btn">Спросить Арни →</div>
+    </div>
+    <div class="sec-title">Приёмы пищи</div>
+    <div class="meal"><div class="m-ic">🍳</div><div><div class="m-name">Завтрак</div><div class="m-kcal">520 ккал · 3 продукта</div></div><div class="m-r done">✓</div></div>
+    <div class="meal"><div class="m-ic">🥗</div><div><div class="m-name">Обед</div><div class="m-kcal">640 ккал · 4 продукта</div></div><div class="m-r done">✓</div></div>
+    <div class="meal"><div class="m-ic">🍽️</div><div><div class="m-name">Ужин</div><div class="m-kcal">Запланировано</div></div><div class="m-r add">+ добавить</div></div>
+  </div>
+  <div class="nav">
+    <a class="on"><span class="n-ic">🏠</span>Главная</a>
+    <a><span class="n-ic">📖</span>Дневник</a>
+    <a><span class="n-ic">💬</span>Чат</a>
+    <a><span class="n-ic">👤</span>Профиль</a>
+  </div>
+</body>
+</html>

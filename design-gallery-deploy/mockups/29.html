@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390, initial-scale=1">
+<title>29 — Data-Viz Heavy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0F1419; --panel:#161D26; --panel2:#1B232E; --line:#222C38;
+    --acc:#00D9A3; --acc-soft:rgba(0,217,163,.14); --acc-dim:rgba(0,217,163,.32);
+    --text:#E8EEF2; --muted:#5E6B7A; --muted2:#8493A2;
+    --font:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    --mono:ui-monospace,"SF Mono","Roboto Mono",Menlo,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-font-smoothing:antialiased;}
+  html,body{width:390px;height:844px;}
+  body{
+    background:
+      radial-gradient(90% 50% at 50% -8%, rgba(0,217,163,.10), transparent 60%),
+      var(--bg);
+    font-family:var(--font);color:var(--text);overflow:hidden;display:flex;flex-direction:column;}
+  .status{display:flex;justify-content:space-between;align-items:center;padding:13px 24px 4px;font-size:13px;font-weight:600;}
+  .status .ic{display:flex;gap:6px;align-items:center;font-size:12px;color:var(--muted2);}
+  .scroll{flex:1;overflow:hidden;padding:6px 18px 0;}
+  /* header */
+  .head{display:flex;justify-content:space-between;align-items:center;margin:6px 0 16px;}
+  .head .hi{font-size:11px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;}
+  .head h1{font-size:21px;font-weight:800;letter-spacing:-.5px;margin-top:3px;}
+  .head h1 b{color:var(--acc);}
+  .avatar{width:44px;height:44px;border-radius:14px;background:linear-gradient(135deg,var(--acc),#00B488);
+          color:#06231C;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:17px;
+          box-shadow:0 6px 16px rgba(0,217,163,.25);}
+  /* hero row */
+  .hero{display:flex;gap:12px;margin-bottom:12px;}
+  .ring-card{flex:0 0 150px;background:var(--panel);border:1px solid var(--line);border-radius:18px;
+             padding:14px 12px 12px;display:flex;flex-direction:column;align-items:center;position:relative;}
+  .ring-card .cap{position:absolute;top:13px;left:14px;font-size:9.5px;letter-spacing:1.2px;color:var(--muted);text-transform:uppercase;font-weight:600;}
+  .ring-wrap{position:relative;width:120px;height:120px;display:flex;align-items:center;justify-content:center;margin-top:14px;}
+  .ring-wrap svg{transform:rotate(-90deg);filter:drop-shadow(0 0 6px rgba(0,217,163,.4));}
+  .ring-c{position:absolute;text-align:center;}
+  .ring-c .b{font-size:26px;font-weight:800;letter-spacing:-1px;}
+  .ring-c .s{font-size:10px;color:var(--muted2);margin-top:1px;}
+  .ring-card .pill{margin-top:10px;font-size:11px;font-weight:600;color:var(--acc);background:var(--acc-soft);
+                   border-radius:20px;padding:5px 12px;}
+  /* right stat column */
+  .stats{flex:1;display:flex;flex-direction:column;gap:12px;}
+  .stat{flex:1;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:12px 13px;display:flex;flex-direction:column;justify-content:center;}
+  .stat .l{font-size:9.5px;letter-spacing:.8px;color:var(--muted);text-transform:uppercase;font-weight:600;}
+  .stat .v{font-size:22px;font-weight:800;letter-spacing:-.5px;margin-top:3px;}
+  .stat .v small{font-size:11px;color:var(--muted2);font-weight:500;}
+  /* sparkline inside stat */
+  .spark{margin-top:6px;}
+  .stat .delta{font-size:10.5px;font-weight:600;}
+  .down{color:var(--acc);}
+  /* weight chart */
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:14px 14px 10px;margin-bottom:12px;}
+  .card-h{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;}
+  .card-h .t{font-size:13px;font-weight:700;}
+  .card-h .now{font-size:13px;font-weight:700;}
+  .card-h .now b{color:var(--acc);font-size:18px;letter-spacing:-.5px;}
+  .card-h .now .d{font-size:11px;color:var(--acc);font-weight:600;margin-left:5px;}
+  .wc-sub{font-size:10px;color:var(--muted);letter-spacing:.5px;margin-bottom:6px;}
+  .wchart{width:100%;display:block;}
+  .wlabels{display:flex;justify-content:space-between;font-size:9px;color:var(--muted);font-family:var(--mono);margin-top:4px;padding:0 2px;}
+  /* macros bar chart week */
+  .mac-card{margin-bottom:12px;}
+  .mac-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+  .mac-head .t{font-size:13px;font-weight:700;}
+  .legend{display:flex;gap:12px;font-size:9.5px;color:var(--muted2);}
+  .legend i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:4px;vertical-align:middle;}
+  .dot-p{background:var(--acc);} .dot-f{background:#FFB454;} .dot-c{background:#5B8DEF;}
+  .bars{display:flex;justify-content:space-between;align-items:flex-end;height:86px;padding:0 2px;}
+  .bcol{display:flex;flex-direction:column;align-items:center;gap:0;width:30px;}
+  .stack{width:18px;display:flex;flex-direction:column-reverse;border-radius:5px;overflow:hidden;}
+  .stack i{display:block;width:100%;}
+  .stack .p{background:var(--acc);} .stack .f{background:#FFB454;} .stack .c{background:#5B8DEF;}
+  .bcol .day{font-size:9px;color:var(--muted);font-family:var(--mono);margin-top:7px;}
+  .bcol.today .day{color:var(--acc);font-weight:700;}
+  /* current macros mini */
+  .mmini{display:flex;gap:9px;}
+  .mm{flex:1;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:11px 11px;}
+  .mm .l{font-size:9.5px;letter-spacing:.6px;color:var(--muted);text-transform:uppercase;font-weight:600;}
+  .mm .v{font-size:14px;font-weight:700;margin:6px 0 7px;}
+  .mm .v small{color:var(--muted2);font-size:10px;font-weight:500;}
+  .mm .bar{height:4px;border-radius:4px;background:var(--line);overflow:hidden;}
+  .mm .bar i{display:block;height:100%;border-radius:4px;}
+  .mm.p .bar i{background:var(--acc);} .mm.f .bar i{background:#FFB454;} .mm.c .bar i{background:#5B8DEF;}
+  /* arni mini */
+  .arni{display:flex;align-items:center;gap:12px;border:1px solid var(--acc-dim);border-radius:16px;
+        background:linear-gradient(120deg,var(--acc-soft),rgba(22,29,38,.5));padding:12px 14px;margin-top:12px;}
+  .arni .av{width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,var(--acc),#00B488);
+            color:#06231C;display:flex;align-items:center;justify-content:center;font-weight:800;flex-shrink:0;
+            box-shadow:0 0 14px rgba(0,217,163,.4);}
+  .arni .tx b{font-size:13px;display:flex;align-items:center;gap:6px;}
+  .arni .tx b .on{font-size:8px;color:var(--acc);font-family:var(--mono);letter-spacing:1px;}
+  .arni .tx p{font-size:11.5px;color:var(--muted2);margin-top:2px;line-height:1.35;}
+  .arni .go{margin-left:auto;color:var(--acc);font-size:20px;font-weight:700;}
+  /* nav */
+  .nav{display:flex;justify-content:space-around;padding:12px 8px 24px;border-top:1px solid var(--line);
+       background:rgba(15,20,25,.85);backdrop-filter:blur(8px);}
+  .nav a{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:10px;color:var(--muted);text-decoration:none;font-weight:500;}
+  .nav a.on{color:var(--acc);}
+  .nav .ni{font-size:18px;}
+</style>
+</head>
+<body>
+  <div class="status"><span>9:41</span><span class="ic">􀙇 􀊪 􀛨</span></div>
+  <div class="scroll">
+    <div class="head">
+      <div>
+        <div class="hi">Понедельник, 15 июня</div>
+        <h1>Привет, <b>Пётр</b></h1>
+      </div>
+      <div class="avatar">П</div>
+    </div>
+
+    <div class="hero">
+      <div class="ring-card">
+        <div class="cap">Калории</div>
+        <div class="ring-wrap">
+          <svg width="120" height="120" viewBox="0 0 120 120">
+            <circle cx="60" cy="60" r="50" fill="none" stroke="#222C38" stroke-width="9"/>
+            <circle cx="60" cy="60" r="50" fill="none" stroke="#00D9A3" stroke-width="9"
+              stroke-linecap="round" stroke-dasharray="314" stroke-dashoffset="72"/>
+          </svg>
+          <div class="ring-c"><div class="b">1 850</div><div class="s">из 2 400</div></div>
+        </div>
+        <div class="pill">осталось 550 ккал</div>
+      </div>
+      <div class="stats">
+        <div class="stat">
+          <div class="l">Сожжено</div>
+          <div class="v">420 <small>ккал</small></div>
+          <svg class="spark" width="100%" height="20" viewBox="0 0 110 20" preserveAspectRatio="none">
+            <polyline points="0,15 18,11 36,13 54,7 72,9 90,4 110,6" fill="none" stroke="#00D9A3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="stat">
+          <div class="l">Шаги</div>
+          <div class="v">7 240 <span class="delta down">▲</span></div>
+          <svg class="spark" width="100%" height="20" viewBox="0 0 110 20" preserveAspectRatio="none">
+            <polyline points="0,16 18,12 36,14 54,10 72,11 90,6 110,8" fill="none" stroke="#5B8DEF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-h">
+        <div class="t">Динамика веса</div>
+        <div class="now"><b>78.4</b> кг<span class="d">▼0.6</span></div>
+      </div>
+      <div class="wc-sub">за 7 дней · цель 75.0 кг</div>
+      <svg class="wchart" width="100%" height="74" viewBox="0 0 322 74" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="wgrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#00D9A3" stop-opacity=".28"/>
+            <stop offset="1" stop-color="#00D9A3" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <line x1="0" y1="14" x2="322" y2="14" stroke="#222C38" stroke-width="1" stroke-dasharray="2 5"/>
+        <line x1="0" y1="40" x2="322" y2="40" stroke="#222C38" stroke-width="1" stroke-dasharray="2 5"/>
+        <path d="M0,18 L53,22 L107,20 L160,30 L214,34 L268,42 L322,48 L322,74 L0,74 Z" fill="url(#wgrad)"/>
+        <polyline points="0,18 53,22 107,20 160,30 214,34 268,42 322,48" fill="none" stroke="#00D9A3" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="322" cy="48" r="4" fill="#00D9A3"/>
+        <circle cx="322" cy="48" r="7" fill="none" stroke="#00D9A3" stroke-opacity=".35" stroke-width="2"/>
+      </svg>
+      <div class="wlabels"><span>9</span><span>10</span><span>11</span><span>12</span><span>13</span><span>14</span><span>15</span></div>
+    </div>
+
+    <div class="card mac-card">
+      <div class="mac-head">
+        <div class="t">Макросы за неделю</div>
+        <div class="legend"><span><i class="dot-p"></i>Б</span><span><i class="dot-f"></i>Ж</span><span><i class="dot-c"></i>У</span></div>
+      </div>
+      <div class="bars">
+        <div class="bcol"><div class="stack" style="height:54px"><i class="c" style="height:48%"></i><i class="f" style="height:22%"></i><i class="p" style="height:30%"></i></div><div class="day">Пн</div></div>
+        <div class="bcol"><div class="stack" style="height:66px"><i class="c" style="height:50%"></i><i class="f" style="height:20%"></i><i class="p" style="height:30%"></i></div><div class="day">Вт</div></div>
+        <div class="bcol"><div class="stack" style="height:48px"><i class="c" style="height:46%"></i><i class="f" style="height:24%"></i><i class="p" style="height:30%"></i></div><div class="day">Ср</div></div>
+        <div class="bcol"><div class="stack" style="height:72px"><i class="c" style="height:52%"></i><i class="f" style="height:18%"></i><i class="p" style="height:30%"></i></div><div class="day">Чт</div></div>
+        <div class="bcol"><div class="stack" style="height:58px"><i class="c" style="height:48%"></i><i class="f" style="height:20%"></i><i class="p" style="height:32%"></i></div><div class="day">Пт</div></div>
+        <div class="bcol"><div class="stack" style="height:62px"><i class="c" style="height:50%"></i><i class="f" style="height:22%"></i><i class="p" style="height:28%"></i></div><div class="day">Сб</div></div>
+        <div class="bcol today"><div class="stack" style="height:50px"><i class="c" style="height:46%"></i><i class="f" style="height:22%"></i><i class="p" style="height:32%"></i></div><div class="day">Вс</div></div>
+      </div>
+    </div>
+
+    <div class="mmini">
+      <div class="mm p"><div class="l">Белки</div><div class="v">90<small>/140 г</small></div><div class="bar"><i style="width:64%"></i></div></div>
+      <div class="mm f"><div class="l">Жиры</div><div class="v">50<small>/70 г</small></div><div class="bar"><i style="width:71%"></i></div></div>
+      <div class="mm c"><div class="l">Углеводы</div><div class="v">180<small>/250 г</small></div><div class="bar"><i style="width:72%"></i></div></div>
+    </div>
+
+    <div class="arni">
+      <div class="av">А</div>
+      <div class="tx">
+        <b>Арни <span class="on">● ОНЛАЙН</span></b>
+        <p>До цели по белку 50 г. Советую творог на ужин.</p>
+      </div>
+      <div class="go">›</div>
+    </div>
+  </div>
+
+  <div class="nav">
+    <a class="on"><span class="ni">📊</span>Главная</a>
+    <a><span class="ni">📖</span>Дневник</a>
+    <a><span class="ni">💬</span>Чат</a>
+    <a><span class="ni">👤</span>Профиль</a>
+  </div>
+</body>
+</html>

@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390, initial-scale=1">
+<title>30 — Chat-First Арни</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F4F5F7; --surface:#FFFFFF; --text:#10141A; --muted:#9AA3AE;
+    --line:#ECEEF1; --acc:#FF5436; --acc-soft:#FFEDE8; --acc-dim:#FFD7CC;
+    --bot-bub:#FFFFFF; --usr-bub:#FF5436;
+    --font:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-font-smoothing:antialiased;}
+  html,body{width:390px;height:844px;}
+  body{background:var(--bg);font-family:var(--font);color:var(--text);overflow:hidden;display:flex;flex-direction:column;}
+  .status{display:flex;justify-content:space-between;align-items:center;padding:13px 24px 4px;font-size:13px;font-weight:600;flex-shrink:0;}
+  .status .ic{display:flex;gap:6px;align-items:center;font-size:12px;}
+  /* chat header */
+  .chead{display:flex;align-items:center;gap:12px;padding:8px 18px 12px;background:var(--surface);
+         border-bottom:1px solid var(--line);flex-shrink:0;box-shadow:0 2px 12px rgba(16,20,26,.03);}
+  .chead .back{font-size:22px;color:var(--muted);font-weight:600;}
+  .chead .av{position:relative;width:42px;height:42px;border-radius:50%;
+             background:linear-gradient(135deg,#FF5436,#FF9A5A);color:#fff;display:flex;align-items:center;
+             justify-content:center;font-weight:800;font-size:18px;box-shadow:0 4px 12px rgba(255,84,54,.3);}
+  .chead .av .live{position:absolute;right:-1px;bottom:-1px;width:12px;height:12px;border-radius:50%;
+                   background:#2BD980;border:2.5px solid var(--surface);}
+  .chead .who b{font-size:16px;font-weight:700;}
+  .chead .who span{font-size:12px;color:#2BD980;font-weight:600;display:flex;align-items:center;gap:5px;margin-top:1px;}
+  .chead .who span::before{content:"";width:6px;height:6px;border-radius:50%;background:#2BD980;}
+  .chead .menu{margin-left:auto;font-size:20px;color:var(--muted);}
+  /* feed */
+  .feed{flex:1;overflow:hidden;padding:18px 16px 6px;display:flex;flex-direction:column;gap:10px;}
+  .daystamp{align-self:center;font-size:11px;color:var(--muted);background:rgba(16,20,26,.05);
+            padding:4px 12px;border-radius:20px;margin-bottom:2px;font-weight:500;}
+  .row{display:flex;gap:9px;max-width:86%;}
+  .row.bot{align-self:flex-start;}
+  .row.usr{align-self:flex-end;flex-direction:row-reverse;}
+  .mini-av{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#FF5436,#FF9A5A);
+           color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;
+           flex-shrink:0;align-self:flex-end;}
+  .bub{padding:11px 14px;font-size:14px;line-height:1.4;border-radius:20px;}
+  .row.bot .bub{background:var(--bot-bub);border-bottom-left-radius:6px;box-shadow:0 2px 10px rgba(16,20,26,.05);}
+  .row.usr .bub{background:var(--usr-bub);color:#fff;border-bottom-right-radius:6px;box-shadow:0 4px 14px rgba(255,84,54,.28);}
+  .time{font-size:10px;color:var(--muted);margin-top:5px;display:block;}
+  .row.usr .time{text-align:right;color:rgba(255,255,255,.7);}
+  /* kbju card in chat */
+  .kcard{background:var(--surface);border-radius:20px;border-bottom-left-radius:6px;padding:14px;
+         box-shadow:0 4px 16px rgba(16,20,26,.07);width:100%;}
+  .kcard .kh{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+  .kcard .kh .kt{font-size:13px;font-weight:700;}
+  .kcard .kh .kt small{display:block;font-size:10.5px;color:var(--muted);font-weight:500;margin-top:1px;}
+  .kcal{text-align:right;}
+  .kcal b{font-size:20px;font-weight:800;color:var(--acc);letter-spacing:-.5px;}
+  .kcal span{font-size:11px;color:var(--muted);font-weight:500;}
+  .kbars{display:flex;gap:8px;}
+  .kb{flex:1;}
+  .kb .kl{font-size:10px;color:var(--muted);font-weight:600;display:flex;justify-content:space-between;margin-bottom:5px;}
+  .kb .kl b{color:var(--text);}
+  .kb .track{height:6px;border-radius:6px;background:var(--line);overflow:hidden;}
+  .kb .track i{display:block;height:100%;border-radius:6px;}
+  .kb.p .track i{background:#FF5436;} .kb.f .track i{background:#FFB454;} .kb.c .track i{background:#5B8DEF;}
+  /* typing */
+  .typing{display:flex;gap:9px;align-self:flex-start;align-items:flex-end;}
+  .typing .bub{display:flex;gap:4px;padding:13px 14px;}
+  .typing .bub i{width:7px;height:7px;border-radius:50%;background:var(--muted);opacity:.5;}
+  .typing .bub i:nth-child(2){opacity:.75;} .typing .bub i:nth-child(3){opacity:1;}
+  /* quick chips */
+  .chips{display:flex;gap:8px;overflow:hidden;padding:8px 16px 4px;flex-shrink:0;}
+  .chip{flex-shrink:0;font-size:12.5px;font-weight:600;color:var(--acc);background:var(--acc-soft);
+        border:1px solid var(--acc-dim);border-radius:20px;padding:8px 14px;white-space:nowrap;
+        display:flex;align-items:center;gap:6px;}
+  /* input bar */
+  .inputbar{display:flex;align-items:center;gap:10px;padding:10px 16px 22px;background:var(--surface);
+            border-top:1px solid var(--line);flex-shrink:0;}
+  .cam{width:42px;height:42px;border-radius:50%;background:var(--bg);display:flex;align-items:center;
+       justify-content:center;font-size:19px;flex-shrink:0;}
+  .field{flex:1;background:var(--bg);border-radius:24px;padding:12px 16px;font-size:14px;color:var(--muted);}
+  .send{width:44px;height:44px;border-radius:50%;background:var(--acc);color:#fff;display:flex;
+        align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 4px 14px rgba(255,84,54,.35);}
+  .send svg{width:20px;height:20px;}
+  /* nav */
+  .nav{display:flex;justify-content:space-around;padding:10px 8px 22px;border-top:1px solid var(--line);background:var(--surface);flex-shrink:0;}
+  .nav a{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:10px;color:var(--muted);text-decoration:none;font-weight:500;}
+  .nav a.on{color:var(--acc);}
+  .nav .ni{font-size:18px;}
+</style>
+</head>
+<body>
+  <div class="status"><span>9:41</span><span class="ic">􀙇 􀊪 􀛨</span></div>
+
+  <div class="chead">
+    <span class="back">‹</span>
+    <div class="av">А<span class="live"></span></div>
+    <div class="who"><b>Арни</b><span>онлайн · AI-коуч</span></div>
+    <span class="menu">⋯</span>
+  </div>
+
+  <div class="feed">
+    <div class="daystamp">Сегодня</div>
+
+    <div class="row bot">
+      <div class="mini-av">А</div>
+      <div>
+        <div class="bub">Доброе утро, Пётр! ☀️ Как самочувствие и как спалось сегодня?<span class="time">9:12</span></div>
+      </div>
+    </div>
+
+    <div class="row usr">
+      <div class="bub">Привет! Выспался, чувствую себя бодро 💪<span class="time">9:14</span></div>
+    </div>
+
+    <div class="row bot">
+      <div class="mini-av">А</div>
+      <div>
+        <div class="bub">Отлично! Тогда держим темп. Вот твой расклад по КБЖУ на сегодня 👇<span class="time">9:14</span></div>
+      </div>
+    </div>
+
+    <div class="row bot">
+      <div class="mini-av">А</div>
+      <div class="kcard">
+        <div class="kh">
+          <div class="kt">КБЖУ на сегодня<small>Понедельник, 15 июня</small></div>
+          <div class="kcal"><b>1 850</b><span> / 2 400 ккал</span></div>
+        </div>
+        <div class="kbars">
+          <div class="kb p"><div class="kl">Белки <b>90/140</b></div><div class="track"><i style="width:64%"></i></div></div>
+          <div class="kb f"><div class="kl">Жиры <b>50/70</b></div><div class="track"><i style="width:71%"></i></div></div>
+          <div class="kb c"><div class="kl">Углев <b>180/250</b></div><div class="track"><i style="width:72%"></i></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="typing">
+      <div class="mini-av">А</div>
+      <div class="bub"><i></i><i></i><i></i></div>
+    </div>
+  </div>
+
+  <div class="chips">
+    <div class="chip">🍽️ Что съесть на ужин?</div>
+    <div class="chip">🏋️ Моя тренировка</div>
+    <div class="chip">📸 Анализ фото еды</div>
+  </div>
+
+  <div class="inputbar">
+    <div class="cam">📷</div>
+    <div class="field">Сообщение Арни…</div>
+    <div class="send">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M4 12L20 4L13 20L11 13L4 12Z" fill="#fff" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/></svg>
+    </div>
+  </div>
+
+  <div class="nav">
+    <a><span class="ni">🏠</span>Главная</a>
+    <a><span class="ni">📖</span>Дневник</a>
+    <a class="on"><span class="ni">💬</span>Чат</a>
+    <a><span class="ni">👤</span>Профиль</a>
+  </div>
+</body>
+</html>

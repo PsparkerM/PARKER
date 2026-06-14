@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390, initial-scale=1">
+<title>31 — Aurora Gradient</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0A0E1A; --green:#3DF5B0; --violet:#7C5CFC; --text:#EAF2FF; --muted:#8A93AD;
+    --line:rgba(255,255,255,.08);
+    --font:"Manrope",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-font-smoothing:antialiased;}
+  html,body{width:390px;height:844px;}
+  body{position:relative;background:var(--bg);font-family:var(--font);color:var(--text);overflow:hidden;display:flex;flex-direction:column;}
+  /* aurora layers */
+  .aur{position:fixed;inset:-10%;pointer-events:none;filter:blur(50px);opacity:.9;}
+  .aur1{background:radial-gradient(50% 38% at 22% 8%, rgba(61,245,176,.55), transparent 70%);}
+  .aur2{background:radial-gradient(55% 40% at 88% 18%, rgba(124,92,252,.55), transparent 70%);}
+  .aur3{background:radial-gradient(60% 35% at 50% 0%, rgba(61,245,176,.22), transparent 70%);}
+  .aur4{background:radial-gradient(70% 45% at 80% 95%, rgba(124,92,252,.30), transparent 70%);}
+  .grain{position:fixed;inset:0;pointer-events:none;opacity:.05;
+    background-image:radial-gradient(circle, rgba(255,255,255,.6) .5px, transparent .5px);background-size:4px 4px;}
+  .status{position:relative;z-index:2;display:flex;justify-content:space-between;align-items:center;padding:14px 24px 6px;font-size:14px;font-weight:600;}
+  .scroll{position:relative;z-index:2;flex:1;overflow:hidden;padding:8px 22px 0;}
+  .head{display:flex;justify-content:space-between;align-items:center;margin:10px 0 24px;}
+  .head h1{font-size:25px;font-weight:800;letter-spacing:-.6px;}
+  .head p{font-size:13px;color:var(--muted);margin-top:4px;}
+  .avatar{width:48px;height:48px;border-radius:16px;background:linear-gradient(135deg,var(--green),var(--violet));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;color:#0A0E1A;box-shadow:0 0 26px rgba(124,92,252,.5);}
+  /* hero */
+  .hero{position:relative;border-radius:28px;padding:24px 22px;margin-bottom:22px;
+    background:linear-gradient(160deg, rgba(61,245,176,.12), rgba(124,92,252,.14));
+    border:1px solid var(--line);box-shadow:0 0 60px rgba(124,92,252,.18) inset;
+    display:flex;align-items:center;gap:20px;}
+  .ring{width:130px;height:130px;flex-shrink:0;position:relative;display:flex;align-items:center;justify-content:center;}
+  .ring svg{filter:drop-shadow(0 0 12px rgba(61,245,176,.55));}
+  .ring .c{position:absolute;text-align:center;}
+  .ring .big{font-size:28px;font-weight:800;letter-spacing:-1px;}
+  .ring .sub{font-size:10.5px;color:var(--muted);margin-top:2px;letter-spacing:.5px;}
+  .hero .side .lab{font-size:11px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;}
+  .hero .side .v{font-size:30px;font-weight:800;letter-spacing:-1px;margin:2px 0 2px;
+    background:linear-gradient(90deg,var(--green),var(--violet));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+  .hero .side .u{font-size:13px;color:var(--muted);}
+  /* macros */
+  .macros{display:flex;gap:10px;margin-bottom:22px;}
+  .macro{flex:1;background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:18px;padding:14px 12px;backdrop-filter:blur(6px);}
+  .macro .t{font-size:11.5px;color:var(--muted);margin-bottom:8px;}
+  .macro .val{font-size:15px;font-weight:700;margin-bottom:9px;}
+  .macro .val small{color:var(--muted);font-weight:500;}
+  .macro .bar{height:5px;border-radius:6px;background:rgba(255,255,255,.08);overflow:hidden;}
+  .macro .bar i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,var(--green),var(--violet));box-shadow:0 0 10px rgba(61,245,176,.6);}
+  /* arni */
+  .arni{display:flex;align-items:center;gap:14px;border-radius:22px;padding:17px 18px;margin-bottom:24px;
+    background:linear-gradient(135deg, rgba(124,92,252,.22), rgba(61,245,176,.10));border:1px solid var(--line);}
+  .arni .av{width:46px;height:46px;border-radius:50%;flex-shrink:0;background:radial-gradient(circle at 30% 30%,var(--green),var(--violet));display:flex;align-items:center;justify-content:center;font-weight:800;color:#0A0E1A;box-shadow:0 0 22px rgba(61,245,176,.5);}
+  .arni b{font-size:15px;}
+  .arni p{font-size:12.5px;color:var(--muted);margin-top:3px;line-height:1.4;}
+  .arni .go{margin-left:auto;font-size:22px;color:var(--green);}
+  .sec{font-size:15px;font-weight:700;margin-bottom:13px;}
+  .meal{display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--line);}
+  .meal .mi{width:42px;height:42px;border-radius:14px;background:rgba(255,255,255,.05);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:20px;}
+  .meal .mn{font-size:15px;font-weight:600;}
+  .meal .mk{font-size:12px;color:var(--muted);margin-top:2px;}
+  .meal .mr{margin-left:auto;font-size:13px;font-weight:700;}
+  .meal .ok{color:var(--green);}
+  .meal .add{color:var(--violet);}
+  .nav{position:relative;z-index:2;display:flex;justify-content:space-around;padding:14px 10px 26px;border-top:1px solid var(--line);background:rgba(10,14,26,.6);backdrop-filter:blur(12px);}
+  .nav a{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:10.5px;color:var(--muted);text-decoration:none;}
+  .nav a.on{color:var(--green);text-shadow:0 0 12px rgba(61,245,176,.6);}
+  .nav .ni{font-size:19px;}
+</style>
+</head>
+<body>
+  <div class="aur aur1"></div><div class="aur aur2"></div><div class="aur aur3"></div><div class="aur aur4"></div>
+  <div class="grain"></div>
+  <div class="status"><span>9:41</span><span>􀙇 􀊪 􀛨</span></div>
+  <div class="scroll">
+    <div class="head">
+      <div><h1>Привет, Пётр ✨</h1><p>Среда, 15 июня</p></div>
+      <div class="avatar">П</div>
+    </div>
+    <div class="hero">
+      <div class="ring">
+        <svg width="130" height="130" viewBox="0 0 130 130">
+          <defs><linearGradient id="ag" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3DF5B0"/><stop offset="1" stop-color="#7C5CFC"/></linearGradient></defs>
+          <circle cx="65" cy="65" r="56" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="9"/>
+          <circle cx="65" cy="65" r="56" fill="none" stroke="url(#ag)" stroke-width="9" stroke-linecap="round"
+            stroke-dasharray="352" stroke-dashoffset="81" transform="rotate(-90 65 65)"/>
+        </svg>
+        <div class="c"><div class="big">1 850</div><div class="sub">из 2 400 ккал</div></div>
+      </div>
+      <div class="side">
+        <div class="lab">Осталось</div>
+        <div class="v">550</div>
+        <div class="u">ккал на сегодня</div>
+      </div>
+    </div>
+    <div class="macros">
+      <div class="macro"><div class="t">Белки</div><div class="val">90 <small>/140 г</small></div><div class="bar"><i style="width:64%"></i></div></div>
+      <div class="macro"><div class="t">Жиры</div><div class="val">50 <small>/70 г</small></div><div class="bar"><i style="width:71%"></i></div></div>
+      <div class="macro"><div class="t">Углеводы</div><div class="val">180 <small>/250 г</small></div><div class="bar"><i style="width:72%"></i></div></div>
+    </div>
+    <div class="arni">
+      <div class="av">А</div>
+      <div><b>Арни</b><p>Тебе осталось 50 г белка — творог на ужин закроет цель ✨</p></div>
+      <div class="go">›</div>
+    </div>
+    <div class="sec">Приёмы пищи</div>
+    <div class="meal"><div class="mi">🍳</div><div><div class="mn">Завтрак</div><div class="mk">520 ккал · 3 продукта</div></div><div class="mr ok">✓</div></div>
+    <div class="meal"><div class="mi">🥗</div><div><div class="mn">Обед</div><div class="mk">640 ккал · 4 продукта</div></div><div class="mr ok">✓</div></div>
+    <div class="meal"><div class="mi">🍽️</div><div><div class="mn">Ужин</div><div class="mk">Запланировано</div></div><div class="mr add">+ добавить</div></div>
+  </div>
+  <div class="nav">
+    <a class="on"><span class="ni">🏠</span>Главная</a>
+    <a><span class="ni">📖</span>Дневник</a>
+    <a><span class="ni">💬</span>Чат</a>
+    <a><span class="ni">👤</span>Профиль</a>
+  </div>
+</body>
+</html>

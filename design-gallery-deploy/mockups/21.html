@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390, initial-scale=1">
+<title>21 — Dark Teal Pro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#06141A; --panel:#0C2129; --panel2:#102A33; --teal:#2EC4B6; --teal-d:#1E9E92;
+    --gold:#E9C46A; --text:#E6F1F0; --muted:#6E8C8E; --line:rgba(46,196,182,.14);
+    --font:"Sora",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-font-smoothing:antialiased;}
+  html,body{width:390px;height:844px;}
+  body{background:
+      radial-gradient(110% 50% at 50% -8%, rgba(46,196,182,.12), transparent 55%),
+      var(--bg);
+    font-family:var(--font);color:var(--text);overflow:hidden;display:flex;flex-direction:column;}
+  .status{display:flex;justify-content:space-between;align-items:center;padding:14px 24px 6px;font-size:13.5px;font-weight:600;color:var(--text);}
+  .status .ic{display:flex;gap:6px;align-items:center;font-size:13px;color:var(--teal);}
+  .scroll{flex:1;overflow:hidden;padding:8px 22px 0;}
+  .head{display:flex;justify-content:space-between;align-items:center;margin:8px 0 22px;}
+  .head .greet{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--teal);font-weight:600;}
+  .head h1{font-size:23px;font-weight:700;letter-spacing:-.4px;margin-top:4px;}
+  .head p{font-size:12.5px;color:var(--muted);margin-top:3px;}
+  .avatar{width:50px;height:50px;border-radius:16px;background:var(--panel);border:1px solid var(--line);color:var(--teal);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;box-shadow:0 0 24px rgba(46,196,182,.12) inset;}
+  /* hero */
+  .hero{background:linear-gradient(160deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:26px;padding:24px;margin-bottom:16px;display:flex;align-items:center;gap:22px;}
+  .ring{position:relative;width:138px;height:138px;flex-shrink:0;display:flex;align-items:center;justify-content:center;}
+  .ring svg{filter:drop-shadow(0 0 8px rgba(46,196,182,.4));}
+  .ring .ctxt{position:absolute;text-align:center;}
+  .ring .big{font-size:30px;font-weight:800;letter-spacing:-1px;color:#fff;}
+  .ring .sub{font-size:10.5px;color:var(--muted);margin-top:2px;letter-spacing:.5px;}
+  .hero .side .lab{font-size:10.5px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);}
+  .hero .side .v{font-size:23px;font-weight:700;margin:3px 0 16px;}
+  .hero .side .v b{color:var(--teal);}
+  .hero .side .v small{font-size:12px;color:var(--muted);font-weight:400;}
+  /* macros */
+  .macros{display:flex;gap:10px;margin-bottom:18px;}
+  .macro{flex:1;background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:15px 13px;}
+  .macro .m-top{font-size:10.5px;letter-spacing:1px;color:var(--muted);margin-bottom:8px;text-transform:uppercase;}
+  .macro .m-val{font-size:16px;font-weight:700;margin-bottom:10px;}
+  .macro .m-val small{font-size:11px;color:var(--muted);font-weight:400;}
+  .macro .bar{height:5px;border-radius:5px;background:rgba(46,196,182,.12);overflow:hidden;}
+  .macro .bar i{display:block;height:100%;border-radius:5px;background:linear-gradient(90deg,var(--teal-d),var(--teal));box-shadow:0 0 8px rgba(46,196,182,.5);}
+  /* arni */
+  .arni{background:linear-gradient(160deg,rgba(46,196,182,.1),var(--panel));border:1px solid var(--line);border-radius:22px;padding:18px 20px;margin-bottom:22px;display:flex;align-items:center;gap:15px;}
+  .arni .a-av{width:46px;height:46px;border-radius:14px;background:var(--teal);color:#06141A;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:19px;flex-shrink:0;box-shadow:0 0 20px rgba(46,196,182,.4);}
+  .arni .a-txt b{font-size:15px;}
+  .arni .a-txt .tag{font-size:9.5px;letter-spacing:1.5px;color:var(--teal);text-transform:uppercase;display:block;margin-top:1px;}
+  .arni .a-txt p{font-size:12.5px;color:var(--muted);margin-top:6px;line-height:1.4;}
+  .arni .a-go{margin-left:auto;font-size:22px;color:var(--teal);}
+  /* meals */
+  .sec-title{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:14px;font-weight:600;}
+  .meal{display:flex;align-items:center;gap:14px;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:13px 15px;margin-bottom:10px;}
+  .meal .m-ic{width:42px;height:42px;border-radius:12px;background:var(--panel2);display:flex;align-items:center;justify-content:center;font-size:19px;}
+  .meal .m-name{font-size:14.5px;font-weight:600;}
+  .meal .m-kcal{font-size:11.5px;color:var(--muted);margin-top:2px;}
+  .meal .m-r{margin-left:auto;font-size:12px;font-weight:600;}
+  .meal .done{width:27px;height:27px;border-radius:50%;background:rgba(46,196,182,.15);border:1px solid var(--teal);color:var(--teal);display:flex;align-items:center;justify-content:center;font-size:13px;}
+  .meal .add{color:var(--gold);border:1px solid rgba(233,196,106,.4);border-radius:30px;padding:6px 13px;font-size:12px;}
+  /* nav */
+  .nav{display:flex;justify-content:space-around;padding:15px 10px 28px;background:rgba(6,20,26,.85);border-top:1px solid var(--line);backdrop-filter:blur(8px);}
+  .nav a{display:flex;flex-direction:column;align-items:center;gap:5px;font-size:10px;color:var(--muted);text-decoration:none;font-weight:500;}
+  .nav a.on{color:var(--teal);}
+  .nav .n-ic{font-size:18px;}
+</style>
+</head>
+<body>
+  <div class="status"><span>9:41</span><span class="ic">􀙇 􀊪 􀛨</span></div>
+  <div class="scroll">
+    <div class="head">
+      <div><div class="greet">Добрый день</div><h1>Привет, Пётр</h1><p>Среда, 15 июня</p></div>
+      <div class="avatar">П</div>
+    </div>
+    <div class="hero">
+      <div class="ring">
+        <svg width="138" height="138" viewBox="0 0 138 138">
+          <circle cx="69" cy="69" r="60" fill="none" stroke="rgba(46,196,182,.12)" stroke-width="9"/>
+          <circle cx="69" cy="69" r="60" fill="none" stroke="#2EC4B6" stroke-width="9"
+            stroke-dasharray="377" stroke-dashoffset="87" stroke-linecap="round" transform="rotate(-90 69 69)"/>
+        </svg>
+        <div class="ctxt"><div class="big">1 850</div><div class="sub">из 2 400 ккал</div></div>
+      </div>
+      <div class="side">
+        <div class="lab">Осталось</div><div class="v"><b>550</b> <small>ккал</small></div>
+        <div class="lab">Сожжено</div><div class="v">420 <small>ккал</small></div>
+      </div>
+    </div>
+    <div class="macros">
+      <div class="macro"><div class="m-top">Белки</div><div class="m-val">90 <small>/140г</small></div><div class="bar"><i style="width:64%"></i></div></div>
+      <div class="macro"><div class="m-top">Жиры</div><div class="m-val">50 <small>/70г</small></div><div class="bar"><i style="width:71%"></i></div></div>
+      <div class="macro"><div class="m-top">Углев</div><div class="m-val">180 <small>/250г</small></div><div class="bar"><i style="width:72%"></i></div></div>
+    </div>
+    <div class="arni">
+      <div class="a-av">А</div>
+      <div class="a-txt"><b>Арни</b><span class="tag">AI Coach</span><p>До цели по белку 50 г. Рекомендую творог на ужин.</p></div>
+      <div class="a-go">›</div>
+    </div>
+    <div class="sec-title">Приёмы пищи</div>
+    <div class="meal"><div class="m-ic">🍳</div><div><div class="m-name">Завтрак</div><div class="m-kcal">520 ккал · 3 продукта</div></div><div class="m-r"><span class="done">✓</span></div></div>
+    <div class="meal"><div class="m-ic">🥗</div><div><div class="m-name">Обед</div><div class="m-kcal">640 ккал · 4 продукта</div></div><div class="m-r"><span class="done">✓</span></div></div>
+    <div class="meal"><div class="m-ic">🍽️</div><div><div class="m-name">Ужин</div><div class="m-kcal">Запланировано</div></div><div class="m-r"><span class="add">+ добавить</span></div></div>
+  </div>
+  <div class="nav">
+    <a class="on"><span class="n-ic">🏠</span>Главная</a>
+    <a><span class="n-ic">📖</span>Дневник</a>
+    <a><span class="n-ic">💬</span>Чат</a>
+    <a><span class="n-ic">👤</span>Профиль</a>
+  </div>
+</body>
+</html>

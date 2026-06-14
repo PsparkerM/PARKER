@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390, initial-scale=1">
+<title>07 — Brutalist</title>
+<style>
+  :root{
+    --bg:#FFFFFF; --ink:#000000; --yellow:#FFE600; --gray:#EDEDED;
+    --font:"Space Mono",ui-monospace,"SF Mono","Roboto Mono",Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-font-smoothing:antialiased;}
+  html,body{width:390px;height:844px;}
+  body{background:var(--bg);font-family:var(--font);color:var(--ink);overflow:hidden;display:flex;flex-direction:column;}
+  .status{display:flex;justify-content:space-between;align-items:center;padding:12px 18px 8px;font-size:13px;font-weight:700;border-bottom:3px solid var(--ink);}
+  .scroll{flex:1;overflow:hidden;padding:14px 16px 0;}
+  .head{display:flex;justify-content:space-between;align-items:stretch;margin-bottom:16px;}
+  .head h1{font-size:26px;font-weight:700;text-transform:uppercase;line-height:1;letter-spacing:-1px;}
+  .head p{font-size:11px;font-weight:700;margin-top:6px;text-transform:uppercase;background:var(--yellow);display:inline-block;padding:2px 6px;border:2px solid var(--ink);}
+  .avatar{width:50px;height:50px;background:var(--yellow);border:3px solid var(--ink);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:22px;}
+  /* hero */
+  .hero{border:3px solid var(--ink);margin-bottom:16px;}
+  .hero .ht{display:flex;justify-content:space-between;align-items:baseline;padding:12px 14px;background:var(--yellow);border-bottom:3px solid var(--ink);}
+  .hero .ht .big{font-size:38px;font-weight:700;letter-spacing:-2px;}
+  .hero .ht .tot{font-size:14px;font-weight:700;}
+  .hero .hbarwrap{height:26px;border-bottom:3px solid var(--ink);position:relative;}
+  .hero .hbar{height:100%;width:77%;background:var(--ink);}
+  .hero .hb{display:flex;justify-content:space-between;padding:10px 14px;font-size:12px;font-weight:700;text-transform:uppercase;}
+  .hero .hb b{background:var(--ink);color:var(--yellow);padding:2px 6px;}
+  /* macros */
+  .macros{display:flex;margin-bottom:16px;border:3px solid var(--ink);}
+  .macro{flex:1;padding:10px 8px;border-right:3px solid var(--ink);}
+  .macro:last-child{border-right:none;}
+  .macro .mt{font-size:10px;font-weight:700;text-transform:uppercase;}
+  .macro .mv{font-size:15px;font-weight:700;margin:6px 0;}
+  .macro .bar{height:10px;border:2px solid var(--ink);overflow:hidden;}
+  .macro .bar i{display:block;height:100%;background:var(--yellow);}
+  /* arni */
+  .arni{display:flex;align-items:center;gap:12px;border:3px solid var(--ink);padding:12px;margin-bottom:16px;background:var(--ink);color:#fff;}
+  .arni .av{width:44px;height:44px;background:var(--yellow);border:2px solid #fff;color:var(--ink);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px;}
+  .arni b{font-size:14px;text-transform:uppercase;letter-spacing:1px;}
+  .arni p{font-size:11px;margin-top:3px;color:var(--yellow);}
+  .arni .go{margin-left:auto;font-size:22px;font-weight:700;}
+  /* meals */
+  .lbl{font-size:12px;font-weight:700;text-transform:uppercase;margin-bottom:10px;border-bottom:3px solid var(--ink);padding-bottom:6px;}
+  .meal{display:flex;align-items:center;gap:12px;padding:10px 8px;border:3px solid var(--ink);margin-bottom:8px;}
+  .meal .mi{width:40px;height:40px;background:var(--gray);border:2px solid var(--ink);display:flex;align-items:center;justify-content:center;font-size:20px;}
+  .meal .mn{font-size:14px;font-weight:700;text-transform:uppercase;}
+  .meal .mk{font-size:10px;font-weight:700;margin-top:2px;color:#555;}
+  .meal .mr{margin-left:auto;font-size:12px;font-weight:700;}
+  .meal .ok{background:var(--ink);color:var(--yellow);padding:4px 8px;}
+  .meal .add{background:var(--yellow);border:2px solid var(--ink);padding:4px 8px;text-transform:uppercase;}
+  /* nav */
+  .nav{display:flex;border-top:3px solid var(--ink);}
+  .nav a{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:12px 0 24px;font-size:9px;font-weight:700;text-transform:uppercase;text-decoration:none;color:var(--ink);border-right:3px solid var(--ink);}
+  .nav a:last-child{border-right:none;}
+  .nav a.on{background:var(--yellow);}
+  .nav .ni{font-size:18px;}
+</style>
+</head>
+<body>
+  <div class="status"><span>9:41</span><span>● ● ● 100%</span></div>
+  <div class="scroll">
+    <div class="head">
+      <div><h1>Привет,<br>Пётр</h1><p>Среда · 15 июня</p></div>
+      <div class="avatar">П</div>
+    </div>
+    <div class="hero">
+      <div class="ht"><span class="big">1 850</span><span class="tot">/ 2 400 ККАЛ</span></div>
+      <div class="hbarwrap"><div class="hbar"></div></div>
+      <div class="hb"><span>Осталось</span><b>550 ККАЛ</b></div>
+    </div>
+    <div class="macros">
+      <div class="macro"><div class="mt">Белки</div><div class="mv">90/140</div><div class="bar"><i style="width:64%"></i></div></div>
+      <div class="macro"><div class="mt">Жиры</div><div class="mv">50/70</div><div class="bar"><i style="width:71%"></i></div></div>
+      <div class="macro"><div class="mt">Углев</div><div class="mv">180/250</div><div class="bar"><i style="width:72%"></i></div></div>
+    </div>
+    <div class="arni">
+      <div class="av">А</div>
+      <div><b>Арни</b><p>СПРОСИ ПРО УЖИН →</p></div>
+      <div class="go">›</div>
+    </div>
+    <div class="lbl">// Приёмы пищи</div>
+    <div class="meal"><div class="mi">🍳</div><div><div class="mn">Завтрак</div><div class="mk">520 ККАЛ · 3 ПРОДУКТА</div></div><div class="mr ok">✓ 520</div></div>
+    <div class="meal"><div class="mi">🥗</div><div><div class="mn">Обед</div><div class="mk">640 ККАЛ · 4 ПРОДУКТА</div></div><div class="mr ok">✓ 640</div></div>
+    <div class="meal"><div class="mi">🍽️</div><div><div class="mn">Ужин</div><div class="mk">ЗАПЛАНИРОВАНО</div></div><div class="mr add">+ Добавить</div></div>
+  </div>
+  <div class="nav">
+    <a class="on"><span class="ni">⌂</span>Главная</a>
+    <a><span class="ni">▤</span>Дневник</a>
+    <a><span class="ni">▢</span>Чат</a>
+    <a><span class="ni">◍</span>Профиль</a>
+  </div>
+</body>
+</html>

@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390, initial-scale=1">
+<title>12 — Fresh Organic Green</title>
+<style>
+  :root{
+    --bg:#F2F8F0; --card:#FFFFFF; --green:#2FBF71; --green-dk:#1E8A50; --green-soft:#E1F3E6;
+    --text:#1C2B22; --muted:#6E8478; --line:#DDEBE0; --leaf:#7FD99A;
+    --font:"Nunito","Quicksand","SF Pro Rounded",-apple-system,"Segoe UI",sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-font-smoothing:antialiased;}
+  html,body{width:390px;height:844px;}
+  body{background:
+      radial-gradient(60% 30% at 100% 0%, rgba(127,217,154,.25), transparent 60%),
+      radial-gradient(50% 25% at 0% 18%, rgba(47,191,113,.12), transparent 60%),
+      var(--bg);
+    font-family:var(--font);color:var(--text);overflow:hidden;display:flex;flex-direction:column;}
+  .status{display:flex;justify-content:space-between;align-items:center;padding:14px 22px 6px;font-size:13px;font-weight:700;color:var(--green-dk);}
+  .scroll{flex:1;overflow:hidden;padding:6px 20px 0;}
+  .head{display:flex;justify-content:space-between;align-items:center;margin:8px 0 18px;}
+  .head h1{font-size:23px;font-weight:800;letter-spacing:-.3px;}
+  .head p{font-size:12px;color:var(--muted);margin-top:3px;font-weight:600;}
+  .avatar{width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,var(--green),var(--leaf));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:19px;color:#fff;box-shadow:0 6px 18px rgba(47,191,113,.35);}
+  /* hero */
+  .hero{background:var(--card);border-radius:28px;padding:20px;margin-bottom:14px;box-shadow:0 10px 30px rgba(30,138,80,.08);display:flex;align-items:center;gap:20px;position:relative;overflow:hidden;}
+  .hero .leaf{position:absolute;top:-14px;right:-10px;font-size:60px;opacity:.12;transform:rotate(20deg);}
+  .ring{width:118px;height:118px;flex-shrink:0;position:relative;}
+  .ring svg{transform:rotate(-90deg);}
+  .ring .ctr{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+  .ring .ctr .b{font-size:26px;font-weight:800;letter-spacing:-.5px;color:var(--green-dk);}
+  .ring .ctr .s{font-size:10px;color:var(--muted);margin-top:1px;font-weight:600;}
+  .hero .side .label{font-size:12px;color:var(--muted);font-weight:600;}
+  .hero .side .val{font-size:24px;font-weight:800;color:var(--green);margin:2px 0 12px;}
+  .hero .side .pill{display:inline-flex;align-items:center;gap:5px;background:var(--green-soft);color:var(--green-dk);font-size:11px;font-weight:700;padding:5px 10px;border-radius:20px;}
+  /* macros */
+  .macros{display:flex;gap:10px;margin-bottom:16px;}
+  .macro{flex:1;background:var(--card);border-radius:22px;padding:14px 12px;box-shadow:0 6px 18px rgba(30,138,80,.06);}
+  .macro .mt{font-size:11px;color:var(--muted);font-weight:700;}
+  .macro .mv{font-size:15px;font-weight:800;margin:7px 0;}
+  .macro .mv small{color:var(--muted);font-weight:600;font-size:11px;}
+  .macro .bar{height:7px;border-radius:7px;background:var(--green-soft);overflow:hidden;}
+  .macro .bar i{display:block;height:100%;border-radius:7px;background:linear-gradient(90deg,var(--green),var(--leaf));}
+  /* arni */
+  .arni{display:flex;align-items:center;gap:14px;background:linear-gradient(120deg,var(--green-dk),var(--green));border-radius:24px;padding:16px;margin-bottom:16px;box-shadow:0 10px 26px rgba(47,191,113,.3);}
+  .arni .av{width:46px;height:46px;border-radius:50%;background:#fff;color:var(--green-dk);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:20px;}
+  .arni b{font-size:15px;color:#fff;}
+  .arni p{font-size:12px;color:#E1F3E6;margin-top:3px;}
+  .arni .go{margin-left:auto;font-size:22px;color:#fff;opacity:.85;}
+  /* meals */
+  .lbl{font-size:13px;font-weight:800;margin-bottom:12px;}
+  .meal{display:flex;align-items:center;gap:13px;background:var(--card);border-radius:20px;padding:12px 14px;margin-bottom:9px;box-shadow:0 4px 14px rgba(30,138,80,.05);}
+  .meal .mi{width:42px;height:42px;border-radius:14px;background:var(--green-soft);display:flex;align-items:center;justify-content:center;font-size:20px;}
+  .meal .mn{font-size:14px;font-weight:700;}
+  .meal .mk{font-size:11px;color:var(--muted);margin-top:2px;font-weight:600;}
+  .meal .mr{margin-left:auto;font-size:12px;font-weight:700;display:flex;align-items:center;gap:6px;}
+  .meal .ok{color:var(--green-dk);}
+  .meal .chk{width:22px;height:22px;border-radius:50%;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;}
+  .meal .add{color:var(--green);border:2px solid var(--green);border-radius:14px;padding:5px 11px;font-size:11px;}
+  /* nav */
+  .nav{display:flex;justify-content:space-around;padding:12px 8px 26px;background:var(--card);border-top:1px solid var(--line);box-shadow:0 -6px 20px rgba(30,138,80,.05);}
+  .nav a{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:10px;font-weight:700;color:var(--muted);text-decoration:none;}
+  .nav a.on{color:var(--green);}
+  .nav .ni{font-size:18px;}
+</style>
+</head>
+<body>
+  <div class="status"><span>9:41</span><span>􀙇 􀊪 􀛨</span></div>
+  <div class="scroll">
+    <div class="head">
+      <div><h1>Привет, Пётр 🌿</h1><p>Среда, 15 июня</p></div>
+      <div class="avatar">П</div>
+    </div>
+    <div class="hero">
+      <span class="leaf">🍃</span>
+      <div class="ring">
+        <svg width="118" height="118" viewBox="0 0 118 118">
+          <defs><linearGradient id="g12" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#2FBF71"/><stop offset="1" stop-color="#7FD99A"/></linearGradient></defs>
+          <circle cx="59" cy="59" r="50" fill="none" stroke="#E1F3E6" stroke-width="10"/>
+          <circle cx="59" cy="59" r="50" fill="none" stroke="url(#g12)" stroke-width="10" stroke-linecap="round"
+            stroke-dasharray="314" stroke-dashoffset="72"/>
+        </svg>
+        <div class="ctr"><div class="b">1 850</div><div class="s">из 2 400 ккал</div></div>
+      </div>
+      <div class="side">
+        <div class="label">Осталось</div>
+        <div class="val">550</div>
+        <span class="pill">🔥 420 ккал сожжено</span>
+      </div>
+    </div>
+    <div class="macros">
+      <div class="macro"><div class="mt">Белки</div><div class="mv">90<small>/140г</small></div><div class="bar"><i style="width:64%"></i></div></div>
+      <div class="macro"><div class="mt">Жиры</div><div class="mv">50<small>/70г</small></div><div class="bar"><i style="width:71%"></i></div></div>
+      <div class="macro"><div class="mt">Углеводы</div><div class="mv">180<small>/250г</small></div><div class="bar"><i style="width:72%"></i></div></div>
+    </div>
+    <div class="arni">
+      <div class="av">А</div>
+      <div><b>Арни</b><p>Добавь зелени к ужину — спроси меня →</p></div>
+      <div class="go">›</div>
+    </div>
+    <div class="lbl">Приёмы пищи</div>
+    <div class="meal"><div class="mi">🍳</div><div><div class="mn">Завтрак</div><div class="mk">520 ккал · 3 продукта</div></div><div class="mr ok"><span class="chk">✓</span>520</div></div>
+    <div class="meal"><div class="mi">🥗</div><div><div class="mn">Обед</div><div class="mk">640 ккал · 4 продукта</div></div><div class="mr ok"><span class="chk">✓</span>640</div></div>
+    <div class="meal"><div class="mi">🍽️</div><div><div class="mn">Ужин</div><div class="mk">Запланировано</div></div><div class="mr"><span class="add">+ добавить</span></div></div>
+  </div>
+  <div class="nav">
+    <a class="on"><span class="ni">🏠</span>Главная</a>
+    <a><span class="ni">📖</span>Дневник</a>
+    <a><span class="ni">💬</span>Чат</a>
+    <a><span class="ni">👤</span>Профиль</a>
+  </div>
+</body>
+</html>

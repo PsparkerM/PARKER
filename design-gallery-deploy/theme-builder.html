@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>P.A.R.K.E.R. — Конструктор цвета</title>
+<style>
+  :root{
+    --pbg:#0C0D10; --pcard:#16181D; --pline:#262A31; --ptext:#EAECEF; --pmut:#8A8F98; --pacc:#FF5436;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;}
+  body{background:var(--pbg);color:var(--ptext);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,sans-serif;-webkit-font-smoothing:antialiased;}
+  .wrap{display:flex;gap:0;min-height:100%;}
+  /* controls */
+  .panel{width:380px;flex-shrink:0;border-right:1px solid var(--pline);padding:24px 22px 60px;overflow-y:auto;height:100vh;}
+  .panel h1{font-size:20px;font-weight:800;letter-spacing:-.5px;margin:0 0 2px;}
+  .panel .sub{color:var(--pmut);font-size:12.5px;margin-bottom:20px;line-height:1.5;}
+  .sec{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--pmut);font-weight:700;margin:22px 0 10px;}
+  .modes{display:flex;gap:8px;}
+  .modes button{flex:1;border:1px solid var(--pline);background:var(--pcard);color:var(--ptext);border-radius:10px;padding:9px;font-size:13px;font-weight:600;cursor:pointer;}
+  .modes button.on{background:var(--pacc);border-color:var(--pacc);color:#fff;}
+  .row{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--pline);}
+  .row label{flex:1;font-size:13.5px;font-weight:600;}
+  .row label small{display:block;color:var(--pmut);font-weight:400;font-size:11px;}
+  .row input[type=color]{width:40px;height:34px;border:1px solid var(--pline);border-radius:9px;background:none;cursor:pointer;padding:2px;}
+  .row input[type=text]{width:88px;border:1px solid var(--pline);background:var(--pcard);color:var(--ptext);border-radius:8px;padding:7px 8px;font-family:ui-monospace,monospace;font-size:12px;text-transform:uppercase;}
+  .palettes{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;}
+  .pal{border:1px solid var(--pline);background:var(--pcard);border-radius:10px;padding:8px 9px;cursor:pointer;transition:.15s;}
+  .pal:hover{border-color:var(--pacc);}
+  .pal .pn{font-size:12px;font-weight:600;margin-bottom:6px;}
+  .pal .sw{display:flex;gap:4px;}
+  .pal .sw i{width:16px;height:16px;border-radius:4px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.15);}
+  .btns{display:flex;gap:8px;margin-top:14px;}
+  .btns button{flex:1;border:1px solid var(--pline);background:var(--pcard);color:var(--ptext);border-radius:10px;padding:11px;font-size:13px;font-weight:700;cursor:pointer;}
+  .btns button:hover{border-color:var(--pacc);}
+  .slider{display:flex;align-items:center;gap:12px;padding:6px 0;}
+  .slider input{flex:1;accent-color:var(--pacc);}
+  .slider .v{font-family:ui-monospace,monospace;font-size:12px;color:var(--pmut);width:46px;text-align:right;}
+  .export{margin-top:8px;}
+  .export textarea{width:100%;height:120px;border:1px solid var(--pline);background:#0A0B0E;color:#9FE7C0;border-radius:10px;padding:12px;font-family:ui-monospace,monospace;font-size:11.5px;line-height:1.5;resize:vertical;}
+  .copy{margin-top:8px;width:100%;border:1px solid var(--pacc);background:var(--pacc);color:#fff;border-radius:10px;padding:11px;font-weight:700;font-size:13px;cursor:pointer;}
+  .copy.done{background:#22A06B;border-color:#22A06B;}
+  /* preview */
+  .stage{flex:1;display:flex;align-items:center;justify-content:center;padding:30px;background:
+        radial-gradient(80% 60% at 50% 0%, rgba(255,84,54,.06), transparent 60%);min-height:100vh;}
+  .device{background:#0A0A0C;border-radius:48px;padding:13px;box-shadow:0 40px 90px rgba(0,0,0,.55);position:relative;}
+  .device::after{content:"";position:absolute;top:13px;left:50%;transform:translateX(-50%);width:120px;height:26px;background:#0A0A0C;border-radius:0 0 16px 16px;z-index:5;}
+
+  /* ===== APP PREVIEW — fully theme-variable driven ===== */
+  .app{
+    --bg:#FFFFFF; --surface:#F6F6F4; --text:#0F0F0F; --muted:#9A9A95; --accent:#FF5436; --accent2:#FF9A5A; --radius:18px;
+    --line:color-mix(in srgb, var(--text) 9%, transparent);
+    width:380px;height:800px;border-radius:36px;overflow:hidden;background:var(--bg);color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,sans-serif;display:flex;flex-direction:column;
+  }
+  .app *{box-sizing:border-box;}
+  .app .st{display:flex;justify-content:space-between;align-items:center;padding:14px 26px 4px;font-size:14px;font-weight:600;}
+  .app .scr{flex:1;overflow:hidden;padding:6px 22px 0;}
+  .app .hd{display:flex;justify-content:space-between;align-items:center;margin:10px 0 20px;}
+  .app .hd h2{font-size:23px;font-weight:800;letter-spacing:-.5px;margin:0;}
+  .app .hd p{font-size:13px;color:var(--muted);margin:3px 0 0;}
+  .app .av{width:46px;height:46px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;}
+  .app .hero{display:flex;align-items:center;gap:22px;padding:4px 2px 24px;}
+  .app .ring{width:140px;height:140px;border-radius:50%;background:conic-gradient(var(--accent) 0 77%, var(--line) 77% 100%);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .app .ring .in{width:114px;height:114px;border-radius:50%;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;}
+  .app .ring .big{font-size:29px;font-weight:800;letter-spacing:-1px;}
+  .app .ring .sb{font-size:11px;color:var(--muted);margin-top:2px;}
+  .app .side .lb{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;}
+  .app .side .vl{font-size:21px;font-weight:700;margin:2px 0 14px;}
+  .app .side .vl b{color:var(--accent);}
+  .app .mac{display:flex;gap:10px;margin-bottom:22px;}
+  .app .m{flex:1;background:var(--surface);border-radius:var(--radius);padding:13px 12px;}
+  .app .m .mt{font-size:12px;color:var(--muted);margin-bottom:7px;}
+  .app .m .mv{font-size:14px;font-weight:700;margin-bottom:8px;}
+  .app .m .bar{height:5px;border-radius:5px;background:var(--line);overflow:hidden;}
+  .app .m .bar i{display:block;height:100%;border-radius:5px;background:var(--accent);}
+  .app .arni{display:flex;align-items:center;gap:14px;background:var(--text);color:var(--bg);border-radius:var(--radius);padding:15px 18px;margin-bottom:22px;}
+  .app .arni .aa{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;}
+  .app .arni b{font-size:15px;}
+  .app .arni p{font-size:12.5px;opacity:.7;margin:2px 0 0;}
+  .app .arni .go{margin-left:auto;font-size:20px;opacity:.5;}
+  .app .ttl{font-size:15px;font-weight:700;margin-bottom:10px;}
+  .app .meal{display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--line);}
+  .app .meal .mi{width:42px;height:42px;border-radius:13px;background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:20px;}
+  .app .meal .mn{font-size:15px;font-weight:600;}
+  .app .meal .mk{font-size:12.5px;color:var(--muted);margin-top:2px;}
+  .app .meal .mr{margin-left:auto;font-size:13px;font-weight:600;}
+  .app .meal .done{color:var(--accent);}
+  .app .meal .add{color:var(--muted);}
+  .app .nav{display:flex;justify-content:space-around;padding:13px 10px 24px;border-top:1px solid var(--line);background:var(--bg);}
+  .app .nav a{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:10.5px;color:var(--muted);}
+  .app .nav a.on{color:var(--accent);}
+  .app .nav .ni{font-size:19px;}
+  @media (max-width:880px){
+    .wrap{flex-direction:column;} .panel{width:100%;height:auto;border-right:0;border-bottom:1px solid var(--pline);}
+    .stage{min-height:auto;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="panel">
+    <h1>🎨 Конструктор цвета</h1>
+    <div class="sub">Крути цвета — экран приложения меняется вживую. Выбери готовую палитру или собери свою. Внизу можно скопировать CSS.</div>
+
+    <div class="sec">База</div>
+    <div class="modes">
+      <button data-mode="light" class="on">☀️ Светлая</button>
+      <button data-mode="dark">🌙 Тёмная</button>
+    </div>
+
+    <div class="sec">Готовые палитры</div>
+    <div class="palettes" id="pals"></div>
+
+    <div class="sec">Свои цвета</div>
+    <div id="pickers"></div>
+
+    <div class="sec">Скругление углов</div>
+    <div class="slider">
+      <input type="range" id="radius" min="0" max="32" value="18">
+      <span class="v" id="radiusV">18px</span>
+    </div>
+
+    <div class="btns">
+      <button id="rand">🎲 Случайная</button>
+      <button id="reset">↺ Сбросить</button>
+    </div>
+
+    <div class="sec">Экспорт CSS</div>
+    <div class="export"><textarea id="css" readonly></textarea></div>
+    <button class="copy" id="copy">Копировать CSS</button>
+  </div>
+
+  <div class="stage">
+    <div class="device"><div class="app" id="app">
+      <div class="st"><span>9:41</span><span>● ● ● ▮</span></div>
+      <div class="scr">
+        <div class="hd"><div><h2>Привет, Пётр 👋</h2><p>Среда, 15 июня</p></div><div class="av">П</div></div>
+        <div class="hero">
+          <div class="ring"><div class="in"><div class="big">1 850</div><div class="sb">из 2 400 ккал</div></div></div>
+          <div class="side"><div class="lb">Осталось</div><div class="vl"><b>550</b> ккал</div><div class="lb">Сожжено</div><div class="vl">420 ккал</div></div>
+        </div>
+        <div class="mac">
+          <div class="m"><div class="mt">Белки</div><div class="mv">90 / 140</div><div class="bar"><i style="width:64%"></i></div></div>
+          <div class="m"><div class="mt">Жиры</div><div class="mv">50 / 70</div><div class="bar"><i style="width:71%"></i></div></div>
+          <div class="m"><div class="mt">Углеводы</div><div class="mv">180/250</div><div class="bar"><i style="width:72%"></i></div></div>
+        </div>
+        <div class="arni"><div class="aa">А</div><div><b>Арни</b><p>Спроси меня про твой ужин →</p></div><div class="go">›</div></div>
+        <div class="ttl">Приёмы пищи</div>
+        <div class="meal"><div class="mi">🍳</div><div><div class="mn">Завтрак</div><div class="mk">520 ккал · 3 продукта</div></div><div class="mr done">✓</div></div>
+        <div class="meal"><div class="mi">🥗</div><div><div class="mn">Обед</div><div class="mk">640 ккал · 4 продукта</div></div><div class="mr done">✓</div></div>
+        <div class="meal"><div class="mi">🍽️</div><div><div class="mn">Ужин</div><div class="mk">Запланировано</div></div><div class="mr add">+ добавить</div></div>
+      </div>
+      <div class="nav">
+        <a class="on"><span class="ni">🏠</span>Главная</a>
+        <a><span class="ni">📖</span>Дневник</a>
+        <a><span class="ni">💬</span>Чат</a>
+        <a><span class="ni">👤</span>Профиль</a>
+      </div>
+    </div></div>
+  </div>
+</div>
+
+<script>
+const VARS = [
+  {k:'bg',     name:'Фон',          d:'Основной фон'},
+  {k:'surface',name:'Поверхность',  d:'Карточки, плитки'},
+  {k:'text',   name:'Текст',        d:'Заголовки и текст'},
+  {k:'muted',  name:'Приглушённый', d:'Подписи, второстеп.'},
+  {k:'accent', name:'Акцент',       d:'Кнопки, прогресс'},
+  {k:'accent2',name:'Акцент 2',     d:'Градиент Арни'},
+];
+const PRESETS = [
+  {n:'Коралл',    m:'light', v:{bg:'#FFFFFF',surface:'#F6F6F4',text:'#0F0F0F',muted:'#9A9A95',accent:'#FF5436',accent2:'#FF9A5A'}},
+  {n:'JARVIS',    m:'dark',  v:{bg:'#05080F',surface:'#0E1726',text:'#DCF3FF',muted:'#5E8499',accent:'#38E1FF',accent2:'#7CF2D8'}},
+  {n:'Лайм',      m:'dark',  v:{bg:'#0B0B0F',surface:'#16161C',text:'#F2F2F2',muted:'#8A8A92',accent:'#C6FF00',accent2:'#A0D000'}},
+  {n:'Мята',      m:'light', v:{bg:'#F2F8F0',surface:'#FFFFFF',text:'#14241B',muted:'#7A8A80',accent:'#2FBF71',accent2:'#7AD9A0'}},
+  {n:'Фиолет AI', m:'light', v:{bg:'#F6F4FF',surface:'#FFFFFF',text:'#1A1630',muted:'#8A86A0',accent:'#7C5CFC',accent2:'#C7BBFF'}},
+  {n:'Закат',     m:'dark',  v:{bg:'#2A1133',surface:'#3A1B45',text:'#FFE9E0',muted:'#B58FA8',accent:'#FF7E5F',accent2:'#FEB47B'}},
+  {n:'Океан',     m:'light', v:{bg:'#FFFFFF',surface:'#F1F6FC',text:'#0C2233',muted:'#6B8298',accent:'#0A84FF',accent2:'#00C2FF'}},
+  {n:'Золото',    m:'dark',  v:{bg:'#0E0E0E',surface:'#1A1813',text:'#F3EEE2',muted:'#9A8F77',accent:'#D4AF37',accent2:'#E8C96A'}},
+  {n:'Роза',      m:'light', v:{bg:'#FFF3EC',surface:'#FFFFFF',text:'#2A1A18',muted:'#A98A80',accent:'#FF6B6B',accent2:'#FFC2B4'}},
+  {n:'Полночь',   m:'dark',  v:{bg:'#0B1426',surface:'#14203A',text:'#DCE6F5',muted:'#6E84A8',accent:'#6EA8FF',accent2:'#C9D4E5'}},
+];
+const DEFAULT = PRESETS[0];
+const app = document.getElementById('app');
+let mode='light';
+let state = Object.assign({}, DEFAULT.v);
+
+function apply(){
+  for(const {k} of VARS) app.style.setProperty('--'+k, state[k]);
+  app.style.setProperty('--radius', document.getElementById('radius').value+'px');
+  // sync pickers
+  for(const {k} of VARS){
+    const ci=document.getElementById('c_'+k), ti=document.getElementById('t_'+k);
+    if(ci) ci.value=state[k]; if(ti) ti.value=state[k];
+  }
+  // export
+  const r=document.getElementById('radius').value;
+  document.getElementById('css').value =
+`:root{
+  --bg:${state.bg};
+  --surface:${state.surface};
+  --text:${state.text};
+  --muted:${state.muted};
+  --accent:${state.accent};
+  --accent2:${state.accent2};
+  --radius:${r}px;
+}`;
+}
+function setMode(m){
+  mode=m;
+  document.querySelectorAll('.modes button').forEach(b=>b.classList.toggle('on', b.dataset.mode===m));
+}
+
+// build pickers
+const pk=document.getElementById('pickers');
+for(const {k,name,d} of VARS){
+  const row=document.createElement('div'); row.className='row';
+  row.innerHTML=`<label>${name}<small>${d}</small></label>
+    <input type="color" id="c_${k}" value="${state[k]}">
+    <input type="text" id="t_${k}" value="${state[k]}">`;
+  pk.appendChild(row);
+  row.querySelector('#c_'+k).addEventListener('input',e=>{ state[k]=e.target.value.toUpperCase(); apply(); });
+  row.querySelector('#t_'+k).addEventListener('change',e=>{
+    let v=e.target.value.trim(); if(!v.startsWith('#'))v='#'+v;
+    if(/^#[0-9a-fA-F]{6}$/.test(v)){ state[k]=v.toUpperCase(); apply(); }
+  });
+}
+// build presets
+const pals=document.getElementById('pals');
+PRESETS.forEach(p=>{
+  const d=document.createElement('div'); d.className='pal';
+  d.innerHTML=`<div class="pn">${p.n}</div><div class="sw">${['bg','surface','accent','accent2','text'].map(k=>`<i style="background:${p.v[k]}"></i>`).join('')}</div>`;
+  d.onclick=()=>{ state=Object.assign({},p.v); setMode(p.m); apply(); };
+  pals.appendChild(d);
+});
+// modes
+document.querySelectorAll('.modes button').forEach(b=>{
+  b.onclick=()=>{
+    setMode(b.dataset.mode);
+    // soft swap base bg/text/surface to match mode while keeping accent
+    if(mode==='dark'){ state.bg='#0E0F13'; state.surface='#1A1C22'; state.text='#ECECEF'; state.muted='#8A8F98'; }
+    else { state.bg='#FFFFFF'; state.surface='#F5F5F3'; state.text='#111111'; state.muted='#9A9A95'; }
+    apply();
+  };
+});
+// radius
+const rad=document.getElementById('radius');
+rad.addEventListener('input',()=>{ document.getElementById('radiusV').textContent=rad.value+'px'; apply(); });
+// random
+function rnd(){ return Math.floor(Math.random()*256); }
+function hex(r,g,b){ return '#'+[r,g,b].map(x=>x.toString(16).padStart(2,'0')).join('').toUpperCase(); }
+function hsl2hex(h,s,l){
+  s/=100;l/=100;const c=(1-Math.abs(2*l-1))*s,x=c*(1-Math.abs((h/60)%2-1)),m=l-c/2;
+  let r,g,b;
+  if(h<60){r=c;g=x;b=0}else if(h<120){r=x;g=c;b=0}else if(h<180){r=0;g=c;b=x}
+  else if(h<240){r=0;g=x;b=c}else if(h<300){r=x;g=0;b=c}else{r=c;g=0;b=x}
+  return hex(Math.round((r+m)*255),Math.round((g+m)*255),Math.round((b+m)*255));
+}
+document.getElementById('rand').onclick=()=>{
+  const h=Math.floor(Math.random()*360);
+  state.accent=hsl2hex(h,85,55);
+  state.accent2=hsl2hex((h+28)%360,85,62);
+  if(mode==='dark'){
+    state.bg=hsl2hex(h,28,8); state.surface=hsl2hex(h,22,15); state.text='#EFEFF2'; state.muted=hsl2hex(h,12,55);
+  } else {
+    state.bg='#FFFFFF'; state.surface=hsl2hex(h,40,96); state.text=hsl2hex(h,30,12); state.muted=hsl2hex(h,10,60);
+  }
+  apply();
+};
+document.getElementById('reset').onclick=()=>{ state=Object.assign({},DEFAULT.v); setMode('light'); rad.value=18; document.getElementById('radiusV').textContent='18px'; apply(); };
+// copy
+document.getElementById('copy').onclick=async()=>{
+  const ta=document.getElementById('css'); ta.select();
+  try{ await navigator.clipboard.writeText(ta.value);}catch(e){ document.execCommand('copy'); }
+  const b=document.getElementById('copy'); b.textContent='✓ Скопировано'; b.classList.add('done');
+  setTimeout(()=>{ b.textContent='Копировать CSS'; b.classList.remove('done'); },1400);
+};
+
+// query prefill (?accent=..&bg=..)
+const qs=new URLSearchParams(location.search);
+['bg','surface','text','muted','accent','accent2'].forEach(k=>{
+  let v=qs.get(k); if(v){ if(!v.startsWith('#'))v='#'+v; if(/^#[0-9a-fA-F]{6}$/.test(v)) state[k]=v.toUpperCase(); }
+});
+apply();
+</script>
+</body>
+</html>

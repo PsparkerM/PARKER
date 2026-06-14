@@ -311,6 +311,54 @@ def get_user_logs(user_id: str) -> dict:
         return {}
 
 
+# ── Normalized daily_logs (migration 008) — dual-write target ──────────────────
+# Best-effort: any failure (incl. table not yet created) is swallowed so the
+# blob path (source of truth) is never affected.
+_DAILY_LOG_COLS = (
+    "weight_kg", "sleep_hours", "water_ml", "steps",
+    "waist_cm", "hips_cm", "chest_cm", "thigh_cm", "arm_cm",
+)
+_daily_logs_disabled = False  # flips True if the table is missing → stop retrying
+
+
+def upsert_daily_logs(user_id: str, rows: list[dict]) -> bool:
+    """Bulk upsert normalized daily rows. rows: [{log_date, weight_kg, ...}].
+
+    Idempotent on (user_id, log_date). Returns False (silently) if the table
+    doesn't exist or any error occurs — callers must not depend on success.
+    """
+    global _daily_logs_disabled
+    if _daily_logs_disabled:
+        return False
+    db = get_client()
+    if not db or not rows:
+        return False
+    payload = []
+    for r in rows:
+        d = r.get("log_date")
+        if not d:
+            continue
+        rec = {"user_id": user_id, "log_date": d, "updated_at": datetime.now(timezone.utc).isoformat()}
+        for c in _DAILY_LOG_COLS:
+            if r.get(c) is not None:
+                rec[c] = r[c]
+        payload.append(rec)
+    if not payload:
+        return False
+    try:
+        db.table("daily_logs").upsert(payload, on_conflict="user_id,log_date").execute()
+        return True
+    except Exception as e:
+        # If the table isn't there yet, disable to avoid log spam every sync.
+        msg = str(e).lower()
+        if "daily_logs" in msg and ("does not exist" in msg or "not find" in msg or "schema cache" in msg):
+            _daily_logs_disabled = True
+            logging.warning("daily_logs table missing — dual-write disabled until next deploy")
+        else:
+            logging.warning("upsert_daily_logs failed", exc_info=True)
+        return False
+
+
 _USER_MUTABLE_FIELDS = {"name", "avatar", "avatar_data"}
 
 
