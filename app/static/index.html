@@ -1695,7 +1695,10 @@ async function _onbStage(idx) {
         <input class="onb-body-inp" id="onb-ht" type="number" inputmode="numeric" placeholder="175"></div>
       <div class="onb-body-field"><div class="onb-body-lbl">Вес, кг</div>
         <input class="onb-body-inp" id="onb-wt" type="number" inputmode="decimal" placeholder="75" step="0.1"></div>
+      <div class="onb-body-field"><div class="onb-body-lbl">% жира · необяз.</div>
+        <input class="onb-body-inp" id="onb-bf" type="number" inputmode="decimal" placeholder="—" step="0.1" min="3" max="60"></div>
     </div>
+    <div style="font-size:11px;color:var(--text3);margin-top:8px;line-height:1.4">💡 Знаешь свой % жира (весы-анализатор/замеры)? Укажи — рассчитаю КБЖУ точнее по сухой массе.</div>
     <button class="onb-next" onclick="onbBodySubmit()">Далее →</button>`);
 
   } else if (stage === 'health') {
@@ -1757,8 +1760,10 @@ function onbBodySubmit() {
   if (!age||age<14||age>80) { toast('Введи возраст (14–80 лет)'); return; }
   if (!ht||ht<100||ht>250) { toast('Введи рост (100–250 см)'); return; }
   if (!wt||wt<20||wt>300)  { toast('Введи вес (20–300 кг)'); return; }
+  const bf = parseFloat(document.getElementById('onb-bf')?.value||'');
   onbData.age = age; onbData.height_cm = ht; onbData.weight_kg = wt;
-  _onbAddMsg('u', `${age} лет, ${ht} см, ${wt} кг`);
+  if (bf && bf>=3 && bf<=60) onbData.body_fat_pct = bf;
+  _onbAddMsg('u', `${age} лет, ${ht} см, ${wt} кг${onbData.body_fat_pct?`, ${onbData.body_fat_pct}% жира`:''}`);
   _onbBottom('');
   _onbStage(ONB_STAGES.indexOf('health'));
 }
@@ -4082,6 +4087,18 @@ function renderPfAccountContent(el) {
     <button class="pf-edit-row" onclick="openSettings()" style="touch-action:manipulation">
       <div class="pf-edit-lbl">${ru?'Аватар и имя':'Avatar & name'}</div>
       <div class="pf-edit-right"><div class="pf-edit-val">${escHtml(profile?.name||'')}</div><div class="pf-edit-arrow">›</div></div>
+    </button>
+    <button class="pf-edit-row" onclick="openLangPanel()" style="touch-action:manipulation">
+      <div class="pf-edit-lbl">${ru?'🌐 Язык':'🌐 Language'}</div>
+      <div class="pf-edit-right"><div class="pf-edit-val">${lang==='en'?'English':'Русский'}</div><div class="pf-edit-arrow">›</div></div>
+    </button>
+    <button class="pf-edit-row" onclick="openFaqPage()" style="touch-action:manipulation">
+      <div class="pf-edit-lbl">${ru?'📖 Инструкция':'📖 Guide'}</div>
+      <div class="pf-edit-right"><div class="pf-edit-arrow">›</div></div>
+    </button>
+    <button class="pf-edit-row" onclick="exportWeightHistory()" style="touch-action:manipulation">
+      <div class="pf-edit-lbl">${ru?'📥 Выгрузить данные (Excel)':'📥 Export data (Excel)'}</div>
+      <div class="pf-edit-right"><div class="pf-edit-arrow">›</div></div>
     </button>
     <button class="pf-edit-row" onclick="confirmReset()" style="touch-action:manipulation">
       <div class="pf-edit-lbl" style="color:var(--red)">${t('pf_reset')}</div>
