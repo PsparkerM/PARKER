@@ -1634,8 +1634,33 @@ async function sendTestNotif(type) {
 function toast(msg, dur=2200) {
   const el = document.getElementById('toast');
   el.textContent = msg; el.classList.add('show');
-  setTimeout(() => el.classList.remove('show'), dur);
+  clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('show'), dur);
 }
+
+// Тост с кнопкой «Отменить» — для деструктивных действий (удаление записей).
+function toastUndo(msg, onUndo, dur=5000) {
+  const el = document.getElementById('toast');
+  const undoLbl = lang !== 'en' ? 'Отменить' : 'Undo';
+  el.innerHTML = `<span>${escHtml(msg)}</span><span id="toast-undo" style="margin-left:14px;color:var(--cyan);font-weight:800;cursor:pointer;touch-action:manipulation">${undoLbl}</span>`;
+  el.classList.add('show');
+  const u = document.getElementById('toast-undo');
+  if (u) u.onclick = () => { el.classList.remove('show'); const f=onUndo; onUndo=null; if(f){haptic('light');f();} };
+  clearTimeout(el._t); el._t = setTimeout(() => { el.classList.remove('show'); el.textContent=''; }, dur);
+}
+
+// Клавиатура: подскролл активного поля, чтобы оно не пряталось под клавиатурой
+// (в чате/онбординге/трекере инпут мог уходить под клаву на мобиле).
+document.addEventListener('focusin', e => {
+  const el = e.target;
+  if (el && /^(INPUT|TEXTAREA)$/.test(el.tagName))
+    setTimeout(() => { try { el.scrollIntoView({block:'center', behavior:'smooth'}); } catch {} }, 300);
+});
+try {
+  tg?.onEvent?.('viewportChanged', () => {
+    const el = document.activeElement;
+    if (el && /^(INPUT|TEXTAREA)$/.test(el.tagName)) { try { el.scrollIntoView({block:'center'}); } catch {} }
+  });
+} catch {}
 
 function autoResize(el) {
   el.addEventListener('input', () => { el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,96)+'px'; });
@@ -1955,6 +1980,29 @@ function _showRefetchBadge(on) {
   } else if (!on && b) b.remove();
 }
 
+// Индикатор сохранения данных в облако: saving / saved / offline.
+function _setSyncStatus(state) {
+  let b = document.getElementById('sync-pip');
+  if (!b) {
+    b = document.createElement('div'); b.id = 'sync-pip';
+    b.style.cssText = 'position:fixed;top:8px;left:8px;z-index:9999;font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;pointer-events:none;transition:opacity .3s';
+    document.body.appendChild(b);
+  }
+  const ru = lang !== 'en';
+  clearTimeout(b._t);
+  if (state === 'saving') {
+    b.style.background='rgba(139,92,246,.18)'; b.style.color='#a78bfa'; b.style.opacity='1';
+    b.textContent = ru?'Сохраняю…':'Saving…';
+  } else if (state === 'saved') {
+    b.style.background='rgba(16,185,129,.18)'; b.style.color='#34d399'; b.style.opacity='1';
+    b.textContent = ru?'✓ Сохранено':'✓ Saved';
+    b._t = setTimeout(() => { b.style.opacity='0'; }, 1500);
+  } else if (state === 'offline') {
+    b.style.background='rgba(244,63,94,.18)'; b.style.color='#fb7185'; b.style.opacity='1';
+    b.textContent = ru?'⚠ Не сохранено':'⚠ Not saved';
+  }
+}
+
 async function tryLoadFromServer(force = false) {
   const tgId = getTgId(); if (!tgId) return false;
   if (_refetching) return false;
@@ -2043,6 +2091,7 @@ async function syncLogsToServer() {
   if (_syncInFlight) { _syncDirty = true; return; }
   _syncInFlight = true;
   _syncDirty = false;
+  _setSyncStatus('saving');
   try {
     const r = await fetch('/api/logs', {
       method:'POST', headers:{'Content-Type':'application/json'},
@@ -2056,8 +2105,10 @@ async function syncLogsToServer() {
       })
     });
     if (!r.ok) throw new Error('http ' + r.status);
+    _setSyncStatus('saved');
   } catch(e) {
     console.warn('syncLogs error', e);
+    _setSyncStatus('offline');
     _syncDirty = true;
     clearTimeout(_syncTimer);
     _syncTimer = setTimeout(syncLogsToServer, 8000);
@@ -2914,7 +2965,16 @@ function renderFoodLog(items) {
   </div>`;
 }
 
-function deleteFoodEntry(ts) { foodLogs=foodLogs.filter(f=>f.ts!==ts); if(ts&&!deletedFood.includes(ts))deletedFood.push(ts); persist(); scheduleSyncLogs(); renderTracker(); if(curTab==='home')renderHome(); }
+function deleteFoodEntry(ts) {
+  const entry = foodLogs.find(f=>f.ts===ts);
+  foodLogs=foodLogs.filter(f=>f.ts!==ts); if(ts&&!deletedFood.includes(ts))deletedFood.push(ts);
+  persist(); scheduleSyncLogs(); renderTracker(); if(curTab==='home')renderHome();
+  toastUndo(lang!=='en'?'Запись удалена':'Entry deleted', () => {
+    if(!entry) return;
+    foodLogs.push(entry); deletedFood=deletedFood.filter(x=>x!==ts);
+    persist(); scheduleSyncLogs(); renderTracker(); if(curTab==='home')renderHome();
+  });
+}
 function editFoodEntry(ts) {
   const entry=foodLogs.find(f=>f.ts===ts); if(!entry) return;
   foodLogs=foodLogs.filter(f=>f.ts!==ts); persist(); goTab('tracker');
@@ -3483,7 +3543,11 @@ function editWeightLog(date) {
   const e=logs.find(l=>l.date===date); if(!e) return;
   openQE(`${lang==='en'?'Weight for':'Вес за'} ${date} (кг)`,e.weight,v=>{if(v<20||v>300){toast(lang==='en'?'Check value':'Проверь значение');return;}e.weight=v;if(profile)profile.weight_kg=v;persist();renderProgress();toast(t('t_wt_upd'));});
 }
-function deleteWeightLog(date) { logs=logs.map(l=>l.date===date?{...l,weight:null}:l); persist(); renderProgress(); toast(t('t_del')); }
+function deleteWeightLog(date) {
+  const prev = logs.find(l=>l.date===date)?.weight;
+  logs=logs.map(l=>l.date===date?{...l,weight:null}:l); persist(); scheduleSyncLogs(); renderProgress();
+  toastUndo(t('t_del'), () => { logs=logs.map(l=>l.date===date?{...l,weight:prev}:l); persist(); scheduleSyncLogs(); renderProgress(); });
+}
 
 async function exportWeightHistory(btn) {
   const ru = lang !== 'en';
