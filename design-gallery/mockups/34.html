@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390, initial-scale=1">
+<title>34 — OLED Pure Black</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#000000; --text:#FFFFFF; --accent:#FF5436; --muted:#6E6E6E; --line:#1A1A1A;
+    --font:"Inter",-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-font-smoothing:antialiased;}
+  html,body{width:390px;height:844px;}
+  body{background:var(--bg);font-family:var(--font);color:var(--text);overflow:hidden;display:flex;flex-direction:column;}
+  .status{display:flex;justify-content:space-between;align-items:center;padding:14px 24px 8px;font-size:14px;font-weight:600;}
+  .scroll{flex:1;overflow:hidden;padding:8px 24px 0;}
+  .head{display:flex;justify-content:space-between;align-items:center;margin:12px 0 26px;}
+  .head h1{font-size:28px;font-weight:800;letter-spacing:-1px;}
+  .head p{font-size:13px;color:var(--muted);margin-top:4px;font-weight:500;}
+  .avatar{width:50px;height:50px;border-radius:50%;background:var(--accent);color:#000;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:20px;}
+  /* hero */
+  .hero{text-align:center;padding:6px 0 30px;}
+  .hero .big{font-size:88px;font-weight:900;letter-spacing:-5px;line-height:.85;}
+  .hero .of{font-size:15px;color:var(--muted);font-weight:600;margin-top:8px;letter-spacing:.3px;}
+  .hero .rem{display:inline-block;margin-top:16px;font-size:14px;font-weight:700;color:var(--accent);border:1.5px solid var(--accent);border-radius:30px;padding:7px 18px;letter-spacing:.3px;}
+  .hero .track{margin-top:20px;height:8px;background:var(--line);border-radius:8px;overflow:hidden;}
+  .hero .track i{display:block;height:100%;width:77%;background:var(--accent);border-radius:8px;}
+  /* macros */
+  .macros{display:flex;gap:1px;margin-bottom:28px;background:var(--line);border-radius:18px;overflow:hidden;}
+  .macro{flex:1;background:#000;padding:18px 14px;}
+  .macro .t{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);}
+  .macro .n{font-size:34px;font-weight:900;letter-spacing:-1.5px;margin:8px 0 2px;}
+  .macro .g{font-size:12px;color:var(--muted);font-weight:600;margin-bottom:11px;}
+  .macro .bar{height:4px;background:var(--line);border-radius:4px;overflow:hidden;}
+  .macro .bar i{display:block;height:100%;background:var(--accent);border-radius:4px;}
+  /* arni */
+  .arni{display:flex;align-items:center;gap:15px;border:1.5px solid var(--accent);border-radius:22px;padding:18px;margin-bottom:28px;}
+  .arni .av{width:48px;height:48px;border-radius:50%;flex-shrink:0;background:var(--accent);color:#000;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:18px;}
+  .arni b{font-size:16px;font-weight:800;}
+  .arni p{font-size:13px;color:#B5B5B5;margin-top:3px;line-height:1.4;font-weight:500;}
+  .arni .go{margin-left:auto;font-size:24px;color:var(--accent);}
+  .sec{font-size:16px;font-weight:800;margin-bottom:14px;letter-spacing:-.3px;}
+  .meal{display:flex;align-items:center;gap:15px;padding:15px 0;border-bottom:1px solid var(--line);}
+  .meal .mi{width:46px;height:46px;border-radius:14px;background:#0E0E0E;display:flex;align-items:center;justify-content:center;font-size:21px;}
+  .meal .mn{font-size:17px;font-weight:700;letter-spacing:-.3px;}
+  .meal .mk{font-size:12.5px;color:var(--muted);margin-top:2px;font-weight:500;}
+  .meal .mr{margin-left:auto;font-size:15px;font-weight:800;}
+  .meal .ok{color:#fff;}
+  .meal .ok span{color:var(--accent);}
+  .meal .add{color:var(--accent);font-size:13px;}
+  .nav{display:flex;justify-content:space-around;padding:16px 10px 28px;border-top:1px solid var(--line);background:#000;}
+  .nav a{display:flex;flex-direction:column;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--muted);text-decoration:none;}
+  .nav a.on{color:#fff;}
+  .nav a.on .ni{color:var(--accent);}
+  .nav .ni{font-size:20px;}
+</style>
+</head>
+<body>
+  <div class="status"><span>9:41</span><span>􀙇 􀊪 􀛨</span></div>
+  <div class="scroll">
+    <div class="head">
+      <div><h1>Привет, Пётр</h1><p>Среда, 15 июня</p></div>
+      <div class="avatar">П</div>
+    </div>
+    <div class="hero">
+      <div class="big">1 850</div>
+      <div class="of">из 2 400 ккал</div>
+      <div class="rem">Осталось 550 ккал</div>
+      <div class="track"><i></i></div>
+    </div>
+    <div class="macros">
+      <div class="macro"><div class="t">Белки</div><div class="n">90</div><div class="g">/ 140 г</div><div class="bar"><i style="width:64%"></i></div></div>
+      <div class="macro"><div class="t">Жиры</div><div class="n">50</div><div class="g">/ 70 г</div><div class="bar"><i style="width:71%"></i></div></div>
+      <div class="macro"><div class="t">Углев.</div><div class="n">180</div><div class="g">/ 250 г</div><div class="bar"><i style="width:72%"></i></div></div>
+    </div>
+    <div class="arni">
+      <div class="av">А</div>
+      <div><b>Арни</b><p>Осталось 50 г белка. Творог на ужин закроет цель.</p></div>
+      <div class="go">›</div>
+    </div>
+    <div class="sec">Приёмы пищи</div>
+    <div class="meal"><div class="mi">🍳</div><div><div class="mn">Завтрак</div><div class="mk">3 продукта</div></div><div class="mr ok">520 <span>✓</span></div></div>
+    <div class="meal"><div class="mi">🥗</div><div><div class="mn">Обед</div><div class="mk">4 продукта</div></div><div class="mr ok">640 <span>✓</span></div></div>
+    <div class="meal"><div class="mi">🍽️</div><div><div class="mn">Ужин</div><div class="mk">Запланировано</div></div><div class="mr add">+ добавить</div></div>
+  </div>
+  <div class="nav">
+    <a class="on"><span class="ni">🏠</span>Главная</a>
+    <a><span class="ni">📖</span>Дневник</a>
+    <a><span class="ni">💬</span>Чат</a>
+    <a><span class="ni">👤</span>Профиль</a>
+  </div>
+</body>
+</html>

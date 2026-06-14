@@ -13,6 +13,67 @@ from db.queries import get_user, save_user_logs, get_user_logs
 router = APIRouter()
 
 _MAX_ENTRIES = 1_000
+_MAX_TOMBSTONES = 1_000
+
+
+def _merge_logs(existing: dict, incoming: dict) -> dict:
+    """Server-side union merge so concurrent devices accumulate instead of
+    overwriting, and deletions (tombstones) propagate instead of resurrecting.
+
+    - food: union by `ts` (fallback date|text), minus deleted_food set
+    - weight_logs / meas_logs: merge by `date`, newer non-null fields win
+    - water / steps: by `date`, larger value wins
+    - deleted_food: union of both sides (capped)
+    """
+    existing = existing or {}
+    incoming = incoming or {}
+
+    deleted = set(existing.get("deleted_food") or []) | set(incoming.get("deleted_food") or [])
+
+    def _food_key(e):
+        ts = e.get("ts")
+        return ts if ts is not None else f"{e.get('date','')}|{e.get('text') or e.get('description') or e.get('name') or ''}"
+
+    food = {}
+    for src in (existing.get("food") or [], incoming.get("food") or []):
+        for e in src:
+            food[_food_key(e)] = e
+    food_list = [e for e in food.values() if e.get("ts") not in deleted]
+    food_list.sort(key=lambda e: e.get("ts") or 0)
+
+    def _merge_by_date(key):
+        acc = {}
+        for src in (existing.get(key) or [], incoming.get(key) or []):
+            for e in src:
+                d = e.get("date")
+                if not d:
+                    continue
+                cur = acc.get(d, {})
+                merged = dict(cur)
+                for k, v in e.items():
+                    if v is not None:
+                        merged[k] = v
+                acc[d] = merged
+        return sorted(acc.values(), key=lambda e: e.get("date", ""))
+
+    def _merge_max(key, field):
+        acc = {}
+        for src in (existing.get(key) or [], incoming.get(key) or []):
+            for e in src:
+                d = e.get("date")
+                if not d:
+                    continue
+                acc[d] = max(acc.get(d, 0), e.get(field, 0) or 0)
+        return [{"date": d, field: v} for d, v in sorted(acc.items())]
+
+    return {
+        "food":        food_list[-_MAX_ENTRIES:],
+        "weight_logs": _merge_by_date("weight_logs")[-_MAX_ENTRIES:],
+        "meas_logs":   _merge_by_date("meas_logs")[-_MAX_ENTRIES:],
+        "water":       _merge_max("water", "ml")[-365:],
+        "steps":       _merge_max("steps", "steps")[-365:],
+        "deleted_food": sorted(deleted)[-_MAX_TOMBSTONES:],
+    }
 _DATE_RE = re.compile(r"^\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])$")
 
 
@@ -91,11 +152,12 @@ class StepsEntry(BaseModel):
 
 
 class LogsRequest(BaseModel):
-    food:        list[FoodLogEntry]    = Field(default=[], max_length=_MAX_ENTRIES)
-    weight_logs: list[WeightLogEntry]  = Field(default=[], max_length=_MAX_ENTRIES)
-    meas_logs:   list[MeasLogEntry]    = Field(default=[], max_length=_MAX_ENTRIES)
-    water:       list[WaterEntry]      = Field(default=[], max_length=365)
-    steps:       list[StepsEntry]      = Field(default=[], max_length=365)
+    food:         list[FoodLogEntry]    = Field(default=[], max_length=_MAX_ENTRIES)
+    weight_logs:  list[WeightLogEntry]  = Field(default=[], max_length=_MAX_ENTRIES)
+    meas_logs:    list[MeasLogEntry]    = Field(default=[], max_length=_MAX_ENTRIES)
+    water:        list[WaterEntry]      = Field(default=[], max_length=365)
+    steps:        list[StepsEntry]      = Field(default=[], max_length=365)
+    deleted_food: list[int]             = Field(default=[], max_length=_MAX_TOMBSTONES)
 
     model_config = {"extra": "ignore"}
 
@@ -106,7 +168,11 @@ async def save_logs(body: LogsRequest, tg_id: int = Depends(get_current_tg_id)):
         user = await asyncio.to_thread(get_user, tg_id)
         if not user:
             return JSONResponse({"ok": False, "error": "Пользователь не найден"})
-        await asyncio.to_thread(save_user_logs, user["id"], body.model_dump())
+        # Union-merge with what's already stored so multiple devices accumulate
+        # and deletions propagate, instead of last-write-wins overwrite.
+        existing = await asyncio.to_thread(get_user_logs, user["id"])
+        merged = _merge_logs(existing, body.model_dump())
+        await asyncio.to_thread(save_user_logs, user["id"], merged)
         return JSONResponse({"ok": True})
     except Exception:
         logging.exception("save_logs error")

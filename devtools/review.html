@@ -180,7 +180,8 @@ const MOCK = '<script>(function(){\n' +
 '    if(url.indexOf("/api/chat/history") === 0) return Promise.resolve(J({ok:true}));\n' +
 '    if(url.indexOf("/api/food") === 0) return Promise.resolve(J({calories:250,protein_g:20,fat_g:8,carb_g:24,items:[{name:"Тестовый продукт",calories:250}],total:{calories:250,protein_g:20,fat_g:8,carb_g:24}}));\n' +
 '    if(url.indexOf("/api/reminders") === 0) return Promise.resolve(J({reminders:[]}));\n' +
-'    if(url.indexOf("/api/adapt") === 0) return Promise.resolve(J({ok:true, macros:USER.macros, nutrition_plan:USER.nutrition_plan, workout_plan:USER.workout_plan}));\n' +
+'    if(url.indexOf("/api/adapt/apply") === 0) return Promise.resolve(J({ok:true, macros:USER.macros}));\n' +
+'    if(url.indexOf("/api/adapt") === 0) return Promise.resolve(J({ summary:"За 3 дня вес пошёл вниз стабильно — темп здоровый.", recommendations:["Добавь 200мл воды утром","Белок держи у верхней границы"], motivation:"Ты молодец, продолжай!", calorie_adjust:-50, current_macros:USER.macros, new_macros:{calories:1750, protein_g:142, fat_g:54, carb_g:160} }));\n' +
 '    return Promise.resolve(J({ok:true}));\n' +
 '  };\n' +
 '})();<\/' + 'script>';

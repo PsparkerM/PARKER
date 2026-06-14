@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390, initial-scale=1">
+<title>44 — Art Deco</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Poiret+One&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#11151C; --bg2:#161B24; --gold:#D4AF37; --gold2:#E8CE7A; --emer:#1B6B5A;
+    --emer2:#2F8E78; --ink:#EDE6D6; --muted:#8C8772; --line:rgba(212,175,55,.35);
+    --display:"Poiret One","Century Gothic",sans-serif;
+    --serif:"Cormorant Garamond",Georgia,serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-font-smoothing:antialiased;}
+  html,body{width:390px;height:844px;}
+  body{background:
+      radial-gradient(120% 70% at 50% 0%,rgba(27,107,90,.18),transparent 55%),
+      var(--bg);
+    font-family:var(--serif);color:var(--ink);overflow:hidden;display:flex;flex-direction:column;}
+  .status{display:flex;justify-content:space-between;align-items:center;padding:14px 24px 4px;font-family:var(--display);font-size:13px;letter-spacing:2px;color:var(--gold);}
+  .scroll{flex:1;overflow:hidden;padding:4px 22px 0;position:relative;}
+  /* deco frame top */
+  .frame{display:flex;align-items:center;gap:10px;color:var(--gold);margin:4px 0 12px;}
+  .frame .line{flex:1;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);}
+  .frame .di{font-size:13px;letter-spacing:4px;}
+  .fan{height:18px;display:flex;justify-content:center;align-items:flex-end;gap:3px;margin-bottom:8px;}
+  .fan i{width:2px;background:var(--gold);opacity:.55;}
+  .fan i:nth-child(1),.fan i:nth-child(9){height:6px}
+  .fan i:nth-child(2),.fan i:nth-child(8){height:10px}
+  .fan i:nth-child(3),.fan i:nth-child(7){height:14px}
+  .fan i:nth-child(4),.fan i:nth-child(6){height:17px}
+  .fan i:nth-child(5){height:19px;opacity:.9}
+  /* head */
+  .head{text-align:center;margin-bottom:14px;}
+  .head .kick{font-family:var(--display);font-size:9px;letter-spacing:5px;color:var(--emer2);text-transform:uppercase;}
+  .head h1{font-family:var(--display);font-size:28px;letter-spacing:5px;color:var(--gold);margin:5px 0 3px;text-transform:uppercase;}
+  .head p{font-size:14px;letter-spacing:2px;color:var(--muted);}
+  /* hero diamond */
+  .hero{text-align:center;border:1px solid var(--line);border-radius:2px;padding:20px 16px 16px;margin:6px 0 16px;position:relative;background:linear-gradient(180deg,rgba(212,175,55,.05),transparent);}
+  .hero::before,.hero::after{content:"◆";position:absolute;color:var(--gold);font-size:12px;top:-7px;}
+  .hero::before{left:14px;} .hero::after{right:14px;}
+  .hero .lbl{font-family:var(--display);font-size:9px;letter-spacing:4px;color:var(--emer2);text-transform:uppercase;}
+  .hero .big{font-family:var(--display);font-size:54px;letter-spacing:2px;color:var(--gold2);line-height:1;margin:8px 0 2px;}
+  .hero .of{font-size:15px;letter-spacing:2px;color:var(--muted);}
+  .hero .div{display:flex;align-items:center;gap:8px;justify-content:center;margin:12px 0 8px;color:var(--gold);font-size:11px;}
+  .hero .div .l{width:40px;height:1px;background:var(--gold);opacity:.5;}
+  .hero .rem{font-family:var(--display);font-size:13px;letter-spacing:3px;color:var(--ink);}
+  .hero .rem b{color:var(--gold);}
+  /* macros */
+  .macros{display:flex;gap:8px;margin-bottom:16px;}
+  .macro{flex:1;border:1px solid var(--line);border-radius:2px;padding:12px 6px;text-align:center;background:var(--bg2);position:relative;}
+  .macro .l{font-family:var(--display);font-size:9px;letter-spacing:2px;color:var(--emer2);text-transform:uppercase;}
+  .macro .v{font-family:var(--display);font-size:21px;letter-spacing:1px;color:var(--gold2);margin:5px 0;}
+  .macro .v small{font-size:10px;color:var(--muted);}
+  .macro .bar{height:2px;background:rgba(212,175,55,.18);}
+  .macro .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--emer2),var(--gold));}
+  /* arni */
+  .arni{border:1px double var(--gold);border-radius:2px;padding:16px 18px;margin-bottom:16px;background:linear-gradient(135deg,rgba(27,107,90,.16),rgba(17,21,28,.4));position:relative;}
+  .arni .col{font-family:var(--display);font-size:9px;letter-spacing:4px;color:var(--gold);text-transform:uppercase;margin-bottom:8px;}
+  .arni .col span{float:right;color:var(--emer2);}
+  .arni .q{font-size:18px;line-height:1.35;font-style:italic;color:var(--ink);}
+  .arni .by{font-family:var(--display);font-size:10px;letter-spacing:3px;color:var(--gold2);margin-top:9px;text-transform:uppercase;}
+  /* meals */
+  .lbl{font-family:var(--display);font-size:11px;letter-spacing:4px;color:var(--gold);text-transform:uppercase;text-align:center;margin-bottom:4px;}
+  .ldec{display:flex;align-items:center;justify-content:center;gap:8px;color:var(--gold);margin-bottom:8px;font-size:10px;}
+  .ldec .l{width:60px;height:1px;background:linear-gradient(90deg,transparent,var(--gold));}
+  .ldec .l.r{background:linear-gradient(90deg,var(--gold),transparent);}
+  .meal{display:flex;align-items:center;gap:13px;padding:9px 0;border-bottom:1px solid rgba(212,175,55,.18);}
+  .meal .mi{width:40px;height:40px;border:1px solid var(--line);border-radius:2px;display:flex;align-items:center;justify-content:center;font-size:18px;background:var(--bg2);transform:rotate(45deg);}
+  .meal .mi span{transform:rotate(-45deg);}
+  .meal .nm b{font-size:18px;letter-spacing:1px;}
+  .meal .nm small{display:block;font-family:var(--display);font-size:9px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-top:1px;}
+  .meal .r{margin-left:auto;font-family:var(--display);font-size:11px;letter-spacing:2px;color:var(--gold2);}
+  .meal.add .r{color:var(--emer2);}
+  /* nav */
+  .nav{display:flex;justify-content:space-around;padding:13px 8px 26px;border-top:1px solid var(--line);background:var(--bg2);}
+  .nav a{display:flex;flex-direction:column;align-items:center;gap:4px;font-family:var(--display);font-size:9px;letter-spacing:2px;color:var(--muted);text-decoration:none;text-transform:uppercase;}
+  .nav a .ni{font-size:15px;color:var(--gold);opacity:.5;}
+  .nav a.on{color:var(--gold);}
+  .nav a.on .ni{opacity:1;}
+</style>
+</head>
+<body>
+  <div class="status"><span>9:41</span><span>◆ 100%</span></div>
+  <div class="scroll">
+    <div class="frame"><span class="line"></span><span class="di">◆◇◆</span><span class="line"></span></div>
+    <div class="fan"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    <div class="head">
+      <div class="kick">Личный кабинет</div>
+      <h1>Пётр</h1>
+      <p>Среда · 15 июня MMXXVI</p>
+    </div>
+    <div class="hero">
+      <div class="lbl">Калории дня</div>
+      <div class="big">1 850</div>
+      <div class="of">из 2 400 ккал</div>
+      <div class="div"><span class="l"></span>◆<span class="l"></span></div>
+      <div class="rem">осталось <b>550 ккал</b></div>
+    </div>
+    <div class="macros">
+      <div class="macro"><div class="l">Белки</div><div class="v">90<small>/140</small></div><div class="bar"><i style="width:64%"></i></div></div>
+      <div class="macro"><div class="l">Жиры</div><div class="v">50<small>/70</small></div><div class="bar"><i style="width:71%"></i></div></div>
+      <div class="macro"><div class="l">Углев</div><div class="v">180<small>/250</small></div><div class="bar"><i style="width:72%"></i></div></div>
+    </div>
+    <div class="arni">
+      <div class="col">Арни · советник <span>● online</span></div>
+      <div class="q">«До цели по белку 50 г. Рекомендую творог на ужин.»</div>
+      <div class="by">— Ваш AI-нутрициолог →</div>
+    </div>
+    <div class="lbl">Приёмы пищи</div>
+    <div class="ldec"><span class="l"></span>◆<span class="l r"></span></div>
+    <div class="meal"><div class="mi"><span>🍳</span></div><div class="nm"><b>Завтрак</b><small>3 продукта</small></div><div class="r">520 ✓</div></div>
+    <div class="meal"><div class="mi"><span>🥗</span></div><div class="nm"><b>Обед</b><small>4 продукта</small></div><div class="r">640 ✓</div></div>
+    <div class="meal add"><div class="mi"><span>🍽️</span></div><div class="nm"><b>Ужин</b><small>запланировано</small></div><div class="r">+ добавить</div></div>
+  </div>
+  <div class="nav">
+    <a class="on"><span class="ni">◈</span>Главная</a>
+    <a><span class="ni">▤</span>Дневник</a>
+    <a><span class="ni">◇</span>Чат</a>
+    <a><span class="ni">◉</span>Профиль</a>
+  </div>
+</body>
+</html>

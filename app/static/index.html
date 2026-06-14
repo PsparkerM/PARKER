@@ -1425,6 +1425,7 @@ let chatHist      = JSON.parse(localStorage.getItem('pk_chat')            || '[]
 let logs          = JSON.parse(localStorage.getItem('pk_logs')            || '[]');
 let foodLogs      = JSON.parse(localStorage.getItem('pk_food')            || '[]');
 let measLogs      = JSON.parse(localStorage.getItem('pk_meas')            || '[]');
+let deletedFood   = JSON.parse(localStorage.getItem('pk_deleted_food')    || '[]'); // тумбстоны удалённой еды (ts)
 let macrosOverride= JSON.parse(localStorage.getItem('pk_macros_override') || 'null');
 
 function todayKey() { return new Date().toLocaleDateString('ru-RU'); }
@@ -1441,6 +1442,7 @@ function persist() {
     localStorage.setItem('pk_logs',    JSON.stringify(logs));
     localStorage.setItem('pk_food',    JSON.stringify(foodLogs));
     localStorage.setItem('pk_meas',    JSON.stringify(measLogs));
+    localStorage.setItem('pk_deleted_food', JSON.stringify(deletedFood.slice(-1000)));
     if (macrosOverride) localStorage.setItem('pk_macros_override', JSON.stringify(macrosOverride));
     else localStorage.removeItem('pk_macros_override');
   } catch(e) { console.warn('persist error', e); }
@@ -1971,6 +1973,14 @@ function scheduleSyncLogs() {
   clearTimeout(_syncTimer);
   _syncTimer = setTimeout(syncLogsToServer, 1500);
 }
+
+// Union двух массивов по ключу: server-записи добавляются/обновляют, локальные не теряются.
+function _mergeByKey(local, remote, keyFn) {
+  const map = new Map();
+  for (const e of (local||[])) map.set(keyFn(e), e);
+  for (const e of (remote||[])) { const k = keyFn(e); if (!map.has(k)) map.set(k, e); }
+  return [...map.values()];
+}
 window.addEventListener('online', () => { if (_syncDirty) syncLogsToServer(); });
 
 function _collectWaterEntries() {
@@ -1999,6 +2009,7 @@ async function syncLogsToServer() {
         weight_logs: logs.slice(-365),
         meas_logs: measLogs.slice(-365),
         water: _collectWaterEntries(),
+        deleted_food: deletedFood.slice(-1000),
       })
     });
     if (!r.ok) throw new Error('http ' + r.status);
@@ -2026,12 +2037,18 @@ async function loadLogsFromServer(force = false) {
     const data = await r.json();
     if (!data.found) return;
     localStorage.setItem('pk_logs_ts', String(Date.now()));
-    if (Array.isArray(data.food) && data.food.length > foodLogs.length)
-      foodLogs = data.food;
-    if (Array.isArray(data.weight_logs) && data.weight_logs.length > logs.length)
-      logs = data.weight_logs;
-    if (Array.isArray(data.meas_logs) && data.meas_logs.length > measLogs.length)
-      measLogs = data.meas_logs;
+    // Union-merge с сервером (он сам уже мержит) вместо «длиннее массив побеждает» —
+    // не теряем локальные добавления и уважаем тумбстоны удалений.
+    if (Array.isArray(data.deleted_food))
+      deletedFood = Array.from(new Set([...deletedFood, ...data.deleted_food]));
+    const _del = new Set(deletedFood);
+    if (Array.isArray(data.food))
+      foodLogs = _mergeByKey(foodLogs, data.food, f => f.ts ?? `${f.date}|${f.text||f.description||f.name||''}`)
+        .filter(f => !_del.has(f.ts));
+    if (Array.isArray(data.weight_logs))
+      logs = _mergeByKey(logs, data.weight_logs, l => l.date);
+    if (Array.isArray(data.meas_logs))
+      measLogs = _mergeByKey(measLogs, data.meas_logs, m => m.date);
     if (Array.isArray(data.water))
       data.water.forEach(e => {
         if (e.date && e.ml > 0) {
@@ -2848,7 +2865,7 @@ function renderFoodLog(items) {
   </div>`;
 }
 
-function deleteFoodEntry(ts) { foodLogs=foodLogs.filter(f=>f.ts!==ts); persist(); renderTracker(); if(curTab==='home')renderHome(); }
+function deleteFoodEntry(ts) { foodLogs=foodLogs.filter(f=>f.ts!==ts); if(ts&&!deletedFood.includes(ts))deletedFood.push(ts); persist(); scheduleSyncLogs(); renderTracker(); if(curTab==='home')renderHome(); }
 function editFoodEntry(ts) {
   const entry=foodLogs.find(f=>f.ts===ts); if(!entry) return;
   foodLogs=foodLogs.filter(f=>f.ts!==ts); persist(); goTab('tracker');
