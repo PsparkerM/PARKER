@@ -3436,26 +3436,69 @@ async function exportWeightHistory(btn) {
 }
 
 // ══ ADAPTATION ══
+let _pendingAdaptMacros = null;
+
 async function getWeeklyAdapt() {
-  if(!profile){toast('Сначала заполни профиль');return;}
+  const ru = lang !== 'en';
+  if(!profile){toast(ru?'Сначала заполни профиль':'Fill in your profile first');return;}
   const btn=document.getElementById('adapt-btn'), res=document.getElementById('adapt-result');
   if(!btn||!res) return;
-  btn.textContent='Арни анализирует...'; btn.disabled=true; res.style.display='none';
+  btn.textContent=ru?'Арни анализирует...':'Arnie is analyzing...'; btn.disabled=true; res.style.display='none';
+  _pendingAdaptMacros=null;
   try {
     const r=await fetch('/api/adapt',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({profile,logs:logs.slice(-14),food_logs:foodLogs.slice(-50),current_macros:planData?.macros||{}})});
     const data=await r.json();
-    if(data.error){res.style.display='block';res.textContent=data.error;return;}
-    let txt='';
-    if(data.summary) txt+=data.summary+'\n\n';
-    if(data.calorie_adjust&&data.calorie_adjust!==0) txt+=`📊 Корректировка: ${data.calorie_adjust>0?'+':''}${data.calorie_adjust} ккал\n\n`;
+    if(data.error){res.style.display='block';res.innerHTML=`<div style="color:var(--red)">${escHtml(data.error)}</div>`;return;}
+    let html='';
+    if(data.summary) html+=`<div style="margin-bottom:10px">${escHtml(data.summary)}</div>`;
     if(Array.isArray(data.recommendations)&&data.recommendations.length)
-      txt+=data.recommendations.map((r,i)=>`${i+1}. ${r}`).join('\n');
-    if(data.motivation) txt+='\n\n💪 '+data.motivation;
-    if(!txt) txt=JSON.stringify(data,null,2);
-    res.style.display='block'; res.textContent=txt; toast('Анализ готов! 🤖');
-  } catch { res.style.display='block'; res.textContent='Ошибка соединения — попробуй позже.'; }
-  finally { btn.textContent='Обновить адаптацию ↻'; btn.disabled=false; }
+      html+='<div style="margin-bottom:10px">'+data.recommendations.map((r,i)=>`<div style="margin-bottom:4px">${i+1}. ${escHtml(String(r))}</div>`).join('')+'</div>';
+    if(data.motivation) html+=`<div style="margin-bottom:10px">💪 ${escHtml(data.motivation)}</div>`;
+
+    // Блок предложенных новых целей с кнопкой применения
+    if(data.new_macros && data.new_macros.calories){
+      _pendingAdaptMacros=data.new_macros;
+      const nm=data.new_macros, cm=data.current_macros||planData?.macros||{};
+      const diff=nm.calories-(cm.calories||nm.calories);
+      const diffStr=diff>0?`+${diff}`:`${diff}`;
+      html+=`<div style="margin-top:6px;padding:12px;background:rgba(0,229,255,.08);border:1px solid rgba(0,229,255,.2);border-radius:12px">
+        <div style="font-size:12px;font-weight:800;color:var(--cyan);margin-bottom:8px">🎯 ${ru?'Новые цели':'New targets'} (${diffStr} ${ru?'ккал':'kcal'})</div>
+        <div style="display:flex;justify-content:space-around;text-align:center;margin-bottom:10px">
+          <div><div style="font-size:16px;font-weight:800">${nm.calories}</div><div style="font-size:10px;color:var(--text3)">${ru?'ккал':'kcal'}</div></div>
+          <div><div style="font-size:16px;font-weight:800">${nm.protein_g}</div><div style="font-size:10px;color:var(--text3)">${ru?'белки':'prot'}</div></div>
+          <div><div style="font-size:16px;font-weight:800">${nm.fat_g}</div><div style="font-size:10px;color:var(--text3)">${ru?'жиры':'fat'}</div></div>
+          <div><div style="font-size:16px;font-weight:800">${nm.carb_g}</div><div style="font-size:10px;color:var(--text3)">${ru?'углев':'carbs'}</div></div>
+        </div>
+        <button class="save-food-btn" style="margin:0" id="adapt-apply-btn" onclick="applyAdaptMacros()">${ru?'✅ Применить новые цели':'✅ Apply new targets'}</button>
+      </div>`;
+    } else if(data.calorie_adjust===0){
+      html+=`<div style="font-size:12px;color:var(--emerald)">✅ ${ru?'План оптимален — менять не нужно':'Plan is optimal — no change needed'}</div>`;
+    }
+    if(!html) html=`<div>${escHtml(JSON.stringify(data))}</div>`;
+    res.style.display='block'; res.innerHTML=html; toast(ru?'Анализ готов! 🤖':'Analysis ready! 🤖');
+  } catch { res.style.display='block'; res.innerHTML=`<div style="color:var(--red)">${ru?'Ошибка соединения — попробуй позже.':'Connection error — try later.'}</div>`; }
+  finally { btn.textContent=ru?'Обновить адаптацию ↻':'Refresh adaptation ↻'; btn.disabled=false; }
+}
+
+async function applyAdaptMacros() {
+  const ru = lang !== 'en';
+  if(!_pendingAdaptMacros) return;
+  const nm=_pendingAdaptMacros;
+  const btn=document.getElementById('adapt-apply-btn');
+  if(btn){ btn.disabled=true; btn.textContent=ru?'Применяю…':'Applying…'; }
+  try {
+    const r=await fetch('/api/adapt/apply',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(nm)});
+    const data=await r.json();
+    if(!data.ok){ toast(ru?(data.error||'Не удалось применить'):'Apply failed'); if(btn){btn.disabled=false;btn.textContent=ru?'✅ Применить новые цели':'✅ Apply new targets';} return; }
+    // Локально обновляем цели, чтобы кольцо/трекер сразу показали новые значения
+    macrosOverride={calories:nm.calories,protein_g:nm.protein_g,fat_g:nm.fat_g,carb_g:nm.carb_g};
+    if(planData) planData.macros={...(planData.macros||{}),...macrosOverride};
+    persist(); hapticSuccess(); _pendingAdaptMacros=null;
+    if(btn){ btn.textContent=ru?'✅ Применено':'✅ Applied'; btn.style.opacity='.6'; }
+    toast(ru?`Новые цели: ${nm.calories} ккал 🎯`:`New targets: ${nm.calories} kcal 🎯`,3000);
+    scheduleSyncLogs?.();
+  } catch { toast(ru?'Ошибка соединения':'Connection error'); if(btn){btn.disabled=false;btn.textContent=ru?'✅ Применить новые цели':'✅ Apply new targets';} }
 }
 
 window.editWeightLog=editWeightLog;

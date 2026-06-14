@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>P.A.R.K.E.R. — 30 концептов дизайна</title>
+<style>
+  :root{
+    --bg:#0C0D10; --bg2:#141519; --card:#16181D; --line:#262A31;
+    --text:#EAECEF; --muted:#8A8F98; --accent:#FF5436; --accent2:#38E1FF;
+    --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,Helvetica,Arial,sans-serif;
+  }
+  body.light{--bg:#F3F4F6;--bg2:#FFFFFF;--card:#FFFFFF;--line:#E5E7EB;--text:#15171C;--muted:#6B7280;}
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:var(--font);-webkit-font-smoothing:antialiased;}
+  /* header */
+  header{padding:34px 30px 16px;max-width:1400px;margin:0 auto;}
+  .kicker{font-size:12px;letter-spacing:3px;text-transform:uppercase;color:var(--accent2);font-weight:700;}
+  h1{font-size:34px;font-weight:800;letter-spacing:-1px;margin:8px 0 6px;}
+  h1 .g{background:linear-gradient(90deg,var(--accent),#FF9A5A);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+  .lead{color:var(--muted);font-size:15px;max-width:680px;line-height:1.6;}
+  /* toolbar */
+  .bar{position:sticky;top:0;z-index:40;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(12px);border-bottom:1px solid var(--line);}
+  .bar .inner{max-width:1400px;margin:0 auto;padding:12px 30px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+  .chip{border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:100px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;transition:.15s;}
+  .chip:hover{border-color:var(--accent);}
+  .chip.on{background:var(--accent);border-color:var(--accent);color:#fff;}
+  .spacer{flex:1;}
+  .toggle{margin-left:auto;}
+  .count{color:var(--muted);font-size:13px;font-weight:600;}
+  /* grid */
+  .grid{max-width:1400px;margin:0 auto;padding:26px 30px 80px;
+        display:grid;grid-template-columns:repeat(auto-fill,minmax(252px,1fr));gap:30px 26px;}
+  .card{cursor:pointer;}
+  .phone{position:relative;width:100%;display:flex;justify-content:center;}
+  .device{position:relative;width:252px;height:534px;background:#0A0A0C;border-radius:34px;padding:9px;
+           box-shadow:0 18px 40px rgba(0,0,0,.45),0 0 0 1px var(--line);transition:transform .22s ease,box-shadow .22s;}
+  .card:hover .device{transform:translateY(-6px);box-shadow:0 26px 56px rgba(0,0,0,.55),0 0 0 1px var(--accent);}
+  .device::after{content:"";position:absolute;top:9px;left:50%;transform:translateX(-50%);width:74px;height:18px;background:#0A0A0C;border-radius:0 0 12px 12px;z-index:3;}
+  .screen{position:relative;width:234px;height:516px;border-radius:26px;overflow:hidden;background:#fff;}
+  .screen iframe{position:absolute;top:0;left:0;width:390px;height:844px;border:0;
+                 transform:scale(.6);transform-origin:top left;pointer-events:none;}
+  .badge{position:absolute;top:-10px;left:-6px;z-index:5;background:var(--accent);color:#fff;font-weight:800;font-size:12px;
+         padding:5px 10px;border-radius:100px;box-shadow:0 4px 12px rgba(0,0,0,.35);}
+  .brandtag{position:absolute;top:-10px;right:-6px;z-index:5;background:var(--accent2);color:#04212b;font-weight:800;font-size:11px;
+            padding:5px 10px;border-radius:100px;}
+  .meta{padding:16px 6px 0;}
+  .meta .nm{font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px;}
+  .meta .vibe{color:var(--muted);font-size:13px;line-height:1.45;margin-top:5px;}
+  .sw{display:flex;gap:6px;margin-top:11px;}
+  .sw i{width:18px;height:18px;border-radius:6px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.14);}
+  .open{margin-top:11px;font-size:12px;font-weight:700;color:var(--accent);opacity:0;transition:.15s;}
+  .card:hover .open{opacity:1;}
+  /* lightbox */
+  .lb{position:fixed;inset:0;z-index:100;background:rgba(6,7,9,.86);backdrop-filter:blur(10px);
+      display:none;align-items:center;justify-content:center;}
+  .lb.show{display:flex;}
+  .lb .stage{display:flex;flex-direction:column;align-items:center;gap:16px;}
+  .lb .ldev{background:#0A0A0C;border-radius:46px;padding:12px;box-shadow:0 30px 80px rgba(0,0,0,.6);position:relative;}
+  .lb .lscreen{width:390px;height:844px;border-radius:36px;overflow:hidden;background:#fff;}
+  .lb .lscreen iframe{width:390px;height:844px;border:0;}
+  .lb .linfo{color:#fff;text-align:center;}
+  .lb .linfo .ln{font-size:19px;font-weight:800;}
+  .lb .linfo .lv{color:#aab;font-size:13px;margin-top:4px;max-width:380px;}
+  .lb .pos{color:#788;font-size:12px;font-weight:700;letter-spacing:1px;margin-top:8px;}
+  .nav-btn{position:fixed;top:50%;transform:translateY(-50%);width:54px;height:54px;border-radius:50%;
+           border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.06);color:#fff;font-size:24px;
+           cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;}
+  .nav-btn:hover{background:var(--accent);border-color:var(--accent);}
+  #prev{left:30px;} #next{right:30px;}
+  #close{position:fixed;top:24px;right:30px;width:46px;height:46px;border-radius:50%;border:1px solid rgba(255,255,255,.18);
+         background:rgba(255,255,255,.06);color:#fff;font-size:22px;cursor:pointer;}
+  #close:hover{background:var(--accent);border-color:var(--accent);}
+  .hint{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);color:#677;font-size:12px;letter-spacing:.5px;}
+  @media (max-width:560px){
+    .lb .ldev{transform:scale(.82);} #prev{left:8px;} #next{right:8px;}
+    h1{font-size:26px;}
+  }
+</style>
+</head>
+<body>
+<div class="bar">
+  <div class="inner">
+    <button class="chip on" data-f="all">Все 30</button>
+    <button class="chip" data-f="light">☀️ Светлые</button>
+    <button class="chip" data-f="dark">🌙 Тёмные</button>
+    <button class="chip" data-f="minimal">◻️ Минимализм</button>
+    <button class="chip" data-f="bright">⚡ Яркие</button>
+    <button class="chip" data-f="premium">💎 Премиум</button>
+    <button class="chip" data-f="playful">🎮 Игривые</button>
+    <button class="chip" data-f="brand">🛡 On-brand</button>
+    <span class="spacer"></span>
+    <span class="count" id="count"></span>
+    <button class="chip toggle" id="themeBtn">Фон: тёмный</button>
+  </div>
+</div>
+
+<header>
+  <div class="kicker">P.A.R.K.E.R. · Design Studio</div>
+  <h1>30 концептов <span class="g">внешнего вида</span> приложения</h1>
+  <p class="lead">Полистай макеты главного экрана в разных стилях — цвета, шрифты, формы. Кликни по любому телефону, чтобы открыть на весь экран и листать стрелками ← →. Фильтруй по настроению кнопками сверху. Когда найдёшь свой — скажи номер, и сделаем приложение в этом стиле.</p>
+</header>
+
+<div class="grid" id="grid"></div>
+
+<!-- Lightbox -->
+<div class="lb" id="lb">
+  <button id="close">✕</button>
+  <button class="nav-btn" id="prev">‹</button>
+  <button class="nav-btn" id="next">›</button>
+  <div class="stage">
+    <div class="ldev"><div class="lscreen"><iframe id="lframe" src=""></iframe></div></div>
+    <div class="linfo"><div class="ln" id="lname"></div><div class="lv" id="lvibe"></div><div class="pos" id="lpos"></div></div>
+  </div>
+  <div class="hint">← → листать · Esc закрыть</div>
+</div>
+
+<script>
+const M = [
+ {n:1, name:"Минимализм Light", vibe:"Чисто, воздушно, крупные цифры. В духе Cal AI.", c:["#FFFFFF","#0F0F0F","#FF5436"], t:["light","minimal"]},
+ {n:2, name:"Пастель Soft", vibe:"Мягко и дружелюбно, округлые формы, коралл + мята.", c:["#FFF6F0","#FF9A8B","#A0E7E5"], t:["light","playful"]},
+ {n:3, name:"Dark Premium", vibe:"Чёрный + кислотный лайм, спортивно (как Whoop).", c:["#0B0B0F","#C6FF00","#FFFFFF"], t:["dark","premium"]},
+ {n:4, name:"Геймификация", vibe:"Маскот, стрик 🔥, уровни/XP. В духе Duolingo и Simple.", c:["#FFFBEA","#FF7A00","#6C5CE7"], t:["light","playful","bright"]},
+ {n:5, name:"Glassmorphism", vibe:"Матовое стекло на сочном градиенте, воздушно.", c:["#6A5AE0","#9D7BFF","#FFFFFF"], t:["bright"]},
+ {n:6, name:"Неоморфизм", vibe:"Софт-UI, мягкие выпуклые тени, тактильно.", c:["#E6E9EF","#5B8DEF","#C9D2E3"], t:["light","minimal"]},
+ {n:7, name:"Брутализм", vibe:"Жирные чёрные рамки, моно-шрифт, жёлтый, смело.", c:["#FFFFFF","#000000","#FFE600"], t:["light","bright"]},
+ {n:8, name:"Медицинский", vibe:"Доверительный медтех, плотные данные (как Cronometer).", c:["#F4F7FB","#0A84FF","#FFFFFF"], t:["light","data"]},
+ {n:9, name:"Vibrant Gradient", vibe:"Тёмный фон + яркие градиенты магента→оранж, энергично.", c:["#1A1140","#FF3CAC","#FF8A3C"], t:["dark","bright"]},
+ {n:10, name:"JARVIS HUD", vibe:"Голографический интерфейс Тони Старка. Прямо под тему P.A.R.K.E.R.", c:["#05080F","#38E1FF","#7CF2D8"], t:["dark","premium","brand"]},
+ {n:11, name:"Luxury Gold", vibe:"Чёрное золото, serif-заголовки, премиум-коучинг.", c:["#0E0E0E","#D4AF37","#FFFFFF"], t:["dark","premium"]},
+ {n:12, name:"Organic Green", vibe:"Натуральная нутрициология, зелень, мягко и светло.", c:["#F2F8F0","#2FBF71","#1B6B45"], t:["light"]},
+ {n:13, name:"Bold Orange", vibe:"Атлетично, крупная жирная типографика, мотивирующе.", c:["#FFFFFF","#FF5A1F","#111111"], t:["light","bright"]},
+ {n:14, name:"Editorial Mono", vibe:"Журнальная вёрстка, огромные заголовки, ноль цвета.", c:["#FAFAFA","#111111","#888888"], t:["light","minimal"]},
+ {n:15, name:"iOS Native", vibe:"Нативный Apple-вид по HIG, системный синий, привычно.", c:["#F2F2F7","#007AFF","#34C759"], t:["light","minimal"]},
+ {n:16, name:"Material You", vibe:"Google Material 3, тональный фиолет, крупные скругления.", c:["#FEF7FF","#6750A4","#EADDFF"], t:["light"]},
+ {n:17, name:"Y2K Retro", vibe:"Ретро 2000-х, хром и глянец, пузатые формы, fun.", c:["#C9F0FF","#FF5FA2","#B6FF5C"], t:["bright","playful"]},
+ {n:18, name:"Cyberpunk Neon", vibe:"Неон магента + циан, свечение, глитч, футуризм.", c:["#0D0221","#FF2A6D","#05D9E8"], t:["dark","bright"]},
+ {n:19, name:"Calm Wellness", vibe:"Спа-настрой, землистые тона, шалфей, спокойно.", c:["#EFE9E1","#8A9A5B","#B7A98B"], t:["light","minimal"]},
+ {n:20, name:"Bento Grid", vibe:"Модульные плитки разного размера, трендово.", c:["#F5F5F7","#6C5CE7","#FF7A00"], t:["light"]},
+ {n:21, name:"Dark Teal Pro", vibe:"Тёмная бирюза со свечением, дорого и сдержанно.", c:["#06141A","#2EC4B6","#E8B046"], t:["dark","premium"]},
+ {n:22, name:"Coral & Cream", vibe:"Тёплый кремовый, коралл, уютно и округло.", c:["#FFF3EC","#FF6B6B","#FFC2B4"], t:["light","playful"]},
+ {n:23, name:"Blue Corporate", vibe:"Корпоративно-чисто, тёмно-синий, надёжно.", c:["#FFFFFF","#1E3A8A","#3B82F6"], t:["light"]},
+ {n:24, name:"Athletic Red", vibe:"Энергия Nike, чёрно-красный, агрессивно и мощно.", c:["#0A0A0A","#E50914","#FFFFFF"], t:["dark","bright","premium"]},
+ {n:25, name:"Soft Purple AI", vibe:"Умный AI-помощник, фокус на Арни, технологично.", c:["#F6F4FF","#7C5CFC","#C7BBFF"], t:["light"]},
+ {n:26, name:"Claymorphism", vibe:"3D-«пластилин», объёмно, игриво и тактильно.", c:["#FDE7E7","#FF8FA3","#5D5FEF"], t:["light","playful","bright"]},
+ {n:27, name:"Minimal Mono Dark", vibe:"Околочёрный + кислотный зелёный, максимум воздуха.", c:["#121212","#A3FF12","#FFFFFF"], t:["dark","minimal"]},
+ {n:28, name:"Gradient Mesh", vibe:"Mesh-градиент, белые карточки поверх, свежо.", c:["#FFD6E8","#A8D8FF","#FFE6C7"], t:["light","bright"]},
+ {n:29, name:"Data-Viz", vibe:"Дашборд-аналитика: графики, тренды, спарклайны.", c:["#0F1419","#00D9A3","#1E2A33"], t:["dark","data","premium"]},
+ {n:30, name:"Chat-First Арни", vibe:"Весь экран — живой диалог с Арни. Главная фишка продукта.", c:["#FFFFFF","#FF5436","#FFE3DB"], t:["light","brand"]},
+];
+
+const pad = n => String(n).padStart(2,'0');
+const grid = document.getElementById('grid');
+let current = [];   // currently visible list (filtered)
+let idx = 0;
+
+function render(filter){
+  grid.innerHTML='';
+  current = M.filter(m => filter==='all' || m.t.includes(filter));
+  current.forEach((m, i)=>{
+    const card = document.createElement('div');
+    card.className='card';
+    card.innerHTML = `
+      <div class="phone">
+        <div class="device">
+          <span class="badge">${pad(m.n)}</span>
+          ${m.t.includes('brand')?'<span class="brandtag">★ под бренд</span>':''}
+          <div class="screen"><iframe loading="lazy" src="mockups/${pad(m.n)}.html"></iframe></div>
+        </div>
+      </div>
+      <div class="meta">
+        <div class="nm">${m.name}</div>
+        <div class="vibe">${m.vibe}</div>
+        <div class="sw">${m.c.map(c=>`<i style="background:${c}"></i>`).join('')}</div>
+        <div class="open">Открыть на весь экран →</div>
+      </div>`;
+    card.addEventListener('click', ()=>openLB(i));
+    grid.appendChild(card);
+  });
+  document.getElementById('count').textContent = current.length + ' из 30';
+}
+
+// lightbox
+const lb=document.getElementById('lb'), lframe=document.getElementById('lframe');
+function openLB(i){ idx=i; syncLB(); lb.classList.add('show'); document.body.style.overflow='hidden'; }
+function syncLB(){
+  const m=current[idx];
+  lframe.src=`mockups/${pad(m.n)}.html`;
+  document.getElementById('lname').textContent=`${pad(m.n)} · ${m.name}`;
+  document.getElementById('lvibe').textContent=m.vibe;
+  document.getElementById('lpos').textContent=`${idx+1} / ${current.length}`;
+}
+function move(d){ idx=(idx+d+current.length)%current.length; syncLB(); }
+function closeLB(){ lb.classList.remove('show'); lframe.src=''; document.body.style.overflow=''; }
+document.getElementById('next').onclick=()=>move(1);
+document.getElementById('prev').onclick=()=>move(-1);
+document.getElementById('close').onclick=closeLB;
+lb.addEventListener('click',e=>{ if(e.target===lb) closeLB(); });
+document.addEventListener('keydown',e=>{
+  if(!lb.classList.contains('show'))return;
+  if(e.key==='ArrowRight')move(1);
+  else if(e.key==='ArrowLeft')move(-1);
+  else if(e.key==='Escape')closeLB();
+});
+
+// filters
+document.querySelectorAll('.chip[data-f]').forEach(b=>{
+  b.onclick=()=>{
+    document.querySelectorAll('.chip[data-f]').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+    render(b.dataset.f);
+  };
+});
+// theme toggle
+const tb=document.getElementById('themeBtn');
+tb.onclick=()=>{ document.body.classList.toggle('light');
+  tb.textContent='Фон: '+(document.body.classList.contains('light')?'светлый':'тёмный'); };
+
+render('all');
+</script>
+</body>
+</html>

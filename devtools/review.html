@@ -389,8 +389,11 @@ iframe.addEventListener('load', ()=>{
   }catch(e){ console.warn('iframe hook failed', e); }
   renderNotes();
   // deep-link: ?screen=progress|tracker|chat|profile|home — авто-переход после загрузки
-  const want = new URLSearchParams(location.search).get('screen');
+  const qp = new URLSearchParams(location.search);
+  const want = qp.get('screen');
   if(want){ setTimeout(()=>{ try{ iframe.contentWindow.goTab(want); }catch(e){} }, 700); }
+  const panel = qp.get('panel');   // профильная под-панель: data|notif|account
+  if(panel){ setTimeout(()=>{ try{ iframe.contentWindow.openProfilePanel(panel); }catch(e){} }, 1100); }
 });
 
 // ════════════════════ Экспорт ════════════════════
