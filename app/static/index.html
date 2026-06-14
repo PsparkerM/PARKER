@@ -2843,6 +2843,15 @@ async function sendChat() {
 let pendingFood=null;
 let _trackerFoodDate = null;
 function setFoodLogDate(key) { _trackerFoodDate = key; renderTracker(); haptic('light'); }
+function _shiftTrackerDate(delta) {
+  const iso = _localeToIso(_trackerFoodDate || todayKey());
+  const [y,m,d] = iso.split('-').map(Number);
+  const dt = new Date(y, m-1, d); dt.setDate(dt.getDate()+delta);
+  const todayDt = new Date(); todayDt.setHours(0,0,0,0);
+  if (dt > todayDt) return;                       // в будущее нельзя
+  if (dt < new Date(todayDt.getTime() - 365*864e5)) return; // не дальше года назад
+  _trackerFoodDate = dt.toLocaleDateString('ru-RU'); renderTracker(); haptic('light');
+}
 function todayFoodLogs() { return foodLogs.filter(f=>f.date===todayKey()); }
 function todayFoodTotal() {
   return todayFoodLogs().reduce((a,f)=>({
@@ -2870,14 +2879,19 @@ function renderTracker() {
 
   const yest = new Date(); yest.setDate(yest.getDate()-1);
   const yesterdayKey = yest.toLocaleDateString('ru-RU');
-  const dateTabs = `<div class="food-date-tabs">
-    <button class="food-date-tab ${dispDate===today?'on':''}" onclick="setFoodLogDate('${today}')">${ru?'Сегодня':'Today'}</button>
-    <button class="food-date-tab ${dispDate===yesterdayKey?'on':''}" onclick="setFoodLogDate('${yesterdayKey}')">${ru?'Вчера':'Yesterday'}</button>
+  const isToday = dispDate===today;
+  const dateLabel = isToday ? (ru?'Сегодня':'Today')
+    : dispDate===yesterdayKey ? (ru?'Вчера':'Yesterday') : dispDate;
+  const dateTabs = `<div class="food-date-tabs" style="align-items:center">
+    <button class="food-date-tab" onclick="_shiftTrackerDate(-1)">‹</button>
+    <div style="flex:1;text-align:center;font-size:13px;font-weight:800;color:var(--cyan)">${dateLabel}</div>
+    <button class="food-date-tab" onclick="_shiftTrackerDate(1)" style="${isToday?'opacity:.3;pointer-events:none':''}">›</button>
+    ${isToday?'':`<button class="food-date-tab on" onclick="setFoodLogDate('${today}')">${ru?'Сегодня':'Today'}</button>`}
   </div>`;
 
   el.innerHTML=`
     <div class="card">
-      <div class="card-ttl"><span>🍽</span> ${ru?'Добавить еду':'Log food'}</div>
+      <div class="card-ttl"><span>🍽</span> ${ru?'Добавить еду':'Log food'}${isToday?'':` <span style="font-size:11px;font-weight:700;color:var(--gold);margin-left:6px">→ ${dateLabel}</span>`}</div>
       <div class="food-row">
         <textarea class="food-ta" id="food-ta" placeholder="${ru?'найди продукт или опиши: куриная грудка 200г...':'search a product or describe: chicken breast 200g...'}"></textarea>
         <div class="cam-btn" onclick="document.getElementById('photo-input').click()">📷</div>
@@ -2996,7 +3010,7 @@ async function calcFood() {
 
 function showFoodResult(data,text) {
   const res=document.getElementById('food-result');
-  pendingFood={ts:Date.now(),date:todayKey(),text:text||data.description||'Фото',items:data.items,total:data.total};
+  pendingFood={ts:Date.now(),date:_trackerFoodDate||todayKey(),text:text||data.description||'Фото',items:data.items,total:data.total};
   const rows=(data.items||[]).map(it=>`<tr>
     <td style="font-weight:600">${escHtml(it.name)}<br><span style="color:var(--text3);font-size:11px;font-weight:400">${it.amount_g}г</span></td>
     <td>${Math.round(it.calories)}</td><td>${it.protein_g.toFixed(1)}</td>
