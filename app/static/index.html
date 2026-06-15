@@ -1318,6 +1318,7 @@ input[type=time]{color-scheme:dark}
   <input type="file" id="photo-input" accept="image/*" capture="environment">
   <input type="file" id="avatar-photo-input" accept="image/*" style="display:none">
   <input type="file" id="chat-photo-input" accept="image/*" style="display:none">
+  <input type="file" id="progress-photo-input" accept="image/*" style="display:none">
 
   <!-- CALENDAR FULL-SCREEN PANEL -->
   <div class="sub-panel" id="cal-panel">
@@ -3329,6 +3330,87 @@ function _buildWeekSummary() {
   </div>`;
 }
 
+// ══ PROGRESS PHOTOS (фото прогресса, локально на устройстве) ══
+let progressPhotos = JSON.parse(localStorage.getItem('pk_progress_photos') || '[]');
+const _MAX_PHOTOS = 30;
+
+function _saveProgressPhotos() {
+  try { localStorage.setItem('pk_progress_photos', JSON.stringify(progressPhotos)); }
+  catch(e) { toast(lang!=='en'?'Память переполнена — удали старые фото':'Storage full — delete old photos'); }
+}
+
+function _compressPhoto(file, maxDim, quality) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        let {width:w, height:h} = img;
+        if (w > h && w > maxDim) { h = Math.round(h*maxDim/w); w = maxDim; }
+        else if (h > maxDim) { w = Math.round(w*maxDim/h); h = maxDim; }
+        const c = document.createElement('canvas'); c.width=w; c.height=h;
+        c.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(c.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = reject; img.src = e.target.result;
+    };
+    reader.onerror = reject; reader.readAsDataURL(file);
+  });
+}
+
+document.getElementById('progress-photo-input').addEventListener('change', async function() {
+  const file = this.files[0]; if (!file) return;
+  const ru = lang !== 'en';
+  toast(ru?'Обрабатываю фото…':'Processing photo…');
+  try {
+    const img = await _compressPhoto(file, 720, 0.7);
+    progressPhotos.push({ts: Date.now(), date: todayKey(), img});
+    if (progressPhotos.length > _MAX_PHOTOS) progressPhotos = progressPhotos.slice(-_MAX_PHOTOS);
+    _saveProgressPhotos(); hapticSuccess(); renderProgress();
+    toast(ru?'Фото добавлено 📸':'Photo added 📸');
+  } catch { toast(ru?'Не удалось обработать фото':'Failed to process photo'); }
+  finally { this.value=''; }
+});
+
+function deleteProgressPhoto(ts) {
+  const ru = lang !== 'en';
+  const photo = progressPhotos.find(p=>p.ts===ts);
+  progressPhotos = progressPhotos.filter(p=>p.ts!==ts); _saveProgressPhotos(); renderProgress();
+  toastUndo(ru?'Фото удалено':'Photo deleted', () => { if(photo){ progressPhotos.push(photo); progressPhotos.sort((a,b)=>a.ts-b.ts); _saveProgressPhotos(); renderProgress(); } });
+}
+
+function viewProgressPhoto(ts) {
+  const p = progressPhotos.find(x=>x.ts===ts); if(!p) return;
+  const ov = document.createElement('div');
+  ov.style.cssText='position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.92);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px';
+  ov.onclick=()=>ov.remove();
+  ov.innerHTML=`<img src="${p.img}" style="max-width:94%;max-height:80%;border-radius:12px"><div style="color:#fff;font-size:13px">${p.date}</div>`;
+  document.body.appendChild(ov);
+}
+
+function _buildPhotosCard() {
+  const ru = lang !== 'en';
+  const addBtn = `<button onclick="document.getElementById('progress-photo-input').click()" style="padding:6px 12px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid rgba(0,229,255,.3);background:rgba(0,229,255,.1);color:var(--cyan);touch-action:manipulation">📷 ${ru?'Добавить':'Add'}</button>`;
+  if (!progressPhotos.length) {
+    return `<div class="chart-card"><div class="chart-hd"><div class="chart-ttl">📸 ${ru?'Фото прогресса':'Progress photos'}</div>${addBtn}</div>
+      <div style="font-size:12px;color:var(--text3);text-align:center;padding:10px 0">${ru?'Сделай первое фото — потом сравнишь прогресс «до/после»':'Take your first photo — compare before/after later'}</div></div>`;
+  }
+  const sorted = progressPhotos.slice().sort((a,b)=>a.ts-b.ts);
+  const first = sorted[0], last = sorted[sorted.length-1];
+  const compare = sorted.length>=2 ? `<div style="display:flex;gap:8px;margin-bottom:10px">
+      <div style="flex:1;text-align:center"><img src="${first.img}" onclick="viewProgressPhoto(${first.ts})" style="width:100%;height:150px;object-fit:cover;border-radius:10px;cursor:pointer"><div style="font-size:10px;color:var(--text3);margin-top:3px">${ru?'Старт':'Start'} · ${first.date}</div></div>
+      <div style="flex:1;text-align:center"><img src="${last.img}" onclick="viewProgressPhoto(${last.ts})" style="width:100%;height:150px;object-fit:cover;border-radius:10px;cursor:pointer"><div style="font-size:10px;color:var(--text3);margin-top:3px">${ru?'Сейчас':'Now'} · ${last.date}</div></div>
+    </div>` : '';
+  const strip = sorted.slice().reverse().map(p=>`<div style="position:relative;flex-shrink:0">
+      <img src="${p.img}" onclick="viewProgressPhoto(${p.ts})" style="width:64px;height:64px;object-fit:cover;border-radius:8px;cursor:pointer">
+      <div onclick="event.stopPropagation();deleteProgressPhoto(${p.ts})" style="position:absolute;top:-5px;right:-5px;width:18px;height:18px;background:var(--red);color:#fff;border-radius:50%;font-size:11px;display:flex;align-items:center;justify-content:center;cursor:pointer">×</div>
+    </div>`).join('');
+  return `<div class="chart-card"><div class="chart-hd"><div class="chart-ttl">📸 ${ru?'Фото прогресса':'Progress photos'}</div>${addBtn}</div>
+    ${compare}
+    <div style="display:flex;gap:8px;overflow-x:auto;padding:4px 0">${strip}</div>
+    <div style="font-size:10px;color:var(--text3);margin-top:6px">${ru?'📱 Хранятся на этом устройстве':'📱 Stored on this device'}</div></div>`;
+}
+
 let _progressPeriod = 30;
 function renderProgress() {
   const el=document.getElementById('progress-content');
@@ -3497,7 +3579,7 @@ function renderProgress() {
       </div>
     </div>` : '';
 
-  el.innerHTML=`${startNowGoalCard}${_buildWeekSummary()}
+  el.innerHTML=`${startNowGoalCard}${_buildWeekSummary()}${_buildPhotosCard()}
     <div class="adapt-card">
       <div class="chart-hd"><div class="chart-ttl">🤖 ${ruP?'Адаптация плана':'Plan adaptation'}</div></div>
       <div style="font-size:13px;color:var(--text2);margin-bottom:12px">${ruP?'Арни проанализирует данные за неделю и скорректирует план':'Arnie will analyze your weekly data and adjust the plan'}</div>
