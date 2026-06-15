@@ -3286,6 +3286,49 @@ document.getElementById('photo-input').addEventListener('change',async function(
 });
 
 // ══ PROGRESS ══
+// Сводка за неделю — считается локально, без AI. Дни/тренировки/белок/вода/вес.
+function _buildWeekSummary() {
+  const ru = lang !== 'en';
+  const tgt = macrosOverride || planData?.macros || {};
+  const protTarget = tgt.protein_g || 0;
+  let foodDays=0, woDays=0, protSum=0, protDaysCounted=0, waterSum=0, waterDays=0;
+  const wkDates=[];
+  for (let i=0;i<7;i++){ const d=new Date(); d.setDate(d.getDate()-i); wkDates.push(d.toLocaleDateString('ru-RU')); }
+  for (const key of wkDates){
+    const dayFood = foodLogs.filter(f=>f.date===key);
+    if (dayFood.length){
+      foodDays++;
+      if (protTarget){
+        const p = dayFood.reduce((a,f)=>a+(f.total?.protein_g||0),0);
+        protSum += Math.min(150, Math.round(p/protTarget*100)); protDaysCounted++;
+      }
+    }
+    if (getWorkoutDone(key)) woDays++;
+    const ml = parseInt(localStorage.getItem('pk_water_'+key)||'0');
+    if (ml>0){ waterSum += Math.min(150, Math.round(ml/getWaterTarget()*100)); waterDays++; }
+  }
+  // вес: дельта за 7 дней по записям веса
+  const wk = logs.filter(l=>l.weight!=null && wkDates.includes(l.date)).map(l=>l.weight);
+  const wDelta = wk.length>=2 ? (wk[wk.length-1]-wk[0]) : null;
+  const avgProt = protDaysCounted ? Math.round(protSum/protDaysCounted) : null;
+  const avgWater = waterDays ? Math.round(waterSum/waterDays) : null;
+  if (!foodDays && !woDays && wDelta===null && avgWater===null) return '';
+  const cell=(val,lbl,color)=>`<div style="flex:1;text-align:center"><div style="font-size:19px;font-weight:800;color:${color||'var(--text)'}">${val}</div><div style="font-size:10px;color:var(--text3);margin-top:2px">${lbl}</div></div>`;
+  const goal=profile?.goal||'';
+  const wGood = wDelta===null?null : (goal==='lose_weight'&&wDelta<0)||(goal==='gain_muscle'&&wDelta>0)||(goal==='maintain'&&Math.abs(wDelta)<0.5);
+  const wColor = wDelta===null?'var(--text3)':wGood?'var(--emerald)':'var(--gold)';
+  return `<div class="chart-card" style="margin-top:0">
+    <div class="chart-hd" style="margin-bottom:12px"><div class="chart-ttl">📅 ${ru?'Итоги недели':'Your week'}</div></div>
+    <div style="display:flex;gap:4px">
+      ${cell(`${foodDays}/7`, ru?'дней с едой':'food days', foodDays>=5?'var(--emerald)':'var(--text)')}
+      ${cell(woDays, ru?'трен.':'workouts', woDays>=3?'var(--emerald)':'var(--text)')}
+      ${avgProt!==null?cell(`${avgProt}%`, ru?'белок':'protein', avgProt>=80?'var(--emerald)':'var(--gold)'):''}
+      ${avgWater!==null?cell(`${avgWater}%`, ru?'вода':'water', avgWater>=80?'var(--emerald)':'var(--gold)'):''}
+      ${wDelta!==null?cell(`${wDelta>0?'+':''}${wDelta.toFixed(1)}`, ru?'кг':'kg', wColor):''}
+    </div>
+  </div>`;
+}
+
 let _progressPeriod = 30;
 function renderProgress() {
   const el=document.getElementById('progress-content');
@@ -3454,7 +3497,7 @@ function renderProgress() {
       </div>
     </div>` : '';
 
-  el.innerHTML=`${startNowGoalCard}
+  el.innerHTML=`${startNowGoalCard}${_buildWeekSummary()}
     <div class="adapt-card">
       <div class="chart-hd"><div class="chart-ttl">🤖 ${ruP?'Адаптация плана':'Plan adaptation'}</div></div>
       <div style="font-size:13px;color:var(--text2);margin-bottom:12px">${ruP?'Арни проанализирует данные за неделю и скорректирует план':'Arnie will analyze your weekly data and adjust the plan'}</div>
