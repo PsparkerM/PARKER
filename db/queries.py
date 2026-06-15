@@ -103,6 +103,7 @@ def get_chat_history(user_id: str) -> list:
             return json.loads(result.data[0]["content"])
         return []
     except Exception:
+        logging.warning("get_chat_history failed user_id=%s", user_id, exc_info=True)
         return []
 
 
@@ -127,6 +128,7 @@ def get_chat_summary(user_id: str) -> dict | None:
             "covered_count": int((row.get("macros") or {}).get("covered_count") or 0),
         }
     except Exception:
+        logging.warning("get_chat_summary failed user_id=%s", user_id, exc_info=True)
         return None
 
 
@@ -245,6 +247,7 @@ def get_reminders_for_user(user_id: str) -> list:
         result = db.table("reminders").select("*").eq("user_id", user_id).execute()
         return result.data or []
     except Exception:
+        logging.warning("get_reminders_for_user failed user_id=%s", user_id, exc_info=True)
         return []
 
 
@@ -308,6 +311,7 @@ def get_user_logs(user_id: str) -> dict:
             return json.loads(result.data[0]["content"])
         return {}
     except Exception:
+        logging.warning("get_user_logs failed user_id=%s", user_id, exc_info=True)
         return {}
 
 
@@ -423,6 +427,7 @@ def get_reminder(reminder_id: str) -> dict | None:
         result = db.table("reminders").select("*").eq("id", reminder_id).single().execute()
         return result.data
     except Exception:
+        logging.debug("get_reminder failed id=%s", reminder_id, exc_info=True)
         return None
 
 
@@ -440,6 +445,7 @@ def get_user(tg_id: int) -> dict | None:
         )
         return result.data
     except Exception:
+        logging.debug("get_user failed tg_id=%s", tg_id, exc_info=True)
         return None
 
 
@@ -540,6 +546,7 @@ def get_subscription(user_id: str) -> dict | None:
         )
         return result.data
     except Exception:
+        logging.debug("get_subscription failed user_id=%s", user_id, exc_info=True)
         return None
 
 
