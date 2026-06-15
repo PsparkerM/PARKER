@@ -1689,7 +1689,7 @@ function calcStreak() {
 
 // ══ ONBOARDING ══
 // ══ ONBOARDING INTERVIEW ══
-const ONB_STAGES = ['name','goal','gender','body','health','equipment','schedule'];
+const ONB_STAGES = ['name','goal','gender','body','health','equipment','schedule','activity'];
 let onbData = {};
 let _onbHealthSel = new Set();
 
@@ -1791,12 +1791,22 @@ async function _onbStage(idx) {
     </div>`);
 
   } else if (stage === 'schedule') {
-    await _onbTyping('Последний вопрос — какой у тебя режим дня?\n\nОт этого зависит интенсивность тренировок и план питания.');
+    await _onbTyping('Какой у тебя режим дня?\n\nОт этого зависит интенсивность тренировок и план питания.');
     _onbBottom(`<div class="onb-chips">
       <div class="onb-chip" onclick="onbSchedule('standard',this)">☀️ Стандартный ~8 ч</div>
       <div class="onb-chip" onclick="onbSchedule('12h',this)">⚡ Насыщенный 12 ч</div>
       <div class="onb-chip" onclick="onbSchedule('16h+',this)">🔥 Тяжёлый 16+ ч</div>
       <div class="onb-chip" onclick="onbSchedule('shift',this)">🔄 Сменный график</div>
+    </div>`);
+
+  } else if (stage === 'activity') {
+    await _onbTyping('И последнее — сколько двигаешься/тренируешься?\n\nЭто нужно для точного расчёта калорий.');
+    _onbBottom(`<div class="onb-chips">
+      <div class="onb-chip" onclick="onbActivity('sedentary',this)">🪑 Сидячий, без тренировок</div>
+      <div class="onb-chip" onclick="onbActivity('light',this)">🚶 Лёгкие 1–3 трен/нед</div>
+      <div class="onb-chip" onclick="onbActivity('moderate',this)">🏃 Умеренные 3–5 трен/нед</div>
+      <div class="onb-chip" onclick="onbActivity('active',this)">💪 Интенсивные 6–7 трен/нед</div>
+      <div class="onb-chip" onclick="onbActivity('very_active',this)">🔥 Физ. работа + тренировки</div>
     </div>`);
   }
 }
@@ -1865,6 +1875,13 @@ function onbEquip(val, el) {
 
 function onbSchedule(val, el) {
   onbData.schedule = val;
+  _onbAddMsg('u', el.textContent.trim());
+  _onbBottom('');
+  _onbStage(ONB_STAGES.indexOf('activity'));
+}
+
+function onbActivity(val, el) {
+  onbData.activity = val;
   _onbAddMsg('u', el.textContent.trim());
   _onbBottom('');
   submitOnboarding();

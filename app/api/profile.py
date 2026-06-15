@@ -36,6 +36,14 @@ class ScheduleEnum(str, Enum):
     shift      = "shift"
 
 
+class ActivityEnum(str, Enum):
+    sedentary   = "sedentary"
+    light       = "light"
+    moderate    = "moderate"
+    active      = "active"
+    very_active = "very_active"
+
+
 class HealthIssue(str, Enum):
     none           = "none"
     back_problems  = "back_problems"
@@ -58,6 +66,7 @@ class ProfileRequest(BaseModel):
     weight_kg:   float = Field(..., ge=30,  le=300)
     goal:        GoalEnum    = GoalEnum.maintain
     schedule:    ScheduleEnum = ScheduleEnum.standard
+    activity:    Optional[ActivityEnum] = None
     health_issues: list[HealthIssue]  = Field(default=[], max_length=10)
     equipment:     list[Equipment]    = Field(default=[Equipment.gym], max_length=10)
     body_fat_pct:  Optional[float]    = Field(None, ge=3,  le=60)

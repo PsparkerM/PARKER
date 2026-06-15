@@ -1,3 +1,14 @@
+# Множители по реальному уровню активности (классические Харрис-Бенедикт).
+# Это корректная основа TDEE — привязка к тренировочной нагрузке, а не к смене.
+ACTIVITY_LEVELS = {
+    "sedentary":   1.2,    # сидячий, без тренировок
+    "light":       1.375,  # лёгкие 1–3 трен/нед
+    "moderate":    1.55,   # умеренные 3–5 трен/нед
+    "active":      1.725,  # интенсивные 6–7 трен/нед
+    "very_active": 1.9,    # физ. работа + тренировки
+}
+
+# Legacy-фоллбэк: множитель по длине смены (когда уровень активности не задан).
 ACTIVITY_MULTIPLIERS = {
     "standard": 1.375,
     "12h":      1.55,
@@ -45,7 +56,10 @@ def calculate_bmr(gender: str, age: int, height_cm: int,
     return 10 * weight_kg + 6.25 * height_cm - 5 * age - 161
 
 
-def calculate_tdee(bmr: float, schedule: str) -> float:
+def calculate_tdee(bmr: float, schedule: str, activity: str | None = None) -> float:
+    # Уровень активности точнее графика — используем его, если задан.
+    if activity and activity in ACTIVITY_LEVELS:
+        return bmr * ACTIVITY_LEVELS[activity]
     return bmr * ACTIVITY_MULTIPLIERS.get(schedule, 1.375)
 
 
@@ -103,5 +117,5 @@ def compute_macros_for_profile(data: dict) -> dict:
         weight_kg=weight_kg,
         body_fat_pct=data.get("body_fat_pct"),
     )
-    tdee = calculate_tdee(bmr, data["schedule"])
+    tdee = calculate_tdee(bmr, data["schedule"], data.get("activity"))
     return calculate_macros(tdee, data["goal"], weight_kg=weight_kg, gender=gender)
