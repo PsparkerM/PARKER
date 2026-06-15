@@ -2629,7 +2629,37 @@ function renderHome() {
     </div>`;
   })() : '';
 
-  el.innerHTML = `${badgeHtml}${streakHtml}
+  // ── Умный поведенческий нудж: один самый релевантный совет по данным дня ──
+  const _hr = _now.getHours();
+  const _foodCount = foodLogs.filter(f=>f.date===today).length;
+  const _protPct = pct(consumed_safe.p, target.p);
+  const _wLogs = logs.filter(l=>l.weight!=null);
+  let _daysSinceW = Infinity;
+  if (_wLogs.length) {
+    const _maxIso = _wLogs.reduce((mx,l)=>{ const iso=_localeToIso(l.date); return iso>mx?iso:mx; }, '0000-00-00');
+    const [yy,mm,dd] = _maxIso.split('-').map(Number);
+    if (yy) _daysSinceW = Math.floor((Date.now()-new Date(yy,mm-1,dd).getTime())/864e5);
+  }
+  let _nudge = null;
+  if (localStorage.getItem('pk_nudge_dismissed') !== today) {
+    if (_foodCount===0 && _hr>=12)
+      _nudge = {ico:'🍽', txt:ru?'Ты ещё не записал ни одного приёма пищи сегодня':'No meals logged today yet', cta:"goTab('tracker')"};
+    else if (_foodCount>0 && _protPct<60 && _hr>=16)
+      _nudge = {ico:'💪', txt:ru?`Добери белок: осталось ~${Math.max(0,Math.round(target.p-consumed_safe.p))}г до нормы`:`Protein: ~${Math.max(0,Math.round(target.p-consumed_safe.p))}g to go`, cta:"goTab('tracker')"};
+    else if (wPct<50 && _hr>=14)
+      _nudge = {ico:'💧', txt:ru?`Вода: ты на ${wPct}% от нормы — догоняй`:`Water: ${wPct}% of target — catch up`, cta:null};
+    else if (!_woDoneToday && !_isRestDayToday() && _hr>=18)
+      _nudge = {ico:'🏋️', txt:ru?'Не отметил тренировку сегодня':'Workout not marked today', cta:"openDailyPanel()"};
+    else if (_daysSinceW>=7)
+      _nudge = {ico:'⚖️', txt:ru?'Давно не взвешивался — отметь вес для точной адаптации':'Log your weight for accurate adaptation', cta:"goTab('tracker')"};
+  }
+  const nudgeHtml = _nudge ? `<div ${_nudge.cta?`onclick="${_nudge.cta}"`:''} style="display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,rgba(0,229,255,.1),rgba(139,92,246,.06));border:1px solid rgba(0,229,255,.2);border-radius:16px;padding:13px 14px;margin-bottom:14px;cursor:${_nudge.cta?'pointer':'default'};touch-action:manipulation">
+      <div style="font-size:22px;flex-shrink:0">${_nudge.ico}</div>
+      <div style="flex:1;font-size:13px;font-weight:600;line-height:1.35">${_nudge.txt}</div>
+      <div onclick="event.stopPropagation();dismissNudge()" style="font-size:18px;color:var(--text3);padding:2px 6px;cursor:pointer;flex-shrink:0">×</div>
+    </div>` : '';
+
+  el.innerHTML = `${nudgeHtml}${badgeHtml}${streakHtml}
     <div class="ring-card">
       <div class="ring-wrap">
         <svg width="90" height="90" viewBox="0 0 96 96">
@@ -2689,6 +2719,8 @@ function renderHome() {
     ${_buildChallengeCard()}${workoutHtml}${mealSchedHtml}${nutrCard}${wrkCard}
   `;
 }
+
+function dismissNudge() { localStorage.setItem('pk_nudge_dismissed', todayKey()); haptic('light'); renderHome(); }
 
 function addWater(ml) {
   const cur = getWater();
