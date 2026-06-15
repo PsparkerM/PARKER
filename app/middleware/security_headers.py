@@ -51,7 +51,8 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["Strict-Transport-Security"] = _HSTS
         response.headers["X-Content-Type-Options"]    = "nosniff"
         response.headers["Referrer-Policy"]           = "strict-origin-when-cross-origin"
-        response.headers["Permissions-Policy"]        = "camera=(), microphone=(), geolocation=()"
+        # camera=(self) — нужно для сканера штрихкодов в мини-аппе; mic/geo запрещены
+        response.headers["Permissions-Policy"]        = "camera=(self), microphone=(), geolocation=()"
         response.headers["Content-Security-Policy"]   = _CSP_ADMIN if is_admin else _CSP_APP
 
         if is_admin:
