@@ -562,6 +562,7 @@ def upsert_subscription(user_id: str, plan: str, charge_id: str, expires_at: dat
             "telegram_charge_id": charge_id,
             "starts_at":          datetime.now(timezone.utc).isoformat(),
             "expires_at":         expires_at.isoformat(),
+            "renewal_notified_at": None,   # сброс: в новом периоде напомним заново
         }
         result = (
             db.table("subscriptions")
@@ -599,3 +600,55 @@ def expire_old_subscriptions() -> int:
     except Exception:
         logging.exception("expire_old_subscriptions error")
         return 0
+
+
+def get_subscriptions_expiring_soon(days: int) -> list[dict]:
+    """Активные подписки, которые истекают в ближайшие `days` дней и которым
+    напоминание о продлении ещё НЕ отправлялось (renewal_notified_at IS NULL).
+
+    Возвращает список {user_id, plan, expires_at, tg_id} — tg_id подтягивается
+    join'ом из users для отправки личного сообщения."""
+    db = get_client()
+    if not db:
+        return []
+    try:
+        now    = datetime.now(timezone.utc)
+        cutoff = now + timedelta(days=days)
+        result = (
+            db.table("subscriptions")
+            .select("user_id, plan, expires_at, users(tg_id)")
+            .eq("status", "active")
+            .is_("renewal_notified_at", "null")
+            .gt("expires_at", now.isoformat())
+            .lte("expires_at", cutoff.isoformat())
+            .execute()
+        )
+        rows = []
+        for row in (result.data or []):
+            user = row.get("users") or {}
+            tg_id = user.get("tg_id")
+            if not tg_id:
+                continue
+            rows.append({
+                "user_id":    row["user_id"],
+                "plan":       row.get("plan", "monthly"),
+                "expires_at": row.get("expires_at"),
+                "tg_id":      tg_id,
+            })
+        return rows
+    except Exception:
+        logging.exception("get_subscriptions_expiring_soon error")
+        return []
+
+
+def mark_renewal_notified(user_id: str) -> None:
+    """Пометить, что напоминание о продлении отправлено — чтобы не слать снова."""
+    db = get_client()
+    if not db:
+        return
+    try:
+        db.table("subscriptions").update(
+            {"renewal_notified_at": datetime.now(timezone.utc).isoformat()}
+        ).eq("user_id", user_id).execute()
+    except Exception:
+        logging.exception("mark_renewal_notified error user_id=%s", user_id)

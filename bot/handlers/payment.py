@@ -10,28 +10,26 @@ from aiogram.types import (
 )
 
 from db.queries import get_user, get_subscription, upsert_subscription, set_user_status
+from bot.config import SUB_PLANS
 
 logger = logging.getLogger(__name__)
 router = Router()
 
-# Stars pricing:
-#   Monthly  — 299 Stars  (~300 руб / ~$3-4)
-#   Annual   — 2990 Stars (~2990 руб / ~$30-40, экономия ~17%)
-MONTHLY_STARS = 299
-ANNUAL_STARS  = 2990
-
-MONTHLY_DAYS  = 30
-ANNUAL_DAYS   = 365
+# Цены и длительности берутся из bot/config.py (env-driven, единый источник).
+# Чтобы изменить стоимость — правь SUB_MONTHLY_STARS / SUB_ANNUAL_STARS там
+# или задай переменные окружения. Здесь хардкода цен НЕТ.
 
 
-def _sub_keyboard() -> InlineKeyboardMarkup:
+def sub_keyboard() -> InlineKeyboardMarkup:
+    """Клавиатура выбора плана. Используется и в /subscribe, и в напоминании
+    о продлении (планировщик), поэтому вынесена в публичный хелпер."""
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(
-            text=f"📅 Месяц — {MONTHLY_STARS} ⭐",
+            text=f"📅 Месяц — {SUB_PLANS['monthly']['stars']} ⭐",
             callback_data="sub:monthly",
         )],
         [InlineKeyboardButton(
-            text=f"📆 Год — {ANNUAL_STARS} ⭐  (экономия 17%)",
+            text=f"📆 Год — {SUB_PLANS['annual']['stars']} ⭐  (экономия 17%)",
             callback_data="sub:annual",
         )],
     ])
@@ -62,7 +60,7 @@ async def cmd_subscribe(message: Message) -> None:
         "• Анализ прогресса и адаптация плана\n\n"
         "Оплата через *Telegram Stars* — безопасно, без карты.\n"
         "Выбери период:",
-        reply_markup=_sub_keyboard(),
+        reply_markup=sub_keyboard(),
         parse_mode="Markdown",
     )
 
@@ -70,24 +68,16 @@ async def cmd_subscribe(message: Message) -> None:
 @router.callback_query(F.data.startswith("sub:"))
 async def sub_plan_callback(callback: CallbackQuery) -> None:
     plan = callback.data.split(":")[1]
-
-    if plan == "monthly":
-        stars       = MONTHLY_STARS
-        title       = "P.A.R.K.E.R. Pro — 1 месяц"
-        description = "50 AI-запросов в день, чат с Арни без лимитов, адаптация плана"
-    else:
-        stars       = ANNUAL_STARS
-        title       = "P.A.R.K.E.R. Pro — 1 год"
-        description = "50 AI-запросов в день на целый год. Экономия 17% против месячной"
+    cfg  = SUB_PLANS.get(plan) or SUB_PLANS["monthly"]
 
     await callback.answer()
     await callback.message.answer_invoice(
-        title=title,
-        description=description,
+        title=cfg["title"],
+        description=cfg["description"],
         payload=f"parker_pro_{plan}_{callback.from_user.id}",
-        currency="XTR",
-        prices=[LabeledPrice(label=title, amount=stars)],
-        provider_token="",
+        currency="XTR",                                       # Telegram Stars
+        prices=[LabeledPrice(label=cfg["title"], amount=cfg["stars"])],
+        provider_token="",                                    # пусто = оплата Звёздами
     )
 
 
@@ -104,7 +94,9 @@ async def successful_payment_handler(message: Message) -> None:
 
     parts = payload.split("_")
     plan  = parts[2] if len(parts) > 2 else "monthly"
-    days  = ANNUAL_DAYS if plan == "annual" else MONTHLY_DAYS
+    if plan not in SUB_PLANS:
+        plan = "monthly"
+    days  = SUB_PLANS[plan]["days"]
 
     user = get_user(message.from_user.id)
     if not user:
