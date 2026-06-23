@@ -75,9 +75,10 @@ async def cmd_help(message: Message) -> None:
         "/start — открыть приложение\n"
         "/план — мой план питания и тренировок\n"
         "/прогресс — статистика и динамика\n"
-        "/подписка — Pro-подписка (50 AI/день)\n"
+        "/подписка — Pro-подписка (15 AI/день)\n"
         "/рестарт — начать заново\n"
-        "/помощь — эта справка\n\n"
+        "/помощь — эта справка\n"
+        "🆘 /support — связаться с поддержкой\n\n"
         "💬 Или просто открой приложение — Арни всегда на месте."
     )
     await message.answer(text, reply_markup=APP_BTN(), parse_mode="Markdown")
@@ -276,9 +277,10 @@ async def set_bot_commands(bot) -> None:
         BotCommand(command="start",     description="Открыть P.A.R.K.E.R."),
         BotCommand(command="plan",      description="Мой план питания и тренировок"),
         BotCommand(command="progress",  description="Мой прогресс"),
-        BotCommand(command="subscribe", description="Pro-подписка — 50 AI/день"),
+        BotCommand(command="subscribe", description="Pro-подписка — 15 AI/день"),
         BotCommand(command="restart",   description="Начать заново"),
         BotCommand(command="help",      description="Справка"),
+        BotCommand(command="support",   description="🆘 Поддержка — связаться с командой"),
         BotCommand(command="stats",     description="[Admin] Статистика пользователей"),
         BotCommand(command="users",     description="[Admin] Список всех пользователей"),
     ])

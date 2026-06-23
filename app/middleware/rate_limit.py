@@ -47,10 +47,12 @@ user_limiter = SlidingWindowLimiter()   # keyed by tg_id — general API throttl
 # ── AI daily limits by subscription tier ───────────────────────────────────
 # Actual usage counters live in Supabase (ai_usage table) — see db/queries.py.
 
+from bot.config import PRO_AI_DAILY_LIMIT
+
 _AI_LIMITS: dict[str, int] = {
     "free": 5,
-    "pro":  50,
-    "vip":  9_999,  # effectively unlimited
+    "pro":  PRO_AI_DAILY_LIMIT,   # env-driven (см. bot/config.py) — потолок расхода на AI
+    "vip":  9_999,                # effectively unlimited
 }
 
 

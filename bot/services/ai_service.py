@@ -26,11 +26,11 @@ def _get_client() -> anthropic.AsyncAnthropic:
     return _client
 
 
-MODEL = "claude-sonnet-4-6"
+MODEL = "claude-haiku-4-5"
 
-# Приблизительная цена Sonnet 4.6 (USD за 1M токенов) — для оценки расхода в логах.
-_PRICE_IN_PER_M = 3.0
-_PRICE_OUT_PER_M = 15.0
+# Приблизительная цена Haiku 4.5 (USD за 1M токенов) — для оценки расхода в логах.
+_PRICE_IN_PER_M = 1.0
+_PRICE_OUT_PER_M = 5.0
 _usage_totals = {"input": 0, "output": 0}
 
 

@@ -335,6 +335,25 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
   border-radius:12px;padding:10px 14px;font-size:12px;color:var(--text3);
   display:flex;align-items:center;gap:8px;margin-bottom:12px}
 
+/* BODY MEASUREMENTS ACCORDION */
+.meas-hd{display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;margin-bottom:0}
+.meas-chevron{font-size:13px;color:var(--text3);transition:transform .3s ease}
+.meas-card.open .meas-chevron{transform:rotate(180deg)}
+.meas-body{max-height:0;overflow:hidden;opacity:0;margin-top:0;
+  transition:max-height .4s cubic-bezier(.4,0,.2,1),opacity .3s ease,margin-top .3s ease}
+.meas-card.open .meas-body{max-height:660px;opacity:1;margin-top:14px}
+
+/* INLINE REMINDER CONFIG (replaces the popup sheet) */
+.notif-inline{max-height:0;overflow:hidden;opacity:0;border-top:1px solid transparent;
+  transition:max-height .42s cubic-bezier(.4,0,.2,1),opacity .3s ease}
+.notif-inline.open{max-height:1500px;opacity:1;border-top:1px solid var(--border)}
+.notif-inline-pad{padding:14px 16px 16px}
+.rem-inline-ttl{font-size:15px;font-weight:800;margin-bottom:12px;color:var(--cyan)}
+.rem-inline-test{width:100%;padding:11px;border-radius:var(--radius-sm);font-size:13px;font-weight:700;margin-top:8px;
+  background:rgba(16,210,155,.08);border:1px solid rgba(16,210,155,.22);color:var(--cyan);touch-action:manipulation}
+.notif-inline .rem-body{padding:0;overflow:visible;flex:none}
+.notif-inline .rem-footer{margin-top:14px;padding:0;border-top:none}
+
 /* CHAT */
 .chat-wrap{flex:1;min-height:0;overflow-y:scroll;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;scroll-behavior:smooth;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
 .msg{display:flex;flex-direction:column;max-width:85%;animation:msgIn .2s ease}
@@ -1262,26 +1281,8 @@ input[type=time]{color-scheme:dark}
     <div class="sub-panel-scrl" id="daily-panel-content"></div>
   </div>
 
-  <!-- REMINDER MODAL -->
-  <div class="rem-overlay" id="rem-overlay" onclick="closeNotifModal()"></div>
-  <div class="rem-sheet" id="rem-sheet">
-    <div class="rem-handle"></div>
-    <div class="rem-hdr">
-      <div class="rem-ttl" id="rem-ttl"></div>
-      <button class="rem-close" onclick="closeNotifModal()">✕</button>
-    </div>
-    <div class="rem-body" id="rem-body"></div>
-    <div style="padding:0 18px">
-      <button onclick="sendTestNotif(_remType)" style="width:100%;padding:11px;border-radius:var(--radius-sm);font-size:13px;font-weight:700;
-        background:rgba(16,210,155,.08);border:1px solid rgba(16,210,155,.22);color:var(--cyan);touch-action:manipulation">
-        ⚡ Отправить тестовое в бота
-      </button>
-    </div>
-    <div class="rem-footer">
-      <button class="rem-cancel-btn" onclick="closeNotifModal()" id="rem-cancel-lbl">Отмена</button>
-      <button class="rem-save-btn" onclick="saveNotifModal()" id="rem-save-lbl">Сохранить ✓</button>
-    </div>
-  </div>
+  <!-- REMINDER CONFIG is now rendered INLINE inside #pf-notif-content (#rem-inline) -->
+
 
   <!-- FAQ FULL PAGE -->
   <div class="faq-page" id="faq-page">
@@ -2210,7 +2211,7 @@ function goTab(name) {
 // ══ TELEGRAM BACK BUTTON ══
 // Закрывает открытый оверлей / уводит на Главную вместо закрытия всего приложения.
 const _OVERLAY_IDS = ['settings-panel','faq-page','targets-panel','name-panel','lang-panel',
-  'daily-panel','cal-panel','chal-overlay','wo-overlay','wo-sheet','rem-overlay','rem-sheet',
+  'daily-panel','cal-panel','chal-overlay','wo-overlay','wo-sheet',
   'qe-overlay','qe-sheet','ios-install-overlay','ios-install-sheet','cal-day-sheet-overlay',
   'cal-day-sheet','ava-overlay','ava-sheet'];
 function _openOverlayIds() {
@@ -2848,8 +2849,8 @@ async function sendChat() {
       clearTimeout(watchdog); typ.remove();
       const isPro = profile?.status==='pro'||profile?.status==='vip';
       const limitMsg = isPro
-        ? '<div class="chat-quota-msg"><div class="chat-quota-title">⏳ Дневной лимит AI</div><div class="chat-quota-body">50 запросов в день исчерпаны. Обновится в полночь по UTC.</div></div>'
-        : '<div class="chat-quota-msg"><div class="chat-quota-title">⚡ Лимит Free исчерпан</div><div class="chat-quota-body">5 AI-запросов в день закончились.\n\nС <b>Pro</b> — 50 запросов/день, неограниченный чат с Арни.</div><button class="chat-quota-btn" onclick="openProUpgrade()">Получить Pro →</button></div>';
+        ? '<div class="chat-quota-msg"><div class="chat-quota-title">⏳ Дневной лимит AI</div><div class="chat-quota-body">15 запросов в день исчерпаны. Обновится в полночь по UTC.</div></div>'
+        : '<div class="chat-quota-msg"><div class="chat-quota-title">⚡ Лимит Free исчерпан</div><div class="chat-quota-body">5 AI-запросов в день закончились.\n\nС <b>Pro</b> — 15 запросов/день, чат с Арни и разбор фото еды.</div><button class="chat-quota-btn" onclick="openProUpgrade()">Получить Pro →</button></div>';
       const d=document.createElement('div'); d.className='msg p'; d.innerHTML=limitMsg; el.appendChild(d);
       btn.disabled=false; scrollBottom(el); return;
     }
@@ -3012,31 +3013,45 @@ function renderTracker() {
       ${dayLogs.length?renderFoodLog(dayLogs):`<div style="color:var(--text3);font-size:13px;text-align:center;padding:12px 0">${ru?'Ничего не добавлено':'Nothing logged yet'}</div>`}
     </div>
 
-    <div class="card">
-      <div class="card-ttl"><span>📏</span> Замеры тела</div>
-      <div class="metric-grid">
-        <div class="metric-field"><div class="metric-lbl">Вес</div>
-          <div class="metric-wrap"><input class="metric-in" id="m-wt" type="number" inputmode="decimal" step="0.1" placeholder="${lastLog?.weight||profile?.weight_kg||80}"><span class="metric-unit">кг</span></div>
-        </div>
-        <div class="metric-field"><div class="metric-lbl">Сон</div>
-          <div class="metric-wrap"><input class="metric-in" id="m-sl" type="number" inputmode="decimal" step="0.5" placeholder="7"><span class="metric-unit">ч</span></div>
-        </div>
-        <div class="metric-field"><div class="metric-lbl">Грудь</div>
-          <div class="metric-wrap"><input class="metric-in" id="m-chest" type="number" inputmode="decimal" step="0.5" placeholder="${lastMeas?.chest||100}"><span class="metric-unit">см</span></div>
-        </div>
-        <div class="metric-field"><div class="metric-lbl">Талия</div>
-          <div class="metric-wrap"><input class="metric-in" id="m-waist" type="number" inputmode="decimal" step="0.5" placeholder="${lastMeas?.waist||85}"><span class="metric-unit">см</span></div>
-        </div>
-        <div class="metric-field"><div class="metric-lbl">Бёдра</div>
-          <div class="metric-wrap"><input class="metric-in" id="m-hips" type="number" inputmode="decimal" step="0.5" placeholder="${lastMeas?.hips||95}"><span class="metric-unit">см</span></div>
-        </div>
-        <div class="metric-field"><div class="metric-lbl">Рука</div>
-          <div class="metric-wrap"><input class="metric-in" id="m-arm" type="number" inputmode="decimal" step="0.5" placeholder="${lastMeas?.arm||35}"><span class="metric-unit">см</span></div>
-        </div>
+    <div class="card meas-card${_measOpen?' open':''}">
+      <div class="card-ttl meas-hd" onclick="toggleMeas()">
+        <span style="display:flex;align-items:center;gap:7px"><span>📏</span> Замеры тела</span>
+        <span class="meas-chevron">▾</span>
       </div>
-      <button class="save-btn-blue" style="margin-top:12px" onclick="saveMetrics()">Сохранить ✓</button>
+      <div class="meas-body">
+        <div class="metric-grid">
+          <div class="metric-field"><div class="metric-lbl">Вес</div>
+            <div class="metric-wrap"><input class="metric-in" id="m-wt" type="number" inputmode="decimal" step="0.1" placeholder="${lastLog?.weight||profile?.weight_kg||80}"><span class="metric-unit">кг</span></div>
+          </div>
+          <div class="metric-field"><div class="metric-lbl">Сон</div>
+            <div class="metric-wrap"><input class="metric-in" id="m-sl" type="number" inputmode="decimal" step="0.5" placeholder="7"><span class="metric-unit">ч</span></div>
+          </div>
+          <div class="metric-field"><div class="metric-lbl">Грудь</div>
+            <div class="metric-wrap"><input class="metric-in" id="m-chest" type="number" inputmode="decimal" step="0.5" placeholder="${lastMeas?.chest||100}"><span class="metric-unit">см</span></div>
+          </div>
+          <div class="metric-field"><div class="metric-lbl">Талия</div>
+            <div class="metric-wrap"><input class="metric-in" id="m-waist" type="number" inputmode="decimal" step="0.5" placeholder="${lastMeas?.waist||85}"><span class="metric-unit">см</span></div>
+          </div>
+          <div class="metric-field"><div class="metric-lbl">Бёдра</div>
+            <div class="metric-wrap"><input class="metric-in" id="m-hips" type="number" inputmode="decimal" step="0.5" placeholder="${lastMeas?.hips||95}"><span class="metric-unit">см</span></div>
+          </div>
+          <div class="metric-field"><div class="metric-lbl">Рука</div>
+            <div class="metric-wrap"><input class="metric-in" id="m-arm" type="number" inputmode="decimal" step="0.5" placeholder="${lastMeas?.arm||35}"><span class="metric-unit">см</span></div>
+          </div>
+        </div>
+        <button class="save-btn-blue" style="margin-top:12px" onclick="saveMetrics()">Сохранить ✓</button>
+      </div>
     </div>`;
   autoResize(document.getElementById('food-ta'));
+}
+
+// Body-measurements accordion: collapsed by default, smooth expand on tap
+let _measOpen = false;
+function toggleMeas() {
+  _measOpen = !_measOpen;
+  const c = document.querySelector('.meas-card');
+  if (c) c.classList.toggle('open', _measOpen);
+  try { haptic('light'); } catch (e) {}
 }
 
 function renderFoodLog(items) {
@@ -3690,14 +3705,14 @@ function _renderSubCard(status) {
     return `<div class="sub-card pro">
       <div class="sub-status-row"><div class="sub-badge pro">⭐ Pro</div><div class="sub-plan-name">P.A.R.K.E.R. Pro</div></div>
       <div class="sub-features">
-        <div class="sub-feature">${ru?'50 AI-запросов в день':'50 AI requests/day'}</div>
-        <div class="sub-feature">${ru?'Неограниченный чат с Арни':'Unlimited Arnie chat'}</div>
+        <div class="sub-feature">${ru?'15 AI-запросов в день':'15 AI requests/day'}</div>
+        <div class="sub-feature">${ru?'Чат с Арни и разбор фото еды':'Arnie chat & food photo analysis'}</div>
       </div>
     </div>`;
   }
   return `<div class="sub-card free">
     <div class="sub-status-row"><div class="sub-badge free">⚡ Free</div><div class="sub-plan-name">${ru?'5 запросов / день':'5 requests / day'}</div></div>
-    <div class="sub-desc">${ru?'Обновись до Pro — 50 AI-запросов в день и неограниченный чат с Арни':'Upgrade to Pro — 50 AI requests/day and unlimited Arnie chat'}</div>
+    <div class="sub-desc">${ru?'Обновись до Pro — 15 AI-запросов в день, чат с Арни и разбор фото еды':'Upgrade to Pro — 15 AI requests/day, Arnie chat & food photo analysis'}</div>
     <button class="sub-upgrade-btn" onclick="openProUpgrade()" style="touch-action:manipulation">${ru?'⭐ Получить Pro →':'⭐ Get Pro →'}</button>
   </div>`;
 }
@@ -3773,8 +3788,8 @@ function openProUpgrade() {
   if (tg?.showPopup && tg?.openInvoice) {
     tg.showPopup({
       title: ru?'P.A.R.K.E.R. Pro':'P.A.R.K.E.R. Pro',
-      message: ru?'50 AI-запросов в день, чат с Арни без лимитов, адаптация плана.\n\nВыбери период:'
-                 :'50 AI requests/day, unlimited Arnie chat, plan adaptation.\n\nChoose a period:',
+      message: ru?'15 AI-запросов в день, чат с Арни, разбор фото еды, адаптация плана.\n\nВыбери период:'
+                 :'15 AI requests/day, Arnie chat, food photo analysis, plan adaptation.\n\nChoose a period:',
       buttons: [
         {id:'monthly', type:'default', text:ru?'Месяц — 299 ⭐':'Month — 299 ⭐'},
         {id:'annual',  type:'default', text:ru?'Год — 2990 ⭐':'Year — 2990 ⭐'},
@@ -4548,6 +4563,15 @@ function renderPfNotifContent(el) {
     ${_nsub('log','log', ru ? '📏 Записать замеры' : '📏 Log measurements')}
     ${_nsub('workout','workout', ru ? '💪 Напоминание о тренировке' : '💪 Workout reminder')}
     ${_nsub('motivation','motivation', ru ? '🔥 Мотивация от Арни' : '🔥 Motivation from Arnie')}
+    <div class="notif-inline" id="rem-inline"><div class="notif-inline-pad">
+      <div class="rem-inline-ttl" id="rem-ttl"></div>
+      <div class="rem-body" id="rem-body"></div>
+      <button class="rem-inline-test" onclick="sendTestNotif(_remType)">⚡ ${ru ? 'Отправить тестовое в бота' : 'Send test to bot'}</button>
+      <div class="rem-footer">
+        <button class="rem-cancel-btn" onclick="closeNotifModal()" id="rem-cancel-lbl">${ru ? 'Отмена' : 'Cancel'}</button>
+        <button class="rem-save-btn" onclick="saveNotifModal()" id="rem-save-lbl">${ru ? 'Сохранить ✓' : 'Save ✓'}</button>
+      </div>
+    </div></div>
     <div style="padding:12px 16px">
       <button class="btn-notif-test" onclick="sendTestNotif()" style="touch-action:manipulation">
         ⚡ ${ru ? 'Отправить тестовое уведомление' : 'Send test notification'}
@@ -4654,21 +4678,27 @@ const ALL_DAYS_RU   = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
 const ALL_DAYS_EN   = ['Mo','Tu','We','Th','Fr','Sa','Su'];
 
 function openNotifModal(type) {
+  const host = document.getElementById('rem-inline');
+  // tap the same row again → collapse (toggle behaviour)
+  if (host && host.classList.contains('open') && _remType === type) { closeNotifModal(); return; }
   _remType = type;
   // ensure notifSettings has entries for workout + motivation
   if (!notifSettings.workout)    notifSettings.workout    = {active:false, time:'07:00', days:[0,1,2,3,4], utc_offset: getUtcOffset()};
   if (!notifSettings.motivation) notifSettings.motivation = {active:false, time:'09:00', days:[0,1,2,3,4,5,6], utc_offset: getUtcOffset()};
   renderNotifModal();
-  document.getElementById('rem-sheet').classList.add('on');
-  document.getElementById('rem-overlay').classList.add('on');
   const ru = lang !== 'en';
-  document.getElementById('rem-cancel-lbl').textContent = ru ? 'Отмена' : 'Cancel';
-  document.getElementById('rem-save-lbl').textContent   = ru ? 'Сохранить ✓' : 'Save ✓';
+  const cl = document.getElementById('rem-cancel-lbl'); if (cl) cl.textContent = ru ? 'Отмена' : 'Cancel';
+  const sl = document.getElementById('rem-save-lbl');   if (sl) sl.textContent = ru ? 'Сохранить ✓' : 'Save ✓';
+  if (host) {
+    host.classList.add('open');
+    try { haptic('light'); } catch (e) {}
+    setTimeout(() => host.scrollIntoView({behavior:'smooth', block:'nearest'}), 140);
+  }
 }
 
 function closeNotifModal() {
-  document.getElementById('rem-sheet').classList.remove('on');
-  document.getElementById('rem-overlay').classList.remove('on');
+  const host = document.getElementById('rem-inline');
+  if (host) host.classList.remove('open');
   _remType = null;
 }
 

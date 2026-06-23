@@ -18,6 +18,7 @@ from bot.bot_instance import bot
 from bot.handlers import start
 from bot.handlers.start import set_bot_commands
 from bot.handlers import payment as payment_handler
+from bot.handlers import support as support_handler
 from app.api.profile import router as profile_router
 from app.api.chat import router as chat_router
 from app.api.food import router as food_router
@@ -43,8 +44,12 @@ logging.getLogger("parker.security").setLevel(logging.WARNING)
 
 class MaintenanceMiddleware(BaseMiddleware):
     async def __call__(self, handler, event: Update, data: dict):
-        from bot.config import MAINTENANCE_MODE, ADMIN_TG_IDS
-        if not MAINTENANCE_MODE:
+        from datetime import datetime, timezone
+        from bot.config import MAINTENANCE_MODE, ADMIN_TG_IDS, LAUNCH_AT_UTC
+        # Бот открыт всем, если режим техработ выключен ИЛИ уже наступил момент
+        # публичного запуска (go-live). После 09:00 МСК бот работает для всех,
+        # даже если MAINTENANCE_MODE=true — и это переживает рестарты.
+        if not MAINTENANCE_MODE or datetime.now(timezone.utc) >= LAUNCH_AT_UTC:
             return await handler(event, data)
         user_id = None
         if event.message and event.message.from_user:
@@ -65,6 +70,9 @@ class MaintenanceMiddleware(BaseMiddleware):
 
 dp = Dispatcher()
 dp.update.outer_middleware(MaintenanceMiddleware())
+# support router FIRST — его FSM/reply-хендлеры должны срабатывать раньше
+# catch-all handle_free_text в start.router (иначе тот перехватит текст).
+dp.include_router(support_handler.router)
 dp.include_router(start.router)
 dp.include_router(payment_handler.router)
 

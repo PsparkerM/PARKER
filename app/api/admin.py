@@ -551,7 +551,7 @@ async function loadDetail(tgId, modalId, btn) {{
 
     // AI quota
     const aiCalls = d.ai_calls_today ?? 0;
-    const aiMax = 50;
+    const aiMax = 15;
     const aiPct = Math.min(100, Math.round(aiCalls/aiMax*100));
     const aiColor = aiCalls >= aiMax ? '#f87171' : aiCalls >= aiMax*0.7 ? '#fbbf24' : '#34d399';
     html += `<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px"><span style="color:#6b6b88;font-weight:600;text-transform:uppercase;letter-spacing:.4px">🤖 AI звонков сегодня</span><span style="color:${{aiColor}};font-weight:700">${{aiCalls}} / ${{aiMax}}</span></div><div style="height:4px;background:rgba(255,255,255,.06);border-radius:2px"><div style="height:100%;width:${{aiPct}}%;background:${{aiColor}};border-radius:2px;transition:width .4s"></div></div></div>`;

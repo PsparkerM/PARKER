@@ -217,8 +217,8 @@ async def _renewal_reminder_job() -> None:
                 text=(
                     "⏳ *Подписка P.A.R.K.E.R. Pro скоро закончится*\n\n"
                     f"Действует до: *{expires_at}*\n\n"
-                    "Продли за ⭐ Telegram Stars, чтобы не потерять 50 AI-запросов "
-                    "в день и чат с Арни без лимитов. Выбери период:"
+                    "Продли за ⭐ Telegram Stars, чтобы не потерять 15 AI-запросов "
+                    "в день и чат с Арни. Выбери период:"
                 ),
                 parse_mode="Markdown",
                 reply_markup=sub_keyboard(),
@@ -233,12 +233,10 @@ async def _renewal_reminder_job() -> None:
 
 
 # ── РАЗОВАЯ РАССЫЛКА О ПЕРЕЗАПУСКЕ (launch broadcast) ──
-# Шлётся ОДИН раз всем, кто когда-либо регистрировался, в указанный момент.
+# Шлётся ОДИН раз всем, кто когда-либо регистрировался, в момент публичного
+# запуска LAUNCH_AT_UTC (тот же, что снимает режим техработ в main.py).
 # Идемпотентность: job регистрируется только если момент ещё не наступил
 # (см. load_all_reminders), поэтому повторный рестарт после отправки её не дублирует.
-LAUNCH_BROADCAST_AT_UTC = datetime(2026, 6, 23, 6, 0, 0, tzinfo=timezone.utc)  # 09:00 МСК
-
-
 def _launch_text(name: str | None) -> str:
     greet = f"Привет, {name.strip()}! 👋" if (name and name.strip()) else "Привет! 👋"
     return (
@@ -309,18 +307,19 @@ async def load_all_reminders() -> None:
     )
     logger.info("Scheduler: renewal reminder job registered")
 
-    # One-shot: разовая рассылка о перезапуске в LAUNCH_BROADCAST_AT_UTC.
+    # One-shot: разовая рассылка о перезапуске в момент go-live LAUNCH_AT_UTC.
     # Регистрируем ТОЛЬКО если момент ещё не прошёл — иначе рестарт после
     # отправки заново её не запустит (защита от повторной массовой рассылки).
+    from bot.config import LAUNCH_AT_UTC
     now = datetime.now(timezone.utc)
-    if now < LAUNCH_BROADCAST_AT_UTC:
+    if now < LAUNCH_AT_UTC:
         scheduler.add_job(
             _launch_broadcast_job,
-            DateTrigger(run_date=LAUNCH_BROADCAST_AT_UTC),
+            DateTrigger(run_date=LAUNCH_AT_UTC),
             id="launch_broadcast",
             replace_existing=True,
             misfire_grace_time=600,  # доставим даже при коротком простое сервера у отметки
         )
-        logger.info("Scheduler: launch broadcast scheduled for %s", LAUNCH_BROADCAST_AT_UTC.isoformat())
+        logger.info("Scheduler: launch broadcast scheduled for %s", LAUNCH_AT_UTC.isoformat())
     else:
         logger.info("Scheduler: launch broadcast time passed — not scheduling")
